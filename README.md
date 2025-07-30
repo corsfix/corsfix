@@ -1,6 +1,6 @@
 <div align="center">
-  <p><img src="https://assets.corsfix.com/ig8k4n6.png" height="100" alt="Corsfix"></p>
-  
+  <p><a href="https://corsfix.com"><img src="https://assets.corsfix.com/ig8k4n6.png" height="100" alt="Corsfix"></a></p>
+
   <p>Open source and secure CORS proxy platform</p>
 
   <p>
