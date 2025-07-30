@@ -65,7 +65,7 @@ export default function ApplicationList({
     id: "",
     name: "",
     allowedOrigins: [],
-    allowedUrls: [],
+    targetDomains: [],
   });
   const [currentOrigin, setCurrentOrigin] = useState("");
   const [domainMode, setDomainMode] = useState<"all" | "custom">("all");
@@ -73,7 +73,7 @@ export default function ApplicationList({
   const [validationErrors, setValidationErrors] = useState({
     name: false,
     allowedOrigins: false,
-    allowedUrls: false,
+    targetDomains: false,
     invalidOriginFormat: false,
     invalidDomainFormat: false,
   });
@@ -97,7 +97,7 @@ export default function ApplicationList({
       id: "",
       name: "",
       allowedOrigins: [],
-      allowedUrls: [],
+      targetDomains: [],
     });
     setIsEditing(false);
     setIsDialogOpen(true);
@@ -108,7 +108,7 @@ export default function ApplicationList({
       id: "",
       name: "",
       allowedOrigins: [],
-      allowedUrls: [],
+      targetDomains: [],
     });
     setCurrentOrigin("");
     setDomainMode("all");
@@ -135,9 +135,9 @@ export default function ApplicationList({
   // Set the domain mode when editing an application - ONLY when editing begins
   useEffect(() => {
     // Only run this effect when editing status changes or when dialog opens
-    if (isDialogOpen && isEditing && newApp.allowedUrls) {
+    if (isDialogOpen && isEditing && newApp.targetDomains) {
       // If there's only one URL and it's an asterisk, set mode to "all"
-      if (newApp.allowedUrls.length === 1 && newApp.allowedUrls[0] === "*") {
+      if (newApp.targetDomains.length === 1 && newApp.targetDomains[0] === "*") {
         setDomainMode("all");
       } else {
         setDomainMode("custom");
@@ -146,14 +146,14 @@ export default function ApplicationList({
       // For new applications, default to "all"
       setDomainMode("all");
     }
-  }, [isDialogOpen, isEditing]); // Remove dependency on newApp.allowedUrls
+  }, [isDialogOpen, isEditing]); // Remove dependency on newApp.targetDomains
 
   const handleSubmit = async () => {
     // Reset validation errors
     setValidationErrors({
       name: false,
       allowedOrigins: false,
-      allowedUrls: false,
+      targetDomains: false,
       invalidOriginFormat: false,
       invalidDomainFormat: false,
     });
@@ -174,7 +174,7 @@ export default function ApplicationList({
     // Validate domains format if in custom mode
     let invalidDomains: string[] = [];
     if (domainMode === "custom") {
-      const allDomains = [...(newApp.allowedUrls || [])].filter(Boolean); // Filter out empty domains
+      const allDomains = [...(newApp.targetDomains || [])].filter(Boolean); // Filter out empty domains
       invalidDomains = allDomains.filter(
         (domain) => !validateDomainFormat(domain)
       );
@@ -184,10 +184,10 @@ export default function ApplicationList({
     const errors = {
       name: !newApp.name.trim(),
       allowedOrigins: !newApp.allowedOrigins?.length && !pendingOrigin,
-      allowedUrls:
+      targetDomains:
         domainMode === "custom" &&
-        (!newApp.allowedUrls?.length ||
-          newApp.allowedUrls.every((url) => !url.trim())),
+        (!newApp.targetDomains?.length ||
+          newApp.targetDomains.every((url) => !url.trim())),
       invalidOriginFormat: invalidOrigins.length > 0,
       invalidDomainFormat: invalidDomains.length > 0,
     };
@@ -204,7 +204,7 @@ export default function ApplicationList({
             {errors.allowedOrigins && (
               <li>At least one allowed origin is required</li>
             )}
-            {errors.allowedUrls && (
+            {errors.targetDomains && (
               <li>At least one allowed domain is required</li>
             )}
             {invalidOrigins.length > 0 && (
@@ -245,7 +245,7 @@ export default function ApplicationList({
         finalDomains = ["*"];
       } else {
         // Filter out empty strings
-        finalDomains = (appData.allowedUrls || []).filter((url) => url.trim());
+        finalDomains = (appData.targetDomains || []).filter((url) => url.trim());
       }
 
       // Include current input values in the submission data
@@ -255,7 +255,7 @@ export default function ApplicationList({
           ...(appData.allowedOrigins || []),
           ...(pendingOrigin ? [pendingOrigin] : []),
         ],
-        allowedUrls: finalDomains,
+        targetDomains: finalDomains,
       };
 
       const endpoint = isEditing ? `/applications/${id}` : "/applications";
@@ -321,17 +321,17 @@ export default function ApplicationList({
     setDomainMode("custom"); // Ensure mode stays as custom when adding a domain
     setNewApp((prev) => ({
       ...prev,
-      allowedUrls: [...(prev.allowedUrls || []), ""],
+      targetDomains: [...(prev.targetDomains || []), ""],
     }));
   };
 
   const updateDomain = (index: number, value: string) => {
     setNewApp((prev) => {
-      const newAllowedUrls = [...(prev.allowedUrls || [])];
-      newAllowedUrls[index] = value;
+      const newtargetDomains = [...(prev.targetDomains || [])];
+      newtargetDomains[index] = value;
       return {
         ...prev,
-        allowedUrls: newAllowedUrls,
+        targetDomains: newtargetDomains,
       };
     });
   };
@@ -339,7 +339,7 @@ export default function ApplicationList({
   const removeDomain = (index: number) => {
     setNewApp((prev) => ({
       ...prev,
-      allowedUrls: prev.allowedUrls?.filter((_, i) => i !== index),
+      targetDomains: prev.targetDomains?.filter((_, i) => i !== index),
     }));
   };
 
@@ -445,7 +445,7 @@ export default function ApplicationList({
               )}
             </div>
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="domainMode">Allowed Domains</Label>
+              <Label htmlFor="domainMode">Target Domains</Label>
               <p className="text-sm text-muted-foreground">Enable fetch to:</p>
               <Select
                 value={domainMode}
@@ -458,7 +458,7 @@ export default function ApplicationList({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All domains</SelectItem>
-                  <SelectItem value="custom">Custom domains</SelectItem>
+                  <SelectItem value="custom">Selected domains</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -468,7 +468,7 @@ export default function ApplicationList({
                     Enter domain names like example.com, app.example.com
                   </p>
                   <div className="space-y-2 mt-1">
-                    {(newApp.allowedUrls || []).map((domain, index) => (
+                    {(newApp.targetDomains || []).map((domain, index) => (
                       <div key={index} className="flex gap-2 items-center">
                         <Input
                           placeholder="Enter domain (e.g., example.com)"
@@ -495,7 +495,7 @@ export default function ApplicationList({
                     <Plus className="h-4 w-4 mr-2" /> Add Domain
                   </Button>
 
-                  {validationErrors.allowedUrls && (
+                  {validationErrors.targetDomains && (
                     <p className="text-xs text-red-500">
                       At least one allowed domain is required
                     </p>
@@ -532,7 +532,7 @@ export default function ApplicationList({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Allowed Origins</TableHead>
-                <TableHead>Allowed Domains</TableHead>
+                <TableHead>Target Domains</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -562,7 +562,7 @@ export default function ApplicationList({
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {app.allowedUrls?.map((url) => (
+                      {app.targetDomains?.map((url) => (
                         <Badge key={url} variant="secondary">
                           {url}
                         </Badge>

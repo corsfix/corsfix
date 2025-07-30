@@ -11,14 +11,14 @@ export interface Application {
   id: string;
   name: string;
   allowedOrigins?: string[];
-  allowedUrls?: string[];
+  targetDomains?: string[];
   secrets?: SecretItem[];
 }
 
 export interface UpsertApplication {
   name: string;
   allowedOrigins: string[];
-  allowedUrls: string[];
+  targetDomains: string[];
 }
 
 export interface User {
