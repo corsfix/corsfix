@@ -32,7 +32,7 @@ export const getApplication = async (
     id: applicationEntity._id.toString(),
     user_id: applicationEntity.user_id,
     allowed_origins: applicationEntity.allowed_origins,
-    allowed_urls: applicationEntity.allowed_urls,
+    target_domains: applicationEntity.target_domains,
   };
 
   applicationCache.set(origin, application);

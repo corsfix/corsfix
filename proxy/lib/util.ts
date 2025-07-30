@@ -53,21 +53,6 @@ export const getProxyRequest = (req: Request): ProxyRequest => {
   }
 };
 
-/**
- * Function to check if a given url allowed
- * @param {string} url - The url to check
- * @param {string[]} allowedUrls - The list of allowed URLs
- * @returns {boolean} True if the url or origin is allowed, false otherwise
- */
-export const isValidUrl = (url: string, allowedUrls: string[]): boolean => {
-  for (const pattern of allowedUrls) {
-    if (url.includes(pattern) || pattern == "*") {
-      return true;
-    }
-  }
-  return false;
-};
-
 export const getPreviousMidnightEpoch = (): number => {
   const now = new Date();
   const midnight = new Date(now);

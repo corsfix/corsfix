@@ -4,14 +4,14 @@ export interface ApplicationEntity extends Document {
   user_id: string;
   name: string;
   allowed_origins: string[];
-  allowed_urls: string[];
+  target_domains: string[];
 }
 
 const ApplicationSchema = new Schema<ApplicationEntity>({
   user_id: String,
   name: String,
   allowed_origins: [String],
-  allowed_urls: [String],
+  target_domains: [String],
 });
 
 ApplicationSchema.index({ user_id: 1 });

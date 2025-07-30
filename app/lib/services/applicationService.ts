@@ -14,13 +14,13 @@ export async function getApplications(user_id: string): Promise<Application[]> {
     id: application._id.toString(),
     name: application.name,
     allowedOrigins: application.allowed_origins,
-    allowedUrls: application.allowed_urls,
+    targetDomains: application.target_domains,
   }));
 }
 
 export async function createApplication(
   user_id: string,
-  { name, allowedOrigins, allowedUrls }: UpsertApplication
+  { name, allowedOrigins, targetDomains }: UpsertApplication
 ): Promise<Application> {
   await dbConnect();
 
@@ -28,7 +28,7 @@ export async function createApplication(
     user_id: user_id,
     name: name,
     allowed_origins: allowedOrigins,
-    allowed_urls: allowedUrls,
+    target_domains: targetDomains,
   });
 
   await application.save();
@@ -37,7 +37,7 @@ export async function createApplication(
     id: application._id as string,
     name: name,
     allowedOrigins: application.allowed_origins,
-    allowedUrls: application.allowed_urls,
+    targetDomains: application.target_domains,
   };
 }
 
@@ -64,7 +64,7 @@ export async function hasApplicationWithOrigins(
 export async function updateApplication(
   user_id: string,
   id: string,
-  { name, allowedOrigins, allowedUrls }: UpsertApplication
+  { name, allowedOrigins, targetDomains }: UpsertApplication
 ): Promise<Application> {
   await dbConnect();
 
@@ -79,7 +79,7 @@ export async function updateApplication(
 
   application.name = name;
   application.allowed_origins = allowedOrigins;
-  application.allowed_urls = allowedUrls;
+  application.target_domains = targetDomains;
 
   await application.save();
 
@@ -87,7 +87,7 @@ export async function updateApplication(
     id: application._id as string,
     name: name,
     allowedOrigins: allowedOrigins,
-    allowedUrls: allowedUrls,
+    targetDomains: targetDomains,
   };
 }
 

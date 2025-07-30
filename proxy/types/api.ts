@@ -11,7 +11,7 @@ export interface Application {
   id?: string;
   user_id: string;
   allowed_origins: string[];
-  allowed_urls: string[];
+  target_domains: string[];
 }
 
 export interface Subscription {

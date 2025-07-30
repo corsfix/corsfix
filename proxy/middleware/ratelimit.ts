@@ -35,9 +35,8 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     }
 
     if (
-      !Array.from(application.allowed_urls).some(
-        (pattern) => url.href.includes(pattern) || pattern == "*"
-      )
+      !application.target_domains.includes(url.hostname) &&
+      !application.target_domains.includes("*")
     ) {
       return res
         .status(403)
@@ -81,9 +80,8 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     }
 
     if (
-      !Array.from(application.allowed_urls).some(
-        (pattern) => url.href.includes(pattern) || pattern == "*"
-      )
+      !application.target_domains.includes(url.hostname) &&
+      !application.target_domains.includes("*")
     ) {
       return res
         .status(403)

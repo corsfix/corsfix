@@ -20,7 +20,7 @@ export async function getApplicationSecrets(
     id: application._id.toString(),
     name: application.name,
     allowedOrigins: application.allowed_origins,
-    allowedUrls: application.allowed_urls,
+    targetDomains: application.target_domains,
     secrets: secrets
       .filter(
         (secret) =>

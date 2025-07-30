@@ -252,7 +252,7 @@ export default function SecretList({
   };
 
   const appUsingAllowedAllDomains = (app: Application) => {
-    return app.allowedUrls?.some((domain) => domain === "*");
+    return app.targetDomains?.some((domain) => domain === "*");
   };
 
   return (
@@ -306,7 +306,7 @@ export default function SecretList({
               </div>
               {appUsingAllowedAllDomains(app) && (
                 <span className="text-sm text-yellow-500">
-                  This application allowed domains is set to All Domains (*),
+                  This application target domains is set to All Domains (*),
                   your secrets could be exposed. <br />
                   For better security, restrict access to specific domains only.
                 </span>
