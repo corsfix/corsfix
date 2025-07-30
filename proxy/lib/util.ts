@@ -155,8 +155,14 @@ export const proxyFetch = async (
     (dispatch: Dispatcher.Dispatch) => {
       return (opts, handler) => {
         const { origin } = opts;
-        const address = origin ? new URL(origin).hostname : "";
+        const url = new URL(origin || "");
 
+        if (!["http:", "https:"].includes(url.protocol)) {
+          opts.origin = `http://127.0.0.1`;
+          opts.path = "/error";
+        }
+
+        const address = url.hostname;
         const range = ipaddr.parse(address).range();
         if (
           [
