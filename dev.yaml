@@ -1,0 +1,13 @@
+services:
+  mongodb:
+    image: mongo:8
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - .dev/mongodb/data/db:/data/db
+  redis:
+    image: redis:7.4-alpine
+    restart: always
+    ports:
+      - "6379:6379"

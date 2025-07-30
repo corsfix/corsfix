@@ -1,0 +1,54 @@
+services:
+  mongodb:
+    image: mongo:8
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - .mongodb/data/db:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER:-proxy}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-corsfix}
+      - MONGO_INITDB_DATABASE=db
+  redis:
+    image: redis:7.4-alpine
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    entrypoint:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-corsfix}
+  app:
+    image: ghcr.io/corsfix/corsfix-app:latest
+    platform: linux/amd64
+    restart: always
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
+      - KEK_VERSION=KEK_VERSION_1
+      - KEK_VERSION_1=${KEK_VERSION_1}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_TRUST_HOST=true
+      - AUTH_URL=https://app.${DOMAIN}
+  proxy:
+    image: ghcr.io/corsfix/corsfix-proxy:latest
+    restart: always
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
+      - REDIS_URI=redis://default:${REDIS_PASSWORD:-corsfix}@redis
+      - KEK_VERSION_1=${KEK_VERSION_1}
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - .caddy/data:/data
+      - .caddy/config:/config
+    environment:
+      - DOMAIN=${DOMAIN}
+    depends_on:
+      - app
+      - proxy

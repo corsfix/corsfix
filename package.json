@@ -1,0 +1,13 @@
+{
+  "name": "corsfix-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:app": "pnpm --filter app dev",
+    "build:app": "pnpm --filter app build",
+    "start:app": "pnpm --filter app start",
+    "dev:proxy": "pnpm --filter proxy dev",
+    "build:proxy": "pnpm --filter proxy build",
+    "start:proxy": "pnpm --filter proxy start"
+  }
+}
