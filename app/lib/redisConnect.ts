@@ -29,7 +29,6 @@ async function redisConnect() {
 
   if (!cached.promise) {
     const opts = {
-      lazyConnect: true,
       retryDelayOnFailover: 100,
       enableReadyCheck: false,
       maxRetriesPerRequest: null,
@@ -46,8 +45,6 @@ async function redisConnect() {
         cached.promise = null;
         reject(err);
       });
-      
-      client.connect().catch(reject);
     });
   }
 
