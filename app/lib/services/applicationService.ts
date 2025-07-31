@@ -110,6 +110,9 @@ export async function deleteApplication(user_id: string, id: string) {
     throw new Error("Application not found");
   }
 
+  const redis = await redisConnect();
+  redis.publish("app-invalidate", JSON.stringify(application.allowed_origins));
+
   // Delete all secrets associated with this application
   await deleteSecretsForApplication(user_id, id);
 
