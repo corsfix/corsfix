@@ -31,6 +31,7 @@
     "cmdk": "^1.0.0",
     "crisp-sdk-web": "^1.0.25",
     "date-fns": "^3.6.0",
+    "ioredis": "^5.6.0",
     "lucide-react": "^0.453.0",
     "mongoose": "^8.7.3",
     "next": "^15.2.3",

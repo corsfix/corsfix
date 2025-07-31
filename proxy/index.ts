@@ -7,7 +7,7 @@ import {
 } from "./lib/util";
 import dbConnect from "./lib/dbConnect";
 import "dotenv/config";
-import { getApplication } from "./lib/services/applicationService";
+import { getApplication, registerAppInvalidateCacheHandlers } from "./lib/services/applicationService";
 import {
   validateOriginHeader,
   validatePayloadSize,
@@ -162,10 +162,11 @@ app.any("/", async (req: CorsfixRequest, res: Response) => {
 });
 
 (async () => {
-  registerMetricShutdownHandlers();
-
   await dbConnect();
   await initRedis();
+
+  registerMetricShutdownHandlers();
+  registerAppInvalidateCacheHandlers();
 
   app
     .listen(PORT)

@@ -1,6 +1,7 @@
 import { ApplicationEntity } from "@/models/ApplicationEntity";
 import { Application, UpsertApplication } from "@/types/api";
 import dbConnect from "../dbConnect";
+import redisConnect from "../redisConnect";
 import { deleteSecretsForApplication } from "./secretService";
 
 export async function getApplications(user_id: string): Promise<Application[]> {
@@ -32,6 +33,9 @@ export async function createApplication(
   });
 
   await application.save();
+
+  const redis = await redisConnect();
+  redis.publish("app-invalidate", JSON.stringify(application.allowed_origins));
 
   return {
     id: application._id as string,
@@ -82,6 +86,9 @@ export async function updateApplication(
   application.target_domains = targetDomains;
 
   await application.save();
+
+  const redis = await redisConnect();
+  redis.publish("app-invalidate", JSON.stringify(application.allowed_origins));
 
   return {
     id: application._id as string,

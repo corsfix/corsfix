@@ -1,6 +1,7 @@
 import { ApplicationEntity } from "../../models/ApplicationEntity";
 import { Application } from "../../types/api";
 import { CacheableMemory } from "cacheable";
+import { getRedisClient } from "./cacheService";
 
 const applicationCache = new CacheableMemory({
   ttl: "1m",
@@ -39,4 +40,26 @@ export const getApplication = async (
   applicationCache.set(alternateOrigin, application);
 
   return application;
+};
+
+export const registerAppInvalidateCacheHandlers = () => {
+  const redis = getRedisClient();
+
+  redis.subscribe("app-invalidate", (err, count) => {
+    if (err) console.error(err);
+    console.log(`Subscribed to ${count} channels.`);
+  });
+
+  redis.on("message", (channel, message) => {
+    switch (channel) {
+      case "app-invalidate":
+        const origins: string[] = JSON.parse(message);
+        for (let origin of origins) {
+          applicationCache.delete(origin);
+        }
+        break;
+      default:
+        break;
+    }
+  });
 };
