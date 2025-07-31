@@ -53,9 +53,16 @@ export const registerAppInvalidateCacheHandlers = () => {
   redis.on("message", (channel, message) => {
     switch (channel) {
       case "app-invalidate":
-        const origins: string[] = JSON.parse(message);
-        for (let origin of origins) {
-          applicationCache.delete(origin);
+        try {
+          const origins: string[] = JSON.parse(message);
+          for (let origin of origins) {
+            applicationCache.delete(origin);
+          }
+        } catch (error) {
+          console.error(
+            "Failed to parse message in app-invalidate channel:",
+            error
+          );
         }
         break;
       default:
