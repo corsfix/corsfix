@@ -398,7 +398,7 @@ export default function ApplicationList({
             <div className="grid w-full max-w-sm items-center gap-1.5">
               <Label htmlFor="originDomains">Origin Domains</Label>
               <p className="text-sm text-muted-foreground">
-                Your application base URL: (e.g., https://myapplication.com)
+                Your website domain: (e.g., myapplication.com)
               </p>
               <div className="flex flex-wrap items-center gap-2 border rounded-md min-h-9 text-sm px-3 py-1 focus-within:ring-1 focus-within:ring-ring focus-within:border-input">
                 {newApp.originDomains?.map((origin) => (
