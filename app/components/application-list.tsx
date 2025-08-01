@@ -120,19 +120,50 @@ export default function ApplicationList({
     setIsDialogOpen(true);
   };
 
-  const validateOriginFormat = (origin: string): boolean => {
+  const extractDomainFromInput = (input: string): string => {
+    if (!input || !input.trim()) {
+      return "";
+    }
+
+    let cleanInput = input.trim();
+
+    // Remove protocol if present (http://, https://, //)
+    cleanInput = cleanInput.replace(/^(https?:\/\/|\/\/)/i, "");
+
+    // Remove path, query params, and hash
+    cleanInput = cleanInput.split("/")[0].split("?")[0].split("#")[0];
+
+    // Remove port if present
+    cleanInput = cleanInput.split(":")[0];
+
+    // Convert to lowercase for consistency
+    cleanInput = cleanInput.toLowerCase();
+
+    // Basic domain validation - must have at least one dot and valid characters
     const domainRegex =
       /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$/;
-    return domainRegex.test(origin);
+
+    if (domainRegex.test(cleanInput)) {
+      return cleanInput;
+    }
+
+    // If it doesn't match, return the cleaned input anyway
+    // This allows the user to see what we extracted and fix it if needed
+    return cleanInput;
   };
 
-  const validateDomainFormat = (domain: string): boolean => {
-    if (domain === "*") {
-      return true;
-    }
+  const isValidDomain = (domain: string): boolean => {
     const domainRegex =
       /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$/;
     return domainRegex.test(domain);
+  };
+
+  const isValidTargetDomain = (domain: string): boolean => {
+    // Asterisk is only allowed for target domains
+    if (domain === "*") {
+      return true;
+    }
+    return isValidDomain(domain);
   };
 
   // Set the domain mode when editing an application - ONLY when editing begins
@@ -158,32 +189,35 @@ export default function ApplicationList({
     // Reset validation errors
     resetValidationErrors();
 
-    // Get all non-empty origins
-    const originDomains = (newApp.originDomains || [])
-      .filter((origin) => origin.trim())
-      .map((domain) => domain.toLowerCase());
+    // Extract and clean origin domains
+    const cleanedOriginDomains = (newApp.originDomains || [])
+      .map((origin) => extractDomainFromInput(origin))
+      .filter((origin) => origin.trim());
 
-    const invalidOriginDomains = originDomains.filter(
-      (origin) => !validateOriginFormat(origin)
+    const invalidOriginDomains = cleanedOriginDomains.filter(
+      (origin) => !isValidDomain(origin)
     );
 
-    // Validate domains format if in custom mode
+    // Extract and clean target domains if in custom mode
+    let cleanedTargetDomains: string[] = [];
     let invalidTargetDomains: string[] = [];
+
     if (domainMode === "custom") {
-      const allDomains = [...(newApp.targetDomains || [])].filter(Boolean); // Filter out empty domains
-      invalidTargetDomains = allDomains.filter(
-        (domain) => !validateDomainFormat(domain)
+      cleanedTargetDomains = (newApp.targetDomains || [])
+        .map((domain) => extractDomainFromInput(domain))
+        .filter((domain) => domain.trim());
+
+      invalidTargetDomains = cleanedTargetDomains.filter(
+        (domain) => !isValidTargetDomain(domain)
       );
     }
 
     // Perform validation
     const errors = {
       name: !newApp.name.trim(),
-      originDomains: originDomains.length === 0,
+      originDomains: cleanedOriginDomains.length === 0,
       targetDomains:
-        domainMode === "custom" &&
-        (!newApp.targetDomains?.length ||
-          newApp.targetDomains.every((url) => !url.trim())),
+        domainMode === "custom" && cleanedTargetDomains.length === 0,
       invalidOriginFormat: invalidOriginDomains.length > 0,
       invalidDomainFormat: invalidTargetDomains.length > 0,
     };
@@ -205,16 +239,16 @@ export default function ApplicationList({
             )}
             {invalidOriginDomains.length > 0 && (
               <li>
-                Invalid origin format: {invalidOriginDomains.join(", ")}
+                Invalid origin domains: {invalidOriginDomains.join(", ")}
                 <br />
-                <span className="text-xs">Format should be: domain.tld</span>
+                <span className="text-xs">Please check these domains</span>
               </li>
             )}
             {errors.invalidDomainFormat && (
               <li>
-                Invalid domain format: {invalidTargetDomains.join(", ")}
+                Invalid target domains: {invalidTargetDomains.join(", ")}
                 <br />
-                <span className="text-xs">Format should be: domain.tld</span>
+                <span className="text-xs">Please check these domains</span>
               </li>
             )}
           </ul>
@@ -238,16 +272,13 @@ export default function ApplicationList({
       if (domainMode === "all") {
         targetDomains = ["*"];
       } else {
-        // Filter out empty strings
-        targetDomains = (appData.targetDomains || [])
-          .filter((domain) => domain.trim())
-          .map((domain) => domain.toLowerCase());
+        targetDomains = cleanedTargetDomains;
       }
 
-      // Use filtered origins for submission
+      // Use cleaned domains for submission
       const dataToSubmit = {
         ...appData,
-        originDomains: originDomains,
+        originDomains: cleanedOriginDomains,
         targetDomains: targetDomains,
       };
 
@@ -311,6 +342,15 @@ export default function ApplicationList({
     });
   };
 
+  const handleOriginBlur = (index: number, value: string) => {
+    if (value.trim()) {
+      const cleanedValue = extractDomainFromInput(value);
+      if (cleanedValue !== value) {
+        updateOrigin(index, cleanedValue);
+      }
+    }
+  };
+
   const removeOrigin = (index: number) => {
     setNewApp((prev) => {
       const currentOrigins = prev.originDomains || [];
@@ -342,6 +382,15 @@ export default function ApplicationList({
         targetDomains: newtargetDomains,
       };
     });
+  };
+
+  const handleDomainBlur = (index: number, value: string) => {
+    if (value.trim()) {
+      const cleanedValue = extractDomainFromInput(value);
+      if (cleanedValue !== value) {
+        updateDomain(index, cleanedValue);
+      }
+    }
   };
 
   const removeDomain = (index: number) => {
@@ -407,9 +456,10 @@ export default function ApplicationList({
                 {(newApp.originDomains || []).map((origin, index) => (
                   <div key={index} className="flex gap-2 items-center">
                     <Input
-                      placeholder="example.com"
+                      placeholder="example.com, https://example.com, app.example.com"
                       value={origin}
                       onChange={(e) => updateOrigin(index, e.target.value)}
+                      onBlur={(e) => handleOriginBlur(index, e.target.value)}
                       className="flex-1"
                     />
                     <Button
@@ -426,7 +476,8 @@ export default function ApplicationList({
 
               {validationErrors.invalidOriginFormat && (
                 <p className="text-xs text-red-500">
-                  Please use a valid domain format: domain.tld
+                  Please enter valid domains. We couldn&apos;t extract valid
+                  domains from some inputs.
                 </p>
               )}
               {validationErrors.originDomains && (
@@ -471,9 +522,12 @@ export default function ApplicationList({
                     {(newApp.targetDomains || []).map((domain, index) => (
                       <div key={index} className="flex gap-2 items-center">
                         <Input
-                          placeholder="api.external.com"
+                          placeholder="api.external.com, https://api.external.com/v1"
                           value={domain}
                           onChange={(e) => updateDomain(index, e.target.value)}
+                          onBlur={(e) =>
+                            handleDomainBlur(index, e.target.value)
+                          }
                           className="flex-1"
                         />
                         <Button
@@ -495,7 +549,8 @@ export default function ApplicationList({
                   )}
                   {validationErrors.invalidDomainFormat && (
                     <p className="text-xs text-red-500">
-                      Please use a valid domain format: domain.tld
+                      Please enter valid domains. We couldn&apos;t extract valid
+                      domains from some inputs.
                     </p>
                   )}
 
