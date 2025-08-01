@@ -120,18 +120,6 @@ export default function ApplicationList({
     setIsDialogOpen(true);
   };
 
-  const resetForm = () => {
-    resetValidationErrors();
-    setNewApp({
-      id: "",
-      name: "",
-      originDomains: [""],
-      targetDomains: [""],
-    });
-    setDomainMode("all");
-    setIsDialogOpen(false);
-  };
-
   const validateOriginFormat = (origin: string): boolean => {
     const domainRegex =
       /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$/;
@@ -171,19 +159,19 @@ export default function ApplicationList({
     resetValidationErrors();
 
     // Get all non-empty origins
-    const allOrigins = (newApp.originDomains || []).filter((origin) =>
-      origin.trim()
-    );
+    const originDomains = (newApp.originDomains || [])
+      .filter((origin) => origin.trim())
+      .map((domain) => domain.toLowerCase());
 
-    const invalidOrigins = allOrigins.filter(
+    const invalidOriginDomains = originDomains.filter(
       (origin) => !validateOriginFormat(origin)
     );
 
     // Validate domains format if in custom mode
-    let invalidDomains: string[] = [];
+    let invalidTargetDomains: string[] = [];
     if (domainMode === "custom") {
       const allDomains = [...(newApp.targetDomains || [])].filter(Boolean); // Filter out empty domains
-      invalidDomains = allDomains.filter(
+      invalidTargetDomains = allDomains.filter(
         (domain) => !validateDomainFormat(domain)
       );
     }
@@ -191,13 +179,13 @@ export default function ApplicationList({
     // Perform validation
     const errors = {
       name: !newApp.name.trim(),
-      originDomains: allOrigins.length === 0,
+      originDomains: originDomains.length === 0,
       targetDomains:
         domainMode === "custom" &&
         (!newApp.targetDomains?.length ||
           newApp.targetDomains.every((url) => !url.trim())),
-      invalidOriginFormat: invalidOrigins.length > 0,
-      invalidDomainFormat: invalidDomains.length > 0,
+      invalidOriginFormat: invalidOriginDomains.length > 0,
+      invalidDomainFormat: invalidTargetDomains.length > 0,
     };
 
     // Update validation errors state
@@ -215,16 +203,16 @@ export default function ApplicationList({
             {errors.targetDomains && (
               <li>At least one allowed domain is required</li>
             )}
-            {invalidOrigins.length > 0 && (
+            {invalidOriginDomains.length > 0 && (
               <li>
-                Invalid origin format: {invalidOrigins.join(", ")}
+                Invalid origin format: {invalidOriginDomains.join(", ")}
                 <br />
                 <span className="text-xs">Format should be: domain.tld</span>
               </li>
             )}
             {errors.invalidDomainFormat && (
               <li>
-                Invalid domain format: {invalidDomains.join(", ")}
+                Invalid domain format: {invalidTargetDomains.join(", ")}
                 <br />
                 <span className="text-xs">Format should be: domain.tld</span>
               </li>
@@ -246,21 +234,21 @@ export default function ApplicationList({
       const { id, ...appData } = newApp;
 
       // Prepare domains based on mode
-      let finalDomains: string[];
+      let targetDomains: string[];
       if (domainMode === "all") {
-        finalDomains = ["*"];
+        targetDomains = ["*"];
       } else {
         // Filter out empty strings
-        finalDomains = (appData.targetDomains || []).filter((url) =>
-          url.trim()
-        );
+        targetDomains = (appData.targetDomains || [])
+          .filter((domain) => domain.trim())
+          .map((domain) => domain.toLowerCase());
       }
 
       // Use filtered origins for submission
       const dataToSubmit = {
         ...appData,
-        originDomains: allOrigins,
-        targetDomains: finalDomains,
+        originDomains: originDomains,
+        targetDomains: targetDomains,
       };
 
       const endpoint = isEditing ? `/applications/${id}` : "/applications";
@@ -278,7 +266,7 @@ export default function ApplicationList({
             : [...prev, response.data]
         );
         toast(`${isEditing ? "Updated" : "Added"} application successfully`);
-        resetForm();
+        setIsDialogOpen(false);
       } else {
         toast(response.message);
       }
