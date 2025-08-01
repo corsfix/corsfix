@@ -10,7 +10,7 @@ export interface CorsfixRequest extends Request {
 export interface Application {
   id?: string;
   user_id: string;
-  allowed_origins: string[];
+  origin_domains: string[];
   target_domains: string[];
 }
 

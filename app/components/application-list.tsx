@@ -64,7 +64,7 @@ export default function ApplicationList({
   const [newApp, setNewApp] = useState<Application>({
     id: "",
     name: "",
-    allowedOrigins: [],
+    originDomains: [],
     targetDomains: [],
   });
   const [currentOrigin, setCurrentOrigin] = useState("");
@@ -72,7 +72,7 @@ export default function ApplicationList({
 
   const [validationErrors, setValidationErrors] = useState({
     name: false,
-    allowedOrigins: false,
+    originDomains: false,
     targetDomains: false,
     invalidOriginFormat: false,
     invalidDomainFormat: false,
@@ -96,7 +96,7 @@ export default function ApplicationList({
     setNewApp({
       id: "",
       name: "",
-      allowedOrigins: [],
+      originDomains: [],
       targetDomains: [],
     });
     setIsEditing(false);
@@ -107,7 +107,7 @@ export default function ApplicationList({
     setNewApp({
       id: "",
       name: "",
-      allowedOrigins: [],
+      originDomains: [],
       targetDomains: [],
     });
     setCurrentOrigin("");
@@ -152,7 +152,7 @@ export default function ApplicationList({
     // Reset validation errors
     setValidationErrors({
       name: false,
-      allowedOrigins: false,
+      originDomains: false,
       targetDomains: false,
       invalidOriginFormat: false,
       invalidDomainFormat: false,
@@ -163,7 +163,7 @@ export default function ApplicationList({
 
     // Validate the format of all origins
     const allOrigins = [
-      ...(newApp.allowedOrigins || []),
+      ...(newApp.originDomains || []),
       ...(pendingOrigin ? [pendingOrigin] : []),
     ];
 
@@ -183,7 +183,7 @@ export default function ApplicationList({
     // Perform validation
     const errors = {
       name: !newApp.name.trim(),
-      allowedOrigins: !newApp.allowedOrigins?.length && !pendingOrigin,
+      originDomains: !newApp.originDomains?.length && !pendingOrigin,
       targetDomains:
         domainMode === "custom" &&
         (!newApp.targetDomains?.length ||
@@ -201,7 +201,7 @@ export default function ApplicationList({
         description: (
           <ul className="list-disc pl-4">
             {errors.name && <li>Name is required</li>}
-            {errors.allowedOrigins && (
+            {errors.originDomains && (
               <li>At least one allowed origin is required</li>
             )}
             {errors.targetDomains && (
@@ -251,8 +251,8 @@ export default function ApplicationList({
       // Include current input values in the submission data
       const dataToSubmit = {
         ...appData,
-        allowedOrigins: [
-          ...(appData.allowedOrigins || []),
+        originDomains: [
+          ...(appData.originDomains || []),
           ...(pendingOrigin ? [pendingOrigin] : []),
         ],
         targetDomains: finalDomains,
@@ -301,10 +301,10 @@ export default function ApplicationList({
   };
 
   const addOrigin = () => {
-    if (currentOrigin && !newApp.allowedOrigins?.includes(currentOrigin)) {
+    if (currentOrigin && !newApp.originDomains?.includes(currentOrigin)) {
       setNewApp({
         ...newApp,
-        allowedOrigins: [...(newApp.allowedOrigins || []), currentOrigin],
+        originDomains: [...(newApp.originDomains || []), currentOrigin],
       });
       setCurrentOrigin("");
     }
@@ -313,7 +313,7 @@ export default function ApplicationList({
   const removeOrigin = (origin: string) => {
     setNewApp({
       ...newApp,
-      allowedOrigins: newApp.allowedOrigins?.filter((o) => o !== origin),
+      originDomains: newApp.originDomains?.filter((o) => o !== origin),
     });
   };
 
@@ -396,7 +396,7 @@ export default function ApplicationList({
                 Your application base URL: (e.g., https://myapplication.com)
               </p>
               <div className="flex flex-wrap items-center gap-2 border rounded-md min-h-9 text-sm px-3 py-1 focus-within:ring-1 focus-within:ring-ring focus-within:border-input">
-                {newApp.allowedOrigins?.map((origin) => (
+                {newApp.originDomains?.map((origin) => (
                   <Badge key={origin} variant="secondary">
                     {origin}
                     <X
@@ -409,7 +409,7 @@ export default function ApplicationList({
                   id="allowedOrigin"
                   className="flex-1 bg-transparent border-none outline-none"
                   placeholder={
-                    newApp.allowedOrigins?.length === 0
+                    newApp.originDomains?.length === 0
                       ? "Enter text and hit space to add multiple values"
                       : ""
                   }
@@ -423,11 +423,11 @@ export default function ApplicationList({
                     if (
                       e.key === "Backspace" &&
                       currentOrigin === "" &&
-                      newApp.allowedOrigins &&
-                      newApp.allowedOrigins.length > 0
+                      newApp.originDomains &&
+                      newApp.originDomains.length > 0
                     ) {
                       removeOrigin(
-                        newApp.allowedOrigins[newApp.allowedOrigins.length - 1]
+                        newApp.originDomains[newApp.originDomains.length - 1]
                       );
                     }
                   }}
@@ -438,7 +438,7 @@ export default function ApplicationList({
                   Please use a valid origin format: scheme://domain[:port]
                 </p>
               )}
-              {validationErrors.allowedOrigins && (
+              {validationErrors.originDomains && (
                 <p className="text-xs text-red-500">
                   At least one allowed origin is required
                 </p>
@@ -553,7 +553,7 @@ export default function ApplicationList({
                   <TableCell>{app.name}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {app.allowedOrigins?.map((origin) => (
+                      {app.originDomains?.map((origin) => (
                         <Badge key={origin} variant="secondary">
                           {origin}
                         </Badge>

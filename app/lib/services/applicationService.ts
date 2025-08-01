@@ -14,21 +14,21 @@ export async function getApplications(user_id: string): Promise<Application[]> {
   return applications.map((application) => ({
     id: application._id.toString(),
     name: application.name,
-    allowedOrigins: application.origin_domains,
+    originDomains: application.origin_domains,
     targetDomains: application.target_domains,
   }));
 }
 
 export async function createApplication(
   user_id: string,
-  { name, allowedOrigins, targetDomains }: UpsertApplication
+  { name, originDomains, targetDomains }: UpsertApplication
 ): Promise<Application> {
   await dbConnect();
 
   const application = new ApplicationEntity({
     user_id: user_id,
     name: name,
-    origin_domains: allowedOrigins,
+    origin_domains: originDomains,
     target_domains: targetDomains,
   });
 
@@ -40,7 +40,7 @@ export async function createApplication(
   return {
     id: application._id as string,
     name: name,
-    allowedOrigins: application.origin_domains,
+    originDomains: application.origin_domains,
     targetDomains: application.target_domains,
   };
 }
@@ -68,7 +68,7 @@ export async function hasApplicationWithOrigins(
 export async function updateApplication(
   user_id: string,
   id: string,
-  { name, allowedOrigins, targetDomains }: UpsertApplication
+  { name, originDomains, targetDomains }: UpsertApplication
 ): Promise<Application> {
   await dbConnect();
 
@@ -82,7 +82,7 @@ export async function updateApplication(
   }
 
   application.name = name;
-  application.origin_domains = allowedOrigins;
+  application.origin_domains = originDomains;
   application.target_domains = targetDomains;
 
   await application.save();
@@ -93,7 +93,7 @@ export async function updateApplication(
   return {
     id: application._id as string,
     name: name,
-    allowedOrigins: allowedOrigins,
+    originDomains: originDomains,
     targetDomains: targetDomains,
   };
 }

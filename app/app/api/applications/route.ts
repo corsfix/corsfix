@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   const existingOrigins = await hasApplicationWithOrigins(
     null,
-    body.allowedOrigins
+    body.originDomains
   );
   if (existingOrigins.length > 0) {
     return NextResponse.json<ApiResponse<null>>(

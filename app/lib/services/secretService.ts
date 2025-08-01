@@ -19,7 +19,7 @@ export async function getApplicationSecrets(
   return applications.map((application) => ({
     id: application._id.toString(),
     name: application.name,
-    allowedOrigins: application.origin_domains,
+    originDomains: application.origin_domains,
     targetDomains: application.target_domains,
     secrets: secrets
       .filter(

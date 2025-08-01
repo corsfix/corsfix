@@ -10,14 +10,14 @@ export interface SecretItem {
 export interface Application {
   id: string;
   name: string;
-  allowedOrigins?: string[];
+  originDomains?: string[];
   targetDomains?: string[];
   secrets?: SecretItem[];
 }
 
 export interface UpsertApplication {
   name: string;
-  allowedOrigins: string[];
+  originDomains: string[];
   targetDomains: string[];
 }
 

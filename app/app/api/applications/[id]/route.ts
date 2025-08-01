@@ -33,7 +33,7 @@ export async function PUT(
 
   const existingOrigins = await hasApplicationWithOrigins(
     id,
-    body.allowedOrigins
+    body.originDomains
   );
   if (existingOrigins.length > 0) {
     return NextResponse.json<ApiResponse<null>>(
