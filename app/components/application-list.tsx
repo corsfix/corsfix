@@ -149,7 +149,7 @@ export default function ApplicationList({
 
     // If it doesn't match, return the cleaned input anyway
     // This allows the user to see what we extracted and fix it if needed
-    return cleanInput;
+    return input;
   };
 
   const isValidDomain = (domain: string): boolean => {
