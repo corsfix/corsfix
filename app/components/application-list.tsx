@@ -126,24 +126,12 @@ export default function ApplicationList({
     }
 
     let cleanInput = input.trim();
-
-    // Remove protocol if present (http://, https://, //)
     cleanInput = cleanInput.replace(/^(https?:\/\/|\/\/)/i, "");
-
-    // Remove path, query params, and hash
     cleanInput = cleanInput.split("/")[0].split("?")[0].split("#")[0];
-
-    // Remove port if present
     cleanInput = cleanInput.split(":")[0];
-
-    // Convert to lowercase for consistency
     cleanInput = cleanInput.toLowerCase();
 
-    // Basic domain validation - must have at least one dot and valid characters
-    const domainRegex =
-      /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$/;
-
-    if (domainRegex.test(cleanInput)) {
+    if (isValidDomain(cleanInput)) {
       return cleanInput;
     }
 
