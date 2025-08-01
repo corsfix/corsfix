@@ -137,7 +137,10 @@ export default function ApplicationList({
     // Only run this effect when editing status changes or when dialog opens
     if (isDialogOpen && isEditing && newApp.targetDomains) {
       // If there's only one URL and it's an asterisk, set mode to "all"
-      if (newApp.targetDomains.length === 1 && newApp.targetDomains[0] === "*") {
+      if (
+        newApp.targetDomains.length === 1 &&
+        newApp.targetDomains[0] === "*"
+      ) {
         setDomainMode("all");
       } else {
         setDomainMode("custom");
@@ -202,7 +205,7 @@ export default function ApplicationList({
           <ul className="list-disc pl-4">
             {errors.name && <li>Name is required</li>}
             {errors.originDomains && (
-              <li>At least one allowed origin is required</li>
+              <li>At least one origin domain is required</li>
             )}
             {errors.targetDomains && (
               <li>At least one allowed domain is required</li>
@@ -245,7 +248,9 @@ export default function ApplicationList({
         finalDomains = ["*"];
       } else {
         // Filter out empty strings
-        finalDomains = (appData.targetDomains || []).filter((url) => url.trim());
+        finalDomains = (appData.targetDomains || []).filter((url) =>
+          url.trim()
+        );
       }
 
       // Include current input values in the submission data
@@ -391,7 +396,7 @@ export default function ApplicationList({
               )}
             </div>
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="allowedOrigin">Allowed Origins</Label>
+              <Label htmlFor="originDomains">Origin Domains</Label>
               <p className="text-sm text-muted-foreground">
                 Your application base URL: (e.g., https://myapplication.com)
               </p>
@@ -406,7 +411,7 @@ export default function ApplicationList({
                   </Badge>
                 ))}
                 <input
-                  id="allowedOrigin"
+                  id="originDomains"
                   className="flex-1 bg-transparent border-none outline-none"
                   placeholder={
                     newApp.originDomains?.length === 0
@@ -440,7 +445,7 @@ export default function ApplicationList({
               )}
               {validationErrors.originDomains && (
                 <p className="text-xs text-red-500">
-                  At least one allowed origin is required
+                  At least one origin domain is required
                 </p>
               )}
             </div>
@@ -531,7 +536,7 @@ export default function ApplicationList({
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Allowed Origins</TableHead>
+                <TableHead>Origin Domains</TableHead>
                 <TableHead>Target Domains</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
