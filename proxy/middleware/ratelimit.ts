@@ -9,10 +9,11 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_CLOUD } from "../config/constants";
+import { IS_SELFHOST } from "../config/constants";
 
 export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
   const origin = req.header("Origin");
+  const domain = new URL(origin).hostname;
   const { url } = getProxyRequest(req);
 
   let rateLimitConfig: RateLimitConfig;
@@ -23,14 +24,14 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       rpm: 60,
       local: true,
     };
-  } else if (!IS_CLOUD) {
-    const application = await getApplication(origin);
+  } else if (IS_SELFHOST) {
+    const application = await getApplication(domain);
 
     if (!application) {
       return res
         .status(403)
         .end(
-          "Corsfix: No application found for this origin. Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)"
+          `Corsfix: No application found for this domain (${domain}). Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
@@ -41,7 +42,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       return res
         .status(403)
         .end(
-          "Corsfix: Target domain not allowed. Check the documentation for adding allowed domains. (https://corsfix.com/docs/dashboard/application)"
+          `Corsfix: Target domain (${url.hostname}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
@@ -59,13 +60,13 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       local: true,
     };
   } else {
-    const application = await getApplication(origin);
+    const application = await getApplication(domain);
 
     if (!application) {
       return res
         .status(403)
         .end(
-          "Corsfix: No application found for this origin. Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)"
+          `Corsfix: No application found for this domain (${domain}). Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
@@ -86,7 +87,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       return res
         .status(403)
         .end(
-          "Corsfix: Target domain not allowed. Check the documentation for adding allowed domains. (https://corsfix.com/docs/dashboard/application)"
+          `Corsfix: Target domain (${url.hostname}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 

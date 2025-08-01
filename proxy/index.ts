@@ -91,7 +91,8 @@ app.any("/", async (req: CorsfixRequest, res: Response) => {
       filteredHeaders,
     };
     if (!isLocalOrigin(origin)) {
-      const application = await getApplication(origin);
+      const domain = new URL(origin).hostname;
+      const application = await getApplication(domain);
       ({ url: processedUrl, headers: processedHeaders } = await processRequest(
         targetUrl,
         filteredHeaders,

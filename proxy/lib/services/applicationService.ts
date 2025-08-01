@@ -9,20 +9,15 @@ const applicationCache = new CacheableMemory({
 });
 
 export const getApplication = async (
-  origin: string
+  domain: string
 ): Promise<Application | null> => {
-  let application = applicationCache.get<Application>(origin);
+  let application = applicationCache.get<Application>(domain);
   if (application) {
     return application;
   }
 
-  const hasPort = origin.includes(":443");
-  const alternateOrigin = hasPort
-    ? origin.replace(":443", "")
-    : `${origin}:443`;
-
   const applicationEntity = await ApplicationEntity.findOne({
-    origin_domains: { $in: [origin, alternateOrigin] },
+    origin_domains: { $in: [domain] },
   }).lean();
 
   if (!applicationEntity) {
@@ -36,8 +31,7 @@ export const getApplication = async (
     target_domains: applicationEntity.target_domains,
   };
 
-  applicationCache.set(origin, application);
-  applicationCache.set(alternateOrigin, application);
+  applicationCache.set(domain, application);
 
   return application;
 };
