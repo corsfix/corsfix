@@ -3,7 +3,7 @@ services:
     image: mongo:8
     restart: always
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - .mongodb/data/db:/data/db
     environment:
@@ -25,6 +25,7 @@ services:
     restart: always
     environment:
       - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
+      - REDIS_URI=redis://default:${REDIS_PASSWORD:-corsfix}@redis
       - KEK_VERSION=KEK_VERSION_1
       - KEK_VERSION_1=${KEK_VERSION_1}
       - AUTH_SECRET=${AUTH_SECRET}
