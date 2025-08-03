@@ -29,19 +29,21 @@ function getCustomerCheckoutLink(
 }
 
 const freeBenefits = [
-  "Unlimited monthly requests",
-  "60 requests per minute",
-  "Limited to local apps",
+  "Unlimited proxy requests",
+  "Localhost web applications only",
+  "60 RPM (per IP)",
+  "Limited data transfer",
   "Best effort support",
 ];
 
 const paidBenefits = [
-  "Unlimited monthly requests",
-  "{{rpm}} requests per minute",
-  "Unlimited applications",
-  "Priority support",
+  "Unlimited proxy requests",
+  "Unlimited web applications",
+  "{{rpm}} RPM (per IP)",
+  "{{bandwidth}} GB data transfer",
   "Cached response",
   "Secrets variable",
+  "Priority support",
 ];
 
 export const metadata: Metadata = {
@@ -217,10 +219,12 @@ export default async function CreditsPage() {
                             <li key={index} className="flex items-center gap-2">
                               <Check className="h-4 w-4 text-primary flex-shrink-0" />
                               <span>
-                                {benefit.replace(
-                                  "{{rpm}}",
-                                  product.rpm.toString()
-                                )}
+                                {benefit
+                                  .replace("{{rpm}}", product.rpm.toString())
+                                  .replace(
+                                    "{{bandwidth}}",
+                                    product.bandwidth.toString()
+                                  )}
                               </span>
                             </li>
                           ))}
