@@ -1,7 +1,7 @@
 import { ApplicationEntity } from "../../models/ApplicationEntity";
 import { Application } from "../../types/api";
 import { CacheableMemory } from "cacheable";
-import { getRedisClient } from "./cacheService";
+import { getPubSubClient } from "./pubSubService";
 
 const applicationCache = new CacheableMemory({
   ttl: "1m",
@@ -37,14 +37,14 @@ export const getApplication = async (
 };
 
 export const registerAppInvalidateCacheHandlers = () => {
-  const redis = getRedisClient();
+  const pubSub = getPubSubClient();
 
-  redis.subscribe("app-invalidate", (err, count) => {
+  pubSub.subscribe("app-invalidate", (err, count) => {
     if (err) console.error(err);
     console.log(`Subscribed to ${count} channels.`);
   });
 
-  redis.on("message", (channel, message) => {
+  pubSub.on("message", (channel, message) => {
     switch (channel) {
       case "app-invalidate":
         try {
