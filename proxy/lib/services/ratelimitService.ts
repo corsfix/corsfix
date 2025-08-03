@@ -20,40 +20,35 @@ const rpm60 = new RateLimiterMemory({
   duration: 60,
 });
 
-const rpm150 = new RateLimiterMemory({
-  points: 150,
-  duration: 60,
-});
-
-const rpm150Redis = new RateLimiterRedis({
-  points: 150,
+const rpm60Redis = new RateLimiterRedis({
+  points: 60,
   duration: 60,
   storeClient: redisClient,
-  keyPrefix: "rpm150",
+  keyPrefix: "rpm120",
 });
 
-const rpm300 = new RateLimiterMemory({
-  points: 300,
+const rpm120 = new RateLimiterMemory({
+  points: 120,
   duration: 60,
 });
 
-const rpm300Redis = new RateLimiterRedis({
-  points: 300,
-  duration: 60,
-  storeClient: redisClient,
-  keyPrefix: "rpm300",
-});
-
-const rpm600 = new RateLimiterMemory({
-  points: 600,
-  duration: 60,
-});
-
-const rpm600Redis = new RateLimiterRedis({
-  points: 600,
+const rpm120Redis = new RateLimiterRedis({
+  points: 120,
   duration: 60,
   storeClient: redisClient,
-  keyPrefix: "rpm600",
+  keyPrefix: "rpm120",
+});
+
+const rpm180 = new RateLimiterMemory({
+  points: 180,
+  duration: 60,
+});
+
+const rpm180Redis = new RateLimiterRedis({
+  points: 180,
+  duration: 60,
+  storeClient: redisClient,
+  keyPrefix: "rpm180",
 });
 
 const consumeSyncRedis = async (
@@ -102,17 +97,29 @@ export const checkRateLimit = async (
   try {
     let rateLimiterRes;
     if (local) {
-      rateLimiterRes = await rpm60.consume(key);
+      switch (rpm) {
+        case 60:
+          rateLimiterRes = await rpm60.consume(key);
+          break;
+        case 120:
+          rateLimiterRes = await rpm120.consume(key);
+          break;
+        case 180:
+          rateLimiterRes = await rpm180.consume(key);
+          break;
+        default:
+          rateLimiterRes = await rpm60.consume(key);
+      }
     } else {
       switch (rpm) {
-        case 150:
-          rateLimiterRes = await consumeSyncRedis(rpm150, rpm150Redis, key);
+        case 60:
+          rateLimiterRes = await consumeSyncRedis(rpm60, rpm60Redis, key);
           break;
-        case 300:
-          rateLimiterRes = await consumeSyncRedis(rpm300, rpm300Redis, key);
+        case 120:
+          rateLimiterRes = await consumeSyncRedis(rpm120, rpm120Redis, key);
           break;
-        case 600:
-          rateLimiterRes = await consumeSyncRedis(rpm600, rpm600Redis, key);
+        case 180:
+          rateLimiterRes = await consumeSyncRedis(rpm180, rpm180Redis, key);
           break;
         default:
           rateLimiterRes = await rpm60.consume(key);

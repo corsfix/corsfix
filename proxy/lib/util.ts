@@ -181,14 +181,5 @@ export const getRpmByProductId = (product_id: string): number => {
     return 60;
   }
 
-  switch (product.name) {
-    case "lite":
-      return 150;
-    case "plus":
-      return 300;
-    case "pro":
-      return 600;
-    default:
-      return 60;
-  }
+  return product.rpm;
 };

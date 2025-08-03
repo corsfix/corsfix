@@ -50,14 +50,13 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
 
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
-      rpm: 60,
+      rpm: 180,
       local: true,
     };
   } else if (isRegisteredOrigin(origin, url.href)) {
     rateLimitConfig = {
       key: origin,
       rpm: 60,
-      local: true,
     };
   } else {
     const application = await getApplication(domain);
@@ -93,7 +92,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
 
     req.ctx_user_id = application.user_id;
     rateLimitConfig = {
-      key: application.user_id,
+      key: req.header("x-real-ip") || req.ip,
       rpm: getRpmByProductId(activeSubscription.product_id),
     };
   }
