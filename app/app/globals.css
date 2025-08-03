@@ -67,7 +67,7 @@ body {
 
 @layer base {
   * {
-    @apply border-border dark;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;

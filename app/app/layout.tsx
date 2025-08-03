@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 import dynamic from "next/dynamic";
 import { SessionProvider } from "next-auth/react";
 import { IS_CLOUD } from "@/config/constants";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const CrispWithNoSSR = dynamic(() => import("../components/crisp"));
 
@@ -34,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       {IS_CLOUD && (
         <>
           <Script
@@ -48,10 +49,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>
-          <AuthGuard isCloud={IS_CLOUD}>{children}</AuthGuard>
-        </SessionProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider>
+            <AuthGuard isCloud={IS_CLOUD}>{children}</AuthGuard>
+          </SessionProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
