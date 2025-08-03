@@ -56,7 +56,7 @@ const configList: Record<string, Config> = {
         id: "43398e9e-7f95-45e9-88e3-49d4ba3d4b94",
         name: "plus",
         price: "8",
-        rpm: 300,
+        rpm: 120,
         bandwidth: 100,
         link: "https://buy.polar.sh/polar_cl_Abgv-MARys_rNjEtr4kJWLGh3YkvNNlWlATlCEbMrE4",
       },

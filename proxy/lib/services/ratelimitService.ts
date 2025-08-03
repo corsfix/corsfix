@@ -24,7 +24,7 @@ const rpm60Redis = new RateLimiterRedis({
   points: 60,
   duration: 60,
   storeClient: redisClient,
-  keyPrefix: "rpm120",
+  keyPrefix: "rpm60",
 });
 
 const rpm120 = new RateLimiterMemory({
