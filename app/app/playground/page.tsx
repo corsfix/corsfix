@@ -630,7 +630,7 @@ export default function Playground() {
                 </SelectContent>
               </Select>
               <div className="flex-1 flex">
-                <div className="bg-accent hidden md:flex px-1 text-sm text-muted-foreground border rounded-l items-center">
+                <div className="bg-muted hidden md:flex px-1 text-sm text-muted-foreground border rounded-l items-center">
                   {`https://${PROXY_REGIONS[config.region]}/?`}
                 </div>
                 <Input

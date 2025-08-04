@@ -61,33 +61,35 @@ export default async function GetStarted() {
           </Card>
 
           <Card className="overflow-hidden">
-            <div className="grid md:grid-cols-2">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">
-                  Use Corsfix in Your Code
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Simple integration with your existing requests.
-                </p>
-                <Link
-                  href="https://corsfix.com/docs/code-examples/fetch"
-                  target="_blank"
-                  data-umami-event="get-started-code-example"
-                >
-                  <Button variant="secondary">
-                    See all integrations{" "}
-                    <ExternalLink size={16} className="inline" />
-                  </Button>
-                </Link>
+            <div className="p-6">
+              <div className="flex w-full justify-between flex-col md:flex-row mb-4 md:mb-0">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">
+                    Use Corsfix in Your Code
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Simple integration with your existing requests.
+                  </p>
+                </div>
+                <div className="flex items-center overflow-x-auto">
+                  <pre className="overflow-x-auto text-sm w-full border px-2 md:px-3 py-4 rounded-lg">
+                    <code lang="javascript">
+                      {`// basic usage with fetch
+fetch("https://proxy.corsfix.com/?https://api.example.com");`}
+                    </code>
+                  </pre>
+                </div>
               </div>
-              <div className="flex items-center m-2 md:m-4 overflow-x-auto">
-                <pre className="overflow-x-auto text-sm w-full border px-2 md:px-3 py-4 rounded-lg">
-                  <code lang="javascript">
-                    {`// basic usage with fetch
-fetch("https://proxy.corsfix.com/?<TARGET_URL>");`}
-                  </code>
-                </pre>
-              </div>
+              <Link
+                href="https://corsfix.com/docs/code-examples/fetch"
+                target="_blank"
+                data-umami-event="get-started-code-example"
+              >
+                <Button variant="secondary">
+                  See all integrations{" "}
+                  <ExternalLink size={16} className="inline" />
+                </Button>
+              </Link>
             </div>
           </Card>
 
