@@ -80,8 +80,8 @@ export default async function GetStarted() {
                   </Button>
                 </Link>
               </div>
-              <div className="flex items-center m-2 md:m-4">
-                <pre className="overflow-x-auto text-sm w-full bg-slate-900 text-slate-50 px-2 md:px-3 py-4 rounded-lg">
+              <div className="flex items-center m-2 md:m-4 overflow-x-auto">
+                <pre className="overflow-x-auto text-sm w-full border px-2 md:px-3 py-4 rounded-lg">
                   <code lang="javascript">
                     {`// basic usage with fetch
 fetch("https://proxy.corsfix.com/?<TARGET_URL>");`}

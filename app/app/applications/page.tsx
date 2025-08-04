@@ -38,7 +38,7 @@ export default async function ApplicationsPage() {
         <Link
           href="https://corsfix.com/docs/dashboard/application"
           target="_blank"
-          className="inline-flex items-center gap-1 text-xs mb-8 border px-2 py-1 rounded-full text-violet-400 border-violet-400 hover:bg-violet-950 transition-colors"
+          className="inline-flex items-center gap-1 text-xs mb-8 border px-2 py-1 rounded-full text-violet-400 border-violet-400 bg-muted font-medium hover:bg-background transition-colors"
         >
           <BookOpenText size={14} />
           Applications documentation
@@ -48,13 +48,13 @@ export default async function ApplicationsPage() {
           hasActiveSubscription={activeSubscription.active}
           isCloud={IS_CLOUD}
         />
-        <div className="mt-8 flex items-center p-3 bg-gray-800 border border-gray-700 rounded-md mx-auto w-fit text-sm text-gray-400">
+        <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
           <CircleHelp size={16} className="text-violet-400 mr-2" />
           <span>
             Need help? Let us know at{" "}
             <a
               href="mailto:rey@corsfix.com"
-              className="text-violet-400 bg-violet-950 px-1 py-0.5 rounded-md"
+              className="text-violet-400 bg-muted px-1 py-0.5 rounded-md font-medium"
             >
               rey@corsfix.com
             </a>

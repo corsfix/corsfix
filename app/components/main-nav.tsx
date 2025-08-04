@@ -34,7 +34,7 @@ export function MainNav({ className }: { className?: string }) {
 
   const getLinkClassName = (href: string) =>
     cn(
-      "text-sm font-medium transition-colors hover:text-primary",
+      "text-sm transition-colors hover:text-primary",
       pathname === href ? "text-foreground" : "text-muted-foreground"
     );
 

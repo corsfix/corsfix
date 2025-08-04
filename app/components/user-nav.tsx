@@ -80,7 +80,7 @@ export function UserNav() {
         <Button
           data-umami-event="user-nav"
           variant="ghost"
-          className="relative h-8 w-8 rounded-full"
+          className="relative h-8 w-8 rounded-full border"
         >
           <Avatar className="h-8 w-8">
             <AvatarFallback>
