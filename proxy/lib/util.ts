@@ -40,8 +40,17 @@ export function isRegisteredOrigin(origin: string, url: string): boolean {
 }
 
 export const getProxyRequest = (req: Request): ProxyRequest => {
-  const params = req.query_parameters;
+  if (req.path != "/") {
+    let inputUrl = req.path.substring(1);
+    if (!inputUrl.startsWith("http")) {
+      inputUrl = "https://" + inputUrl;
+    }
+    return {
+      url: new URL(decodeURIComponent(inputUrl)),
+    };
+  }
 
+  const params = req.query_parameters;
   if ("url" in params) {
     return {
       url: new URL(decodeURIComponent(params.url)),

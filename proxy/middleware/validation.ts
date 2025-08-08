@@ -2,20 +2,6 @@ import { MiddlewareNext, Request, Response } from "hyper-express";
 import { getProxyRequest } from "../lib/util";
 import { CorsfixRequest } from "../types/api";
 
-export const validateQueryParams = (
-  req: Request,
-  res: Response,
-  next: MiddlewareNext
-) => {
-  if (!req.path_query) {
-    res.status(301);
-    res.header("Cache-Control", "public, max-age=3600");
-    res.header("Location", "https://corsfix.com");
-    res.end();
-  }
-  next();
-};
-
 export const validateOriginHeader = (
   req: CorsfixRequest,
   res: Response,
@@ -41,6 +27,13 @@ export const validateUrl = (
   res: Response,
   next: MiddlewareNext
 ) => {
+  if (!req.path_query && req.path == "/") {
+    res.status(301);
+    res.header("Cache-Control", "public, max-age=3600");
+    res.header("Location", "https://corsfix.com");
+    res.end();
+  }
+
   try {
     const proxyReq = getProxyRequest(req);
     if (!["http:", "https:"].includes(proxyReq.url.protocol)) {

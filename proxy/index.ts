@@ -7,11 +7,13 @@ import {
 } from "./lib/util";
 import dbConnect from "./lib/dbConnect";
 import "dotenv/config";
-import { getApplication, registerAppInvalidateCacheHandlers } from "./lib/services/applicationService";
+import {
+  getApplication,
+  registerAppInvalidateCacheHandlers,
+} from "./lib/services/applicationService";
 import {
   validateOriginHeader,
   validatePayloadSize,
-  validateQueryParams,
   validateUrl,
 } from "./middleware/validation";
 import { handlePreflight } from "./middleware/preflight";
@@ -44,18 +46,17 @@ app.use("/", (req: Request, res: Response, next: MiddlewareNext) => {
   next();
 });
 
-app.use("/", validateQueryParams);
-app.use("/", handlePreflight);
-
+app.use("/", handleMetrics);
 app.use("/", validatePayloadSize);
 
 app.use("/", validateOriginHeader);
 app.use("/", validateUrl);
 
-app.use("/", handleMetrics);
+app.use("/", handlePreflight);
+
 app.use("/", handleRateLimit);
 
-app.any("/", async (req: CorsfixRequest, res: Response) => {
+app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const { url: targetUrl } = getProxyRequest(req);
   const origin = req.header("Origin");
 

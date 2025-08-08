@@ -19,10 +19,11 @@ export const handlePreflight = (
     }
 
     const requestHeaders = req.header("Access-Control-Request-Headers");
-    if (IS_CLOUD && requestHeaders) {
+    if (requestHeaders) {
       res.header("Access-Control-Allow-Headers", requestHeaders);
 
       if (
+        IS_CLOUD &&
         requestHeaders
           .split(",")
           .map((h) => h.trim().toLowerCase())
