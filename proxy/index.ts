@@ -151,12 +151,20 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
     return res.end();
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === "AbortError") {
+    const { name, message, cause } = error as Error;
+    if (name === "AbortError" || name === "TimeoutError") {
       res
         .status(504)
         .end(
           "Corsfix: Timeout fetching the target URL. Check documentation for timeout limits. (https://corsfix.com/docs/cors-proxy/api)"
         );
+    } else if (message === "fetch failed") {
+      if ((cause as any).code === "ENOTFOUND") {
+        res.status(404).end("Corsfix: Target URL not found.");
+      } else {
+        console.error("Fetch error occurred.", error);
+        res.status(502).end("Corsfix: Unable to reach target URL.");
+      }
     } else {
       console.error("Unknown error occurred.", error);
       res.status(500).end("Corsfix: Unknown error occurred.");

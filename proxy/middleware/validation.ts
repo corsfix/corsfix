@@ -36,8 +36,13 @@ export const validateUrl = (
 
   try {
     const proxyReq = getProxyRequest(req);
+
     if (!["http:", "https:"].includes(proxyReq.url.protocol)) {
       throw new Error("Invalid protocol. Only HTTP and HTTPS are allowed.");
+    }
+
+    if (!proxyReq.url.hostname.includes(".")) {
+      throw new Error("Invalid hostname. TLD is required.");
     }
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");
