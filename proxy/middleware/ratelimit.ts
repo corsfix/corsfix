@@ -103,10 +103,6 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
   });
 
   if (!isAllowed) {
-    return res
-      .status(429)
-      .end(
-        "Corsfix: Too Many Requests. Check the documentation for throughput. (https://corsfix.com/docs/cors-proxy/throughput)"
-      );
+    return res.status(429).end("Corsfix: Too Many Requests.");
   }
 };
