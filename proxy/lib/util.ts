@@ -40,7 +40,7 @@ export function isRegisteredOrigin(origin: string, url: string): boolean {
 }
 
 const processUrlString = (urlString: string): URL => {
-  const processedUrl = urlString.startsWith("http")
+  const processedUrl = /^https?:\/\//.test(urlString)
     ? urlString
     : `https://${urlString}`;
   return new URL(decodeURIComponent(processedUrl));
