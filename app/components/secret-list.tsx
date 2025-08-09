@@ -449,7 +449,6 @@ export default function SecretList({
                 onChange={handleInputChange}
                 placeholder="API_KEY"
                 className="font-mono"
-                type="text"
                 maxLength={64}
               />
               {validationErrors.name && (
@@ -475,7 +474,6 @@ export default function SecretList({
                     ?.masked_value || "your-secret-value"
                 }
                 className="font-mono"
-                type="text"
                 maxLength={255}
               />
               {validationErrors.value && (

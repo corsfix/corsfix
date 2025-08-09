@@ -430,7 +430,6 @@ export default function ApplicationList({
                 placeholder="my app"
                 value={newApp.name}
                 onChange={handleInputChange}
-                type="text"
                 maxLength={64}
               />
               {validationErrors.name && (
@@ -451,7 +450,6 @@ export default function ApplicationList({
                       onChange={(e) => updateOrigin(index, e.target.value)}
                       onBlur={(e) => handleOriginBlur(index, e.target.value)}
                       className="flex-1"
-                      type="text"
                       maxLength={255}
                     />
                     <Button
@@ -523,7 +521,6 @@ export default function ApplicationList({
                             handleDomainBlur(index, e.target.value)
                           }
                           className="flex-1"
-                          type="text"
                           maxLength={255}
                         />
                         <Button
