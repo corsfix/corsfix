@@ -430,6 +430,8 @@ export default function ApplicationList({
                 placeholder="my app"
                 value={newApp.name}
                 onChange={handleInputChange}
+                type="text"
+                maxLength={64}
               />
               {validationErrors.name && (
                 <p className="text-xs text-red-500">Name is required</p>
@@ -449,6 +451,8 @@ export default function ApplicationList({
                       onChange={(e) => updateOrigin(index, e.target.value)}
                       onBlur={(e) => handleOriginBlur(index, e.target.value)}
                       className="flex-1"
+                      type="text"
+                      maxLength={255}
                     />
                     <Button
                       variant="ghost"
@@ -474,15 +478,17 @@ export default function ApplicationList({
                 </p>
               )}
 
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={addNewOrigin}
-                  className="text-sm text-muted-foreground"
-                >
-                  <Plus className="size-2" /> Add more
-                </Button>
-              </div>
+              {newApp.originDomains && newApp.originDomains?.length < 8 && (
+                <div>
+                  <Button
+                    variant="outline"
+                    onClick={addNewOrigin}
+                    className="text-sm text-muted-foreground"
+                  >
+                    <Plus className="size-2" /> Add more
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="grid w-full max-w-sm items-center gap-1.5">
               <Label htmlFor="domainMode">Target Domains</Label>
@@ -517,6 +523,8 @@ export default function ApplicationList({
                             handleDomainBlur(index, e.target.value)
                           }
                           className="flex-1"
+                          type="text"
+                          maxLength={255}
                         />
                         <Button
                           variant="ghost"
@@ -542,15 +550,17 @@ export default function ApplicationList({
                     </p>
                   )}
 
-                  <div>
-                    <Button
-                      variant="outline"
-                      onClick={addNewDomain}
-                      className="text-sm text-muted-foreground"
-                    >
-                      <Plus className="size-2" /> Add more
-                    </Button>
-                  </div>
+                  {newApp.targetDomains && newApp.targetDomains?.length < 8 && (
+                    <div>
+                      <Button
+                        variant="outline"
+                        onClick={addNewDomain}
+                        className="text-sm text-muted-foreground"
+                      >
+                        <Plus className="size-2" /> Add more
+                      </Button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

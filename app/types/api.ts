@@ -18,9 +18,9 @@ export interface Application {
 }
 
 export const UpsertApplicationSchema = z.object({
-  name: z.string().max(32),
-  originDomains: z.array(z.string()).min(1).max(8),
-  targetDomains: z.array(z.string()).min(1).max(8),
+  name: z.string().max(64),
+  originDomains: z.array(z.string().max(255)).min(1).max(8),
+  targetDomains: z.array(z.string().max(255)).min(1).max(8),
 });
 
 export type UpsertApplication = z.input<typeof UpsertApplicationSchema>;
@@ -39,7 +39,7 @@ export interface Subscription {
 
 export const UpsertSecretSchema = z.object({
   application_id: z.string().max(32),
-  name: z.string().max(32),
+  name: z.string().max(64),
   note: z.string().max(255),
   value: z.string().max(255),
 });

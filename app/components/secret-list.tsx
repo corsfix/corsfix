@@ -449,6 +449,8 @@ export default function SecretList({
                 onChange={handleInputChange}
                 placeholder="API_KEY"
                 className="font-mono"
+                type="text"
+                maxLength={64}
               />
               {validationErrors.name && (
                 <p className="text-xs text-red-500">Name is required</p>
@@ -473,6 +475,8 @@ export default function SecretList({
                     ?.masked_value || "your-secret-value"
                 }
                 className="font-mono"
+                type="text"
+                maxLength={255}
               />
               {validationErrors.value && (
                 <p className="text-xs text-red-500">Secret value is required</p>
@@ -487,6 +491,7 @@ export default function SecretList({
                 onChange={handleInputChange}
                 placeholder="Add any relevant notes about this secret..."
                 rows={3}
+                maxLength={255}
               />
             </div>
           </div>
