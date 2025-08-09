@@ -1,4 +1,9 @@
-import { ApiResponse, Application, UpsertApplication } from "@/types/api";
+import {
+  ApiResponse,
+  Application,
+  UpsertApplication,
+  UpsertApplicationSchema,
+} from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import {
   createApplication,
@@ -23,7 +28,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body: UpsertApplication = await request.json();
+  const json = await request.json();
+  const body: UpsertApplication = UpsertApplicationSchema.parse(json);
 
   const existingOrigins = await hasApplicationWithOrigins(
     null,

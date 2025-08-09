@@ -49,7 +49,8 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "tinycolor2": "^1.6.0",
-    "uuid": "^11.0.2"
+    "uuid": "^11.0.2",
+    "zod": "^4.0.16"
   },
   "overrides": {
     "react-is": "19.0.0-rc-65a56d0e-20241020"

@@ -1,4 +1,9 @@
-import { ApiResponse, SecretItem, UpsertSecret } from "@/types/api";
+import {
+  ApiResponse,
+  SecretItem,
+  UpsertSecret,
+  UpsertSecretSchema,
+} from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getKek } from "@/lib/utils";
 import { authorize } from "@/lib/services/authorizationService";
@@ -25,7 +30,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: UpsertSecret = await request.json();
+    const json = await request.json();
+    const body: UpsertSecret = UpsertSecretSchema.parse(json);
 
     // Check if a secret with the same name already exists for this application
     const secretExists = await secretExistsForApplication(

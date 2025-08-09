@@ -1,3 +1,5 @@
+import * as z from "zod";
+
 export interface SecretItem {
   id?: string;
   application_id: string;
@@ -15,11 +17,13 @@ export interface Application {
   secrets?: SecretItem[];
 }
 
-export interface UpsertApplication {
-  name: string;
-  originDomains: string[];
-  targetDomains: string[];
-}
+export const UpsertApplicationSchema = z.object({
+  name: z.string().max(32),
+  originDomains: z.array(z.string()).min(1).max(8),
+  targetDomains: z.array(z.string()).min(1).max(8),
+});
+
+export type UpsertApplication = z.input<typeof UpsertApplicationSchema>;
 
 export interface User {
   id: string;
@@ -33,12 +37,14 @@ export interface Subscription {
   active: boolean;
 }
 
-export interface UpsertSecret {
-  application_id: string;
-  name: string;
-  note: string;
-  value: string;
-}
+export const UpsertSecretSchema = z.object({
+  application_id: z.string().max(32),
+  name: z.string().max(32),
+  note: z.string().max(255),
+  value: z.string().max(255),
+});
+
+export type UpsertSecret = z.input<typeof UpsertSecretSchema>;
 
 export interface DeleteSecret {
   application_id: string;

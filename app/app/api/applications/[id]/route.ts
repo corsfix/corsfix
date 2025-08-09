@@ -4,7 +4,12 @@ import {
   hasApplicationWithOrigins,
 } from "@/lib/services/applicationService";
 import { authorize } from "@/lib/services/authorizationService";
-import { UpsertApplication, ApiResponse, Application } from "@/types/api";
+import {
+  UpsertApplication,
+  ApiResponse,
+  Application,
+  UpsertApplicationSchema,
+} from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
@@ -27,7 +32,8 @@ export async function PUT(
     );
   }
 
-  const body: UpsertApplication = await request.json();
+  const json = await request.json();
+  const body: UpsertApplication = UpsertApplicationSchema.parse(json);
 
   const id = (await params).id;
 
