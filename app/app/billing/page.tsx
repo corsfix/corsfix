@@ -36,7 +36,7 @@ function getCustomerCheckoutLink(
 
 const freeBenefits = [
   "500 proxy requests",
-  "1 web application",
+  "3 web application",
   "50 MB data transfer",
   "60 RPM (per IP)",
   "1 secret variable",

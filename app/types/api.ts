@@ -47,6 +47,11 @@ export const UpsertSecretSchema = z.object({
 
 export type UpsertSecret = z.input<typeof UpsertSecretSchema>;
 
+export interface AuthorizationResult {
+  allowed: boolean;
+  message?: string;
+}
+
 export interface DeleteSecret {
   application_id: string;
 }

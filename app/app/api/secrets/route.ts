@@ -19,11 +19,12 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     const idToken = getUserId(session);
 
-    if (!(await authorize(idToken, "add_secrets"))) {
+    const authorized = await authorize(idToken, "add_secrets");
+    if (!authorized.allowed) {
       return NextResponse.json<ApiResponse<null>>(
         {
           data: null,
-          message: "Unauthorized",
+          message: authorized.message || "Unauthorized",
           success: false,
         },
         { status: 403 }
