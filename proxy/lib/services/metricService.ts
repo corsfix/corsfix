@@ -1,6 +1,8 @@
 import { UserOriginDailyEntity } from "../../models/UserOriginDailyEntity";
 import { Subject } from "rxjs";
 import { bufferTime } from "rxjs/operators";
+import { Metric } from "../../types/api";
+import { CacheableMemory } from "cacheable";
 
 interface MetricEvent {
   userId: string;
@@ -14,6 +16,11 @@ const BUFFER_TIME_MS = 30_000; // 30 seconds
 const MAX_BATCH_SIZE = 300; // Maximum number of events to process in a single batch
 
 const metricEvents$ = new Subject<MetricEvent>();
+
+const metricCache = new CacheableMemory({
+  ttl: "1m",
+  lruSize: 1000,
+});
 
 export const countMetrics = async (
   userId: string,
@@ -133,4 +140,66 @@ export const flushPendingMetrics = async (): Promise<void> => {
 
     metricEvents$.complete();
   });
+};
+
+export const getMonthToDateMetrics = async (
+  userId: string
+): Promise<Metric> => {
+  const now = new Date();
+  const cacheKey = `mtd-metrics:${userId}:${now.getUTCFullYear()}-${now.getUTCMonth()}`;
+
+  // Try to get from cache first
+  const cachedResult = await metricCache.get(cacheKey);
+  if (cachedResult) {
+    return cachedResult as Metric;
+  }
+
+  // Get start of current month (date 1) in UTC
+  const startOfMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  );
+
+  // Get start of next month (date 1) in UTC
+  const startOfNextMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
+
+  // Aggregate metrics for the user within the date range
+  const result = await UserOriginDailyEntity.aggregate([
+    {
+      $match: {
+        user_id: userId,
+        date: {
+          $gte: startOfMonth,
+          $lt: startOfNextMonth,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        req_count: { $sum: "$req_count" },
+        bytes: { $sum: "$bytes" },
+      },
+    },
+  ]);
+
+  // Prepare the metrics result
+  let metrics: Metric;
+  if (result.length > 0) {
+    metrics = {
+      req_count: result[0].req_count || 0,
+      bytes: result[0].bytes || 0,
+    };
+  } else {
+    metrics = {
+      req_count: 0,
+      bytes: 0,
+    };
+  }
+
+  // Cache the result for 1 minute
+  await metricCache.set(cacheKey, metrics);
+
+  return metrics;
 };

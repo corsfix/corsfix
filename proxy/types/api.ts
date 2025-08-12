@@ -5,6 +5,7 @@ export interface CorsfixRequest extends Request {
   ctx_user_id?: string;
   ctx_origin?: string;
   ctx_cache?: boolean;
+  ctx_free?: boolean;
 }
 
 export interface Application {
@@ -24,4 +25,9 @@ export interface RateLimitConfig {
   key: string;
   rpm: number;
   local?: boolean;
+}
+
+export interface Metric {
+  req_count: number;
+  bytes: number;
 }

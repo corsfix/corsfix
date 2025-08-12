@@ -70,13 +70,14 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     }
 
     const activeSubscription = await getActiveSubscription(application.user_id);
+    let rpm;
 
-    if (!activeSubscription) {
-      return res
-        .status(403)
-        .end(
-          "Corsfix: No active subscription found for this application. Subscribe to one of our plans to use the service. (https://app.corsfix.com/billing)"
-        );
+    if (activeSubscription) {
+      rpm = getRpmByProductId(activeSubscription.product_id);
+    } else {
+      // free tier
+      rpm = 60;
+      req.ctx_free = true;
     }
 
     if (
@@ -93,7 +94,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     req.ctx_user_id = application.user_id;
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
-      rpm: getRpmByProductId(activeSubscription.product_id),
+      rpm: rpm,
     };
   }
 

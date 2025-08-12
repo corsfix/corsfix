@@ -23,6 +23,7 @@ import { CorsfixRequest } from "./types/api";
 import { registerMetricShutdownHandlers } from "./lib/services/metricService";
 import { initRedis } from "./lib/services/cacheService";
 import { initPubSub } from "./lib/services/pubSubService";
+import { handleFreeTier } from "./middleware/free";
 
 const PORT = 80;
 const app = new Server({
@@ -55,6 +56,7 @@ app.use("/", validateUrl);
 app.use("/", handlePreflight);
 
 app.use("/", handleRateLimit);
+app.use("/", handleFreeTier);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const { url: targetUrl } = getProxyRequest(req);
