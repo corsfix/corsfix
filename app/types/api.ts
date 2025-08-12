@@ -61,3 +61,8 @@ export interface ApiResponse<T> {
   message: string;
   success: boolean;
 }
+
+export interface Metric {
+  req_count: number;
+  bytes: number;
+}

@@ -16,10 +16,7 @@ import { config, IS_CLOUD } from "@/config/constants";
 import { cn, formatBytes, getUserId } from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import {
-  getThisMonthBandwidth,
-  getThisMonthRequests,
-} from "@/lib/services/metricService";
+import { getMonthToDateMetrics } from "@/lib/services/metricService";
 
 function getCustomerCheckoutLink(
   baseLink: string | null | undefined,
@@ -64,11 +61,9 @@ export default async function CreditsPage() {
   try {
     idToken = getUserId(session);
     activeSubscription = await getActiveSubscription(idToken);
-    bandwidthMtd = await getThisMonthBandwidth(idToken);
-    requestsMtd = 0;
-    if (!activeSubscription.active) {
-      requestsMtd = await getThisMonthRequests(idToken);
-    }
+    const metricsMtd = await getMonthToDateMetrics(idToken);
+    bandwidthMtd = metricsMtd.bytes;
+    requestsMtd = metricsMtd.req_count;
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
