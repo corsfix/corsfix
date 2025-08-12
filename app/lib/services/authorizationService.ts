@@ -1,4 +1,4 @@
-import { IS_CLOUD } from "@/config/constants";
+import { freeTierLimit, IS_CLOUD } from "@/config/constants";
 import { getActiveSubscription } from "./subscriptionService";
 import { countApplication } from "./applicationService";
 import { countSecret } from "./secretService";
@@ -40,8 +40,8 @@ async function canAddApplications(
   // free tier
   const applicationCount = await countApplication(user_id);
   return {
-    allowed: applicationCount < 3,
-    message: "Max 3 applications on free tier. Upgrade for higher limits.",
+    allowed: applicationCount < freeTierLimit.app_count,
+    message: `Max ${freeTierLimit.app_count} applications on free tier. Upgrade for higher limits.`,
   };
 }
 
@@ -63,7 +63,7 @@ async function canAddSecrets(user_id: string): Promise<AuthorizationResult> {
   // free tier
   const secretCount = await countSecret(user_id);
   return {
-    allowed: secretCount < 1,
-    message: "Max 1 secret on free tier. Upgrade for higher limits.",
+    allowed: secretCount < freeTierLimit.secret_count,
+    message: `Max ${freeTierLimit.secret_count} secret on free tier. Upgrade for higher limits.`,
   };
 }

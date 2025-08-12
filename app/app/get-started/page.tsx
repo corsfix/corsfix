@@ -13,7 +13,7 @@ import { ExternalLink, NotepadText } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
-import { IS_CLOUD } from "@/config/constants";
+import { freeTierLimit, IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
   title: "Get Started | Corsfix Dashboard",
@@ -165,7 +165,7 @@ fetch("https://proxy.corsfix.com/?" + url);`}
                 </CardTitle>
                 <CardDescription>
                   {isFreePlan
-                    ? "Try Corsfix wth 500 free requests. Upgrade for unlimited requests and added benefits."
+                    ? `Try Corsfix wth ${freeTierLimit.req_count} free requests. Upgrade for unlimited requests and added benefits.`
                     : "You have full access to Corsfix and all the benefits of your plan."}
                 </CardDescription>
               </CardHeader>

@@ -9,7 +9,7 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST } from "../config/constants";
+import { freeTierLimit, IS_SELFHOST } from "../config/constants";
 
 export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
   const origin = req.header("Origin");
@@ -76,7 +76,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       rpm = getRpmByProductId(activeSubscription.product_id);
     } else {
       // free tier
-      rpm = 60;
+      rpm = freeTierLimit.rpm;
       req.ctx_free = true;
     }
 

@@ -1,6 +1,7 @@
 import { Response } from "hyper-express";
 import { CorsfixRequest } from "../types/api";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
+import { freeTierLimit } from "../config/constants";
 
 export const handleFreeTier = async (req: CorsfixRequest, res: Response) => {
   const { ctx_user_id, ctx_free } = req;
@@ -8,7 +9,10 @@ export const handleFreeTier = async (req: CorsfixRequest, res: Response) => {
   if (ctx_user_id && ctx_free) {
     const metricsMtd = await getMonthToDateMetrics(ctx_user_id);
 
-    if (metricsMtd.req_count >= 500 || metricsMtd.bytes >= 50_000_000) {
+    if (
+      metricsMtd.req_count >= freeTierLimit.req_count ||
+      metricsMtd.bytes >= freeTierLimit.bytes
+    ) {
       return res
         .status(403)
         .end(

@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Nav from "@/components/nav";
 import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
-import { config, IS_CLOUD } from "@/config/constants";
+import { config, freeTierLimit, IS_CLOUD } from "@/config/constants";
 import { cn, formatBytes, getUserId } from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
@@ -32,11 +32,11 @@ function getCustomerCheckoutLink(
 }
 
 const freeBenefits = [
-  "500 proxy requests",
-  "3 web applications",
-  "50 MB data transfer",
-  "60 RPM (per IP)",
-  "1 secret variable",
+  `${freeTierLimit.req_count} proxy requests`,
+  `${freeTierLimit.app_count} web application(s)`,
+  `${formatBytes(freeTierLimit.bytes)} data transfer`,
+  `${freeTierLimit.rpm} RPM (per IP)`,
+  `${freeTierLimit.secret_count} secret variable(s)`,
 ];
 
 const paidBenefits = [
@@ -67,7 +67,11 @@ export default async function CreditsPage() {
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
-    activeSubscription = { active: false, name: "Free", bandwidth: 50_000_000 };
+    activeSubscription = {
+      active: false,
+      name: "Free",
+      bandwidth: freeTierLimit.bytes,
+    };
     bandwidthMtd = 0;
     requestsMtd = 0;
   }
@@ -113,7 +117,9 @@ export default async function CreditsPage() {
                     style={{
                       width: isOnFreePlan
                         ? `${Math.min(
-                            Math.ceil((requestsMtd / 500) * 100),
+                            Math.ceil(
+                              (requestsMtd / freeTierLimit.req_count) * 100
+                            ),
                             100
                           )}%`
                         : "100%",
@@ -131,7 +137,7 @@ export default async function CreditsPage() {
                       </div>
                       <span>
                         {requestsMtd}&nbsp;/&nbsp;
-                        {500}
+                        {freeTierLimit.req_count}
                       </span>
                     </>
                   ) : (

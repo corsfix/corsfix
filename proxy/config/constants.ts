@@ -53,6 +53,22 @@ const configList: Record<string, Config> = {
   },
 };
 
+interface FreeTierLimit {
+  req_count: number;
+  bytes: number;
+  app_count: number;
+  secret_count: number;
+  rpm: number;
+}
+
+export const freeTierLimit: FreeTierLimit = {
+  req_count: 500,
+  bytes: 50_000_000,
+  app_count: 3,
+  secret_count: 1,
+  rpm: 60,
+};
+
 export const config = configList[ENV];
 export const IS_CLOUD = process.env.CLOUD === "true";
 export const IS_SELFHOST = !IS_CLOUD;
