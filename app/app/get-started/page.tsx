@@ -164,7 +164,7 @@ fetch(\`https://proxy.corsfix.com/?\${url}\`);`}
                 </CardTitle>
                 <CardDescription>
                   {isFreePlan
-                    ? "Use Corsfix for free in localhost. Upgrade to unlock all the benefits."
+                    ? "Try Corsfix wth 500 free requests. Upgrade for unlimited requests and added benefits."
                     : "You have full access to Corsfix and all the benefits of your plan."}
                 </CardDescription>
               </CardHeader>

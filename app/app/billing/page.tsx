@@ -30,10 +30,11 @@ function getCustomerCheckoutLink(
 }
 
 const freeBenefits = [
-  "Unlimited proxy requests",
-  "Localhost web applications only",
+  "500 proxy requests",
+  "Limited to 1 web app",
+  "50 MB data transfer",
   "60 RPM (per IP)",
-  "Limited data transfer",
+  "1 secret variable",
   "Best effort support",
 ];
 
@@ -42,6 +43,7 @@ const paidBenefits = [
   "Unlimited web applications",
   "{{rpm}} RPM (per IP)",
   "{{bandwidth}} GB data transfer",
+  "{{rpm}} RPM (per IP)",
   "Cached response",
   "Secrets variable",
   "Priority support",
