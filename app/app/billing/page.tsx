@@ -36,7 +36,7 @@ function getCustomerCheckoutLink(
 
 const freeBenefits = [
   "500 proxy requests",
-  "3 web application",
+  "3 web applications",
   "50 MB data transfer",
   "60 RPM (per IP)",
   "1 secret variable",
@@ -83,7 +83,7 @@ export default async function CreditsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-3xl font-bold mb-4 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
           <CreditCard size={28} className="mr-2" />
           Billing
         </h1>

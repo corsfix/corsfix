@@ -39,7 +39,7 @@ export default async function GetStarted() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-3xl font-bold mb-4 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
           <NotepadText size={28} className="mr-2" />
           Get Started with Corsfix
         </h1>
@@ -47,63 +47,23 @@ export default async function GetStarted() {
         <div className="grid gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Playground</CardTitle>
+              <CardTitle className="text-xl">
+                Add your web application
+              </CardTitle>
               <CardDescription>
-                Test and experiment using Corsfix to bypass CORS errors.
+                Set up your website to use Corsfix.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <Link href="/playground">
-                  <Button data-umami-event="get-started-playground">
-                    Open Playground
+                <Link href="/applications">
+                  <Button data-umami-event="get-started-applications">
+                    Add Application
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Add your application</CardTitle>
-                <CardDescription>
-                  Set up your web application to use Corsfix.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Link href="/applications">
-                    <Button data-umami-event="get-started-applications">
-                      Add Application
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Documentation</CardTitle>
-                <CardDescription>
-                  Learn how to integrate and use Corsfix with our documentation.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Link
-                    href="https://corsfix.com/docs"
-                    target="_blank"
-                    data-umami-event="get-started-docs"
-                  >
-                    <Button variant="secondary">
-                      View docs <ExternalLink size={16} className="inline" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           <Card className="overflow-hidden">
             <div className="px-6 py-6">
@@ -133,7 +93,7 @@ export default async function GetStarted() {
                       className="ml-2"
                     >
                       <Button variant="secondary">
-                        Platform integrations{" "}
+                        Integrations{" "}
                         <ExternalLink size={16} className="inline" />
                       </Button>
                     </Link>
@@ -144,13 +104,54 @@ export default async function GetStarted() {
                     <code lang="javascript">
                       {`// basic usage with fetch
 const url = "https://api.example.com"
-fetch(\`https://proxy.corsfix.com/?\${url}\`);`}
+fetch("https://proxy.corsfix.com/?" + url);`}
                     </code>
                   </pre>
                 </div>
               </div>
             </div>
           </Card>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Playground</CardTitle>
+                <CardDescription>
+                  Test and experiment using Corsfix to bypass CORS errors.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Link href="/playground">
+                    <Button data-umami-event="get-started-playground">
+                      Open Playground
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Documentation</CardTitle>
+                <CardDescription>
+                  Learn how to integrate and use Corsfix with our documentation.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="https://corsfix.com/docs"
+                    target="_blank"
+                    data-umami-event="get-started-docs"
+                  >
+                    <Button variant="secondary">
+                      View docs <ExternalLink size={16} className="inline" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {IS_CLOUD && (
             <Card>

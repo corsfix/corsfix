@@ -30,7 +30,7 @@ export default async function SecretsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-3xl font-bold mb-4 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
           <KeyRound size={28} className="mr-2" />
           Secrets
         </h1>

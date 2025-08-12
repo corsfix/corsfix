@@ -30,12 +30,12 @@ export default async function ApplicationsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-3xl font-bold mb-4 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
           <Globe size={28} className="mr-2" />
           Applications
         </h1>
         <p className="text-muted-foreground mb-1">
-          Use Corsfix in your website by adding your domain.
+          Add your website (origin) domain to start using Corsfix.
         </p>
         <Link
           href="https://corsfix.com/docs/dashboard/application"

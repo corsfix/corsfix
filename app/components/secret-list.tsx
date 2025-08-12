@@ -253,9 +253,9 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     <>
       <div className="space-y-6">
         {applications.length === 0 && (
-          <>
+          <Card className="text-center py-8 px-4">
             <div className="text-sm text-muted-foreground mb-4">
-              No applications found. Start adding applications to manage your
+              No applications found. Add your web applications before using
               secrets.
             </div>
             <Link href="/applications">
@@ -263,7 +263,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
                 Add Application
               </Button>
             </Link>
-          </>
+          </Card>
         )}
         {applications.map((app) => (
           <Card key={app.id} className="w-full">
