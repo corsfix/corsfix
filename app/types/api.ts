@@ -34,6 +34,7 @@ export interface Subscription {
   name: string;
   product_id?: string;
   customer_id: string;
+  bandwidth: number;
   active: boolean;
 }
 

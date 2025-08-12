@@ -1,9 +1,10 @@
 import {
-  ActivityIcon,
+  Activity,
+  BarChart3,
   Check,
   CreditCard,
+  Infinity,
   PackageIcon,
-  SettingsIcon,
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import Nav from "@/components/nav";
 import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { config, IS_CLOUD } from "@/config/constants";
-import { cn, getUserId } from "@/lib/utils";
+import { cn, formatBytes, getUserId } from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 
@@ -42,7 +43,7 @@ const paidBenefits = [
   "Unlimited proxy requests",
   "Unlimited web applications",
   "{{rpm}} RPM (per IP)",
-  "{{bandwidth}} GB data transfer",
+  "{{bandwidth}} data transfer",
   "{{rpm}} RPM (per IP)",
   "Cached response",
   "Secrets variable",
@@ -82,25 +83,12 @@ export default async function CreditsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Subscription Status
-              </CardTitle>
-              <ActivityIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {IS_CLOUD && activeSubscription.active ? "Active" : "Inactive"}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
                 Current Plan
               </CardTitle>
               <PackageIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold mt-3">
                 {IS_CLOUD
                   ? activeSubscription.name.charAt(0).toUpperCase() +
                     activeSubscription.name.slice(1)
@@ -110,42 +98,58 @@ export default async function CreditsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Subscription & Billing
-              </CardTitle>
-              <SettingsIcon className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Requests</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {IS_CLOUD && activeSubscription.active ? (
-                <Link
-                  href="/api/portal"
-                  target="_blank"
-                  className="text-primary hover:underline"
-                >
-                  <Button
-                    data-umami-event="billing-manage"
-                    className="flex items-center gap-2"
-                  >
-                    Manage <SquareArrowOutUpRight />
-                  </Button>
-                </Link>
-              ) : (
-                <Button
-                  data-umami-event="billing-manage"
-                  className="flex items-center gap-2"
-                  disabled={true}
-                >
-                  Manage <SquareArrowOutUpRight />
-                </Button>
-              )}
+              <div className="mt-3 space-y-1">
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: isOnFreePlan ? "69.4%" : "100%" }}
+                  ></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    {isOnFreePlan
+                      ? "This month usage"
+                      : "You have unlimited requests"}
+                  </div>
+                  <Infinity />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Data Transfer
+              </CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="mt-3 space-y-1">
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: "50%" }}
+                  ></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">August 2025</div>
+                  <span>
+                    {formatBytes(100_000_000)}&nbsp;/&nbsp;
+                    {formatBytes(activeSubscription.bandwidth || 0)}
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Available Plans */}
         {IS_CLOUD && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">Available Plans</h2>
+          <div className="mt-10">
+            <h2 className="text-2xl font-bold mb-6">Plans</h2>
             <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
               <div
                 key={"free"}
@@ -229,7 +233,7 @@ export default async function CreditsPage() {
                                   .replace("{{rpm}}", product.rpm.toString())
                                   .replace(
                                     "{{bandwidth}}",
-                                    product.bandwidth.toString()
+                                    formatBytes(product.bandwidth)
                                   )}
                               </span>
                             </li>
@@ -249,11 +253,25 @@ export default async function CreditsPage() {
                                 className="w-full"
                                 data-umami-event={`pricing-${product.name.toLowerCase()}`}
                               >
-                                Select Plan
+                                Upgrade
                               </Button>
                             </Link>
                           </div>
                         )}
+                        {IS_CLOUD &&
+                          activeSubscription.active &&
+                          activeSubscription.name == product.name && (
+                            <div className="mt-6 flex-none">
+                              <Link href="/api/portal" target="_blank">
+                                <Button
+                                  data-umami-event="billing-manage"
+                                  className="w-full flex items-center gap-2"
+                                >
+                                  Manage <SquareArrowOutUpRight />
+                                </Button>
+                              </Link>
+                            </div>
+                          )}
                       </CardContent>
                     </Card>
                   </div>

@@ -1,9 +1,5 @@
 import Nav from "@/components/nav";
-import {
-  getMetrics,
-  formatBytes,
-  formatNumber,
-} from "@/lib/services/metricService";
+import { getMetrics, formatNumber } from "@/lib/services/metricService";
 import {
   Card,
   CardContent,
@@ -15,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, ChartLine } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { getUserId } from "@/lib/utils";
+import { formatBytes, getUserId } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Metrics | Corsfix Dashboard",

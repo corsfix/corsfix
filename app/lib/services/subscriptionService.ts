@@ -17,6 +17,7 @@ export async function getActiveSubscription(
     return {
       name: "free",
       customer_id: user_id,
+      bandwidth: 50_000,
       active: false,
     };
   }
@@ -29,6 +30,7 @@ export async function getActiveSubscription(
     name: product?.name || "-",
     product_id: subscription.product_id,
     customer_id: subscription.customer_id,
+    bandwidth: product?.bandwidth || 0,
     active: subscription.active,
   };
 }
