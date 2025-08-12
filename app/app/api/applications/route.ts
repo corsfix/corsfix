@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   const idToken = getUserId(session);
 
-  if (!(await authorize(idToken, "manage_applications"))) {
+  if (!(await authorize(idToken, "add_applications"))) {
     return NextResponse.json<ApiResponse<null>>(
       {
         data: null,

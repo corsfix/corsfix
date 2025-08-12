@@ -1,14 +1,12 @@
 import Nav from "@/components/nav";
 import SecretList from "@/components/secret-list";
 import { Application } from "@/types/api";
-import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { Metadata } from "next";
 import Link from "next/link";
 import { CircleHelp, ExternalLink, KeyRound } from "lucide-react";
 import { getApplicationSecrets } from "@/lib/services/secretService";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
-import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
   title: "Secrets | Corsfix Dashboard",
@@ -17,21 +15,15 @@ export const metadata: Metadata = {
 export default async function SecretsPage() {
   const session = await auth();
 
-  let idToken, initialApplications: Application[], activeSubscription;
+  let idToken, initialApplications: Application[];
 
   try {
     idToken = getUserId(session);
     initialApplications = await getApplicationSecrets(idToken);
-    activeSubscription = await getActiveSubscription(idToken);
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
     initialApplications = [];
-    activeSubscription = {
-      name: "Free",
-      customer_id: "",
-      active: false,
-    };
   }
 
   return (
@@ -54,11 +46,7 @@ export default async function SecretsPage() {
           Secrets documentation{" "}
           <ExternalLink size={24} className="inline pb-1" />
         </Link>
-        <SecretList
-          initialApplications={initialApplications}
-          hasActiveSubscription={activeSubscription.active}
-          isCloud={IS_CLOUD}
-        />
+        <SecretList initialApplications={initialApplications} />
         <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
           <CircleHelp size={16} className="text-violet-400 mr-2" />
           <span>

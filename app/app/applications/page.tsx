@@ -1,14 +1,12 @@
 import Nav from "@/components/nav";
 import { getApplications } from "@/lib/services/applicationService";
 import ApplicationList from "@/components/application-list";
-import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { Application } from "@/types/api";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CircleHelp, ExternalLink, Globe } from "lucide-react";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
-import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
   title: "Applications | Corsfix Dashboard",
@@ -17,17 +15,15 @@ export const metadata: Metadata = {
 export default async function ApplicationsPage() {
   const session = await auth();
 
-  let idToken, initialApplications: Application[], activeSubscription;
+  let idToken, initialApplications: Application[];
 
   try {
     idToken = getUserId(session);
     initialApplications = await getApplications(idToken);
-    activeSubscription = await getActiveSubscription(idToken);
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
     initialApplications = [];
-    activeSubscription = { active: false };
   }
 
   return (
@@ -49,11 +45,7 @@ export default async function ApplicationsPage() {
           Applications documentation{" "}
           <ExternalLink size={24} className="inline pb-1" />
         </Link>
-        <ApplicationList
-          initialApplications={initialApplications}
-          hasActiveSubscription={activeSubscription.active}
-          isCloud={IS_CLOUD}
-        />
+        <ApplicationList initialApplications={initialApplications} />
         <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
           <CircleHelp size={16} className="text-violet-400 mr-2" />
           <span>

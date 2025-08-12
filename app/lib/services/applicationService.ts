@@ -118,3 +118,13 @@ export async function deleteApplication(user_id: string, id: string) {
 
   await application.deleteOne();
 }
+
+export async function countApplication(user_id: string) {
+  await dbConnect();
+
+  const applicationCount = await ApplicationEntity.countDocuments({
+    user_id: user_id,
+  }).lean();
+
+  return applicationCount;
+}

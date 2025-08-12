@@ -3,7 +3,6 @@ import {
   deleteApplication,
   hasApplicationWithOrigins,
 } from "@/lib/services/applicationService";
-import { authorize } from "@/lib/services/authorizationService";
 import {
   UpsertApplication,
   ApiResponse,
@@ -21,17 +20,6 @@ export async function PUT(
 ) {
   const session = await auth();
   const idToken = getUserId(session);
-
-  if (!(await authorize(idToken, "manage_applications"))) {
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: "Unauthorized",
-        success: false,
-      },
-      { status: 403 }
-    );
-  }
 
   const json = await request.json();
   const body: UpsertApplication = UpsertApplicationSchema.parse(json);
@@ -69,17 +57,6 @@ export async function DELETE(
 ) {
   const session = await auth();
   const idToken = getUserId(session);
-
-  if (!(await authorize(idToken, "manage_applications"))) {
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: "Unauthorized",
-        success: false,
-      },
-      { status: 403 }
-    );
-  }
 
   const paramId = (await params).id;
   const id = z.string().max(32).parse(paramId);

@@ -60,15 +60,9 @@ import Link from "next/link";
 
 interface SecretListProps {
   initialApplications: Application[];
-  hasActiveSubscription?: boolean;
-  isCloud?: boolean;
 }
 
-export default function SecretList({
-  initialApplications,
-  hasActiveSubscription = false,
-  isCloud = false,
-}: SecretListProps) {
+export default function SecretList({ initialApplications }: SecretListProps) {
   const [applications, setApplications] =
     useState<Application[]>(initialApplications);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -258,7 +252,7 @@ export default function SecretList({
   return (
     <>
       <div className="space-y-6">
-        {!isCloud && hasActiveSubscription && applications.length === 0 && (
+        {applications.length === 0 && (
           <>
             <div className="text-sm text-muted-foreground mb-4">
               No applications found. Start adding applications to manage your
@@ -271,20 +265,6 @@ export default function SecretList({
             </Link>
           </>
         )}
-        {isCloud && !hasActiveSubscription && (
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
-            <p>Upgrade to a paid plan to start managing application secrets.</p>
-            <Link href="/billing">
-              <Button
-                variant="link"
-                className="h-auto p-0"
-                data-umami-event="secrets-upgrade"
-              >
-                Upgrade now
-              </Button>
-            </Link>
-          </div>
-        )}
         {applications.map((app) => (
           <Card key={app.id} className="w-full">
             <CardHeader className="pb-2">
@@ -296,11 +276,7 @@ export default function SecretList({
                     <br />
                   </CardDescription>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => startAdding(app.id)}
-                  disabled={isCloud && !hasActiveSubscription}
-                >
+                <Button size="sm" onClick={() => startAdding(app.id)}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Secret
                 </Button>
               </div>
@@ -346,7 +322,6 @@ export default function SecretList({
                               size="icon"
                               onClick={() => startEditing(secret)}
                               title="Edit Secret"
-                              disabled={isCloud && !hasActiveSubscription}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -356,7 +331,6 @@ export default function SecretList({
                                   data-umami-event="application-delete"
                                   variant="destructive"
                                   size="icon"
-                                  disabled={isCloud && !hasActiveSubscription}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>

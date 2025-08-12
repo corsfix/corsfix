@@ -44,18 +44,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
-import Link from "next/link";
 
 interface ApplicationListProps {
   initialApplications: Application[];
-  hasActiveSubscription?: boolean;
-  isCloud?: boolean;
 }
 
 export default function ApplicationList({
   initialApplications,
-  hasActiveSubscription = false,
-  isCloud = false,
 }: ApplicationListProps) {
   const [applications, setApplications] =
     useState<Application[]>(initialApplications);
@@ -245,13 +240,6 @@ export default function ApplicationList({
       return;
     }
 
-    if (isCloud && !hasActiveSubscription) {
-      toast.error(
-        "An active subscription is required to add a production application."
-      );
-      return;
-    }
-
     try {
       const { id, ...appData } = newApp;
 
@@ -397,23 +385,6 @@ export default function ApplicationList({
               <Plus className="mr-2 h-4 w-4" /> Add New Application
             </Button>
           </DialogTrigger>
-          {isCloud && !hasActiveSubscription && (
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <p>
-                An active subscription is required to add a production
-                application.
-              </p>
-              <Link href="/billing">
-                <Button
-                  variant="link"
-                  className="h-auto p-0"
-                  data-umami-event="application-upgrade"
-                >
-                  Upgrade now
-                </Button>
-              </Link>
-            </div>
-          )}
         </div>
         <DialogContent className="max-w-[425px] mx-1">
           <DialogHeader>
@@ -631,7 +602,6 @@ export default function ApplicationList({
                         variant="outline"
                         size="icon"
                         onClick={() => startEditing(app)}
-                        disabled={isCloud && !hasActiveSubscription}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -641,7 +611,6 @@ export default function ApplicationList({
                             data-umami-event="application-delete"
                             variant="destructive"
                             size="icon"
-                            disabled={isCloud && !hasActiveSubscription}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

@@ -6,7 +6,6 @@ import {
 } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getKek } from "@/lib/utils";
-import { authorize } from "@/lib/services/authorizationService";
 import {
   updateSecret,
   deleteSecret,
@@ -23,17 +22,6 @@ export async function PUT(
   try {
     const session = await auth();
     const idToken = getUserId(session);
-
-    if (!(await authorize(idToken, "manage_secrets"))) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          data: null,
-          message: "Unauthorized",
-          success: false,
-        },
-        { status: 403 }
-      );
-    }
 
     const json = await request.json();
     const body: UpsertSecret = UpsertSecretSchema.parse(json);
@@ -112,17 +100,6 @@ export async function DELETE(
   try {
     const session = await auth();
     const idToken = getUserId(session);
-
-    if (!(await authorize(idToken, "manage_secrets"))) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          data: null,
-          message: "Unauthorized",
-          success: false,
-        },
-        { status: 403 }
-      );
-    }
 
     const paramId = (await params).id;
     const secretId = z.string().max(32).parse(paramId);
