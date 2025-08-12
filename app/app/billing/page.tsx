@@ -16,6 +16,10 @@ import { config, IS_CLOUD } from "@/config/constants";
 import { cn, formatBytes, getUserId } from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import {
+  getThisMonthBandwidth,
+  getThisMonthRequests,
+} from "@/lib/services/metricService";
 
 function getCustomerCheckoutLink(
   baseLink: string | null | undefined,
@@ -32,17 +36,15 @@ function getCustomerCheckoutLink(
 
 const freeBenefits = [
   "500 proxy requests",
-  "Limited to 1 web app",
+  "1 web application",
   "50 MB data transfer",
   "60 RPM (per IP)",
   "1 secret variable",
-  "Best effort support",
 ];
 
 const paidBenefits = [
   "Unlimited proxy requests",
   "Unlimited web applications",
-  "{{rpm}} RPM (per IP)",
   "{{bandwidth}} data transfer",
   "{{rpm}} RPM (per IP)",
   "Cached response",
@@ -57,15 +59,22 @@ export const metadata: Metadata = {
 export default async function CreditsPage() {
   const session = await auth();
 
-  let idToken, activeSubscription;
+  let idToken, activeSubscription, bandwidthMtd, requestsMtd;
 
   try {
     idToken = getUserId(session);
     activeSubscription = await getActiveSubscription(idToken);
+    bandwidthMtd = await getThisMonthBandwidth(idToken);
+    requestsMtd = 0;
+    if (!activeSubscription.active) {
+      requestsMtd = await getThisMonthRequests(idToken);
+    }
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
-    activeSubscription = { active: false, name: "Free" };
+    activeSubscription = { active: false, name: "Free", bandwidth: 50_000_000 };
+    bandwidthMtd = 0;
+    requestsMtd = 0;
   }
 
   const isOnFreePlan = !activeSubscription.active;
@@ -106,16 +115,36 @@ export default async function CreditsPage() {
                 <div className="w-full bg-secondary rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: isOnFreePlan ? "69.4%" : "100%" }}
+                    style={{
+                      width: isOnFreePlan
+                        ? `${Math.min(
+                            Math.ceil((requestsMtd / 500) * 100),
+                            100
+                          )}%`
+                        : "100%",
+                    }}
                   ></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    {isOnFreePlan
-                      ? "This month usage"
-                      : "You have unlimited requests"}
-                  </div>
-                  <Infinity />
+                  {isOnFreePlan ? (
+                    <>
+                      <div className="text-sm">
+                        {new Date().toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <span>
+                        {requestsMtd}&nbsp;/&nbsp;
+                        {500}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm">You have unlimited requests</div>
+                      <Infinity />
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -132,14 +161,26 @@ export default async function CreditsPage() {
                 <div className="w-full bg-secondary rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: "50%" }}
+                    style={{
+                      width: `${Math.min(
+                        Math.ceil(
+                          (bandwidthMtd / activeSubscription.bandwidth) * 100
+                        ),
+                        100
+                      )}%`,
+                    }}
                   ></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm">August 2025</div>
+                  <div className="text-sm">
+                    {new Date().toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </div>
                   <span>
-                    {formatBytes(100_000_000)}&nbsp;/&nbsp;
-                    {formatBytes(activeSubscription.bandwidth || 0)}
+                    {formatBytes(bandwidthMtd)}&nbsp;/&nbsp;
+                    {formatBytes(activeSubscription.bandwidth)}
                   </span>
                 </div>
               </div>
@@ -148,7 +189,7 @@ export default async function CreditsPage() {
         </div>
 
         {IS_CLOUD && (
-          <div className="mt-10">
+          <div className="mt-6">
             <h2 className="text-2xl font-bold mb-6">Plans</h2>
             <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
               <div
@@ -163,7 +204,7 @@ export default async function CreditsPage() {
                 >
                   <CardHeader className="flex-none">
                     <div className="flex justify-between items-center">
-                      <CardTitle>Free</CardTitle>
+                      <CardTitle className="text-xl">Free</CardTitle>
                       {isOnFreePlan && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                           Current Plan
@@ -204,7 +245,7 @@ export default async function CreditsPage() {
                     >
                       <CardHeader className="flex-none">
                         <div className="flex justify-between items-center">
-                          <CardTitle>
+                          <CardTitle className="text-xl">
                             {product.name.charAt(0).toUpperCase() +
                               product.name.slice(1)}
                           </CardTitle>

@@ -132,15 +132,94 @@ export async function getMetrics(userId: string): Promise<MetricsData> {
   }
 }
 
-// Helper function to format large numbers
-export function formatNumber(num: number): string {
-  if (num === 0) return "0";
+export async function getThisMonthBandwidth(userId: string): Promise<number> {
+  await dbConnect();
 
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
+  // Get current date in UTC
+  const now = new Date();
+
+  // First day of this month (UTC)
+  const thisMonthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  );
+
+  // First day of next month (UTC)
+  const nextMonthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
+
+  try {
+    // Query this month's bandwidth usage
+    const thisMonthMetrics = await UserOriginDailyEntity.aggregate([
+      {
+        $match: {
+          user_id: userId,
+          date: {
+            $gte: thisMonthStart,
+            $lt: nextMonthStart,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBytes: { $sum: "$bytes" },
+        },
+      },
+    ]);
+
+    const thisMonthData =
+      thisMonthMetrics.length > 0 ? thisMonthMetrics[0] : { totalBytes: 0 };
+
+    return Math.max(0, thisMonthData.totalBytes || 0);
+  } catch (error) {
+    console.error("Error fetching this month's bandwidth:", error);
+    return 0;
   }
+}
 
-  return num.toString();
+export async function getThisMonthRequests(userId: string): Promise<number> {
+  await dbConnect();
+
+  // Get current date in UTC
+  const now = new Date();
+
+  // First day of this month (UTC)
+  const thisMonthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  );
+
+  // First day of next month (UTC)
+  const nextMonthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
+
+  try {
+    // Query this month's request count
+    const thisMonthMetrics = await UserOriginDailyEntity.aggregate([
+      {
+        $match: {
+          user_id: userId,
+          date: {
+            $gte: thisMonthStart,
+            $lt: nextMonthStart,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRequests: { $sum: "$req_count" },
+        },
+      },
+    ]);
+
+    const thisMonthData =
+      thisMonthMetrics.length > 0 ? thisMonthMetrics[0] : { totalRequests: 0 };
+
+    return Math.max(0, thisMonthData.totalRequests || 0);
+  } catch (error) {
+    console.error("Error fetching this month's requests:", error);
+    return 0;
+  }
 }

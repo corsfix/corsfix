@@ -17,7 +17,7 @@ export async function getActiveSubscription(
     return {
       name: "free",
       customer_id: user_id,
-      bandwidth: 50_000,
+      bandwidth: 50_000_000,
       active: false,
     };
   }
