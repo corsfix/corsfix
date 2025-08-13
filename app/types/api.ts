@@ -47,6 +47,17 @@ export const UpsertSecretSchema = z.object({
 
 export type UpsertSecret = z.input<typeof UpsertSecretSchema>;
 
+export const GetMetricsSchema = z.object({
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: "Invalid start date format",
+  }),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: "Invalid end date format",
+  }),
+});
+
+export type GetMetrics = z.input<typeof GetMetricsSchema>;
+
 export interface AuthorizationResult {
   allowed: boolean;
   message?: string;
@@ -63,6 +74,12 @@ export interface ApiResponse<T> {
 }
 
 export interface Metric {
+  req_count: number;
+  bytes: number;
+}
+
+export interface MetricPoint {
+  date: Date;
   req_count: number;
   bytes: number;
 }
