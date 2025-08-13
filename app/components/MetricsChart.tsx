@@ -178,7 +178,7 @@ export default function MetricsChart() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row justify-between items-stretch border-b !p-0 mb-8 overflow-x-scroll">
+      <CardHeader className="flex flex-row justify-between items-stretch border-b p-0 mb-8 overflow-x-scroll">
         <div className="flex">
           <button
             data-active={showRequests}
