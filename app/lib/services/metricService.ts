@@ -65,8 +65,7 @@ export const getMonthToDateMetrics = async (
     };
   }
 
-  // Cache the result for 5 minutes
-  await metricCache.set(cacheKey, metrics, "5m");
+  await metricCache.set(cacheKey, metrics);
 
   return metrics;
 };
@@ -93,7 +92,7 @@ export const getMetricsYearMonth = async (
 
   // Parse year and month from yearMonth string
   const [year, month] = yearMonth.split("-").map(Number);
-  
+
   // Create start and end dates for the month
   const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const endOfMonth = new Date(Date.UTC(year, month, 0)); // Last day of the month
@@ -147,8 +146,7 @@ export const getMetricsYearMonth = async (
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
-    // Cache the result for 10 minutes
-    await metricCache.set(cacheKey, result, "10m");
+    await metricCache.set(cacheKey, result);
 
     return result;
   } catch (error) {
