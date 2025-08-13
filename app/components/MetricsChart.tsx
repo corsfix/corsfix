@@ -260,7 +260,6 @@ export default function MetricsChart() {
                     fill: "var(--color-requests)",
                   },
                 }}
-                hide={!showRequests}
               />
               <YAxis
                 yAxisId="right"
@@ -272,7 +271,6 @@ export default function MetricsChart() {
                   dx: 30,
                   style: { textAnchor: "middle", fill: "var(--color-bytes)" },
                 }}
-                hide={!showBytes}
               />
               <ChartTooltip
                 content={({ active, payload, label }) => {
