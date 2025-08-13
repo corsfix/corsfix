@@ -48,11 +48,8 @@ export const UpsertSecretSchema = z.object({
 export type UpsertSecret = z.input<typeof UpsertSecretSchema>;
 
 export const GetMetricsSchema = z.object({
-  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: "Invalid start date format",
-  }),
-  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: "Invalid end date format",
+  yearMonth: z.string().regex(/^\d{4}-\d{2}$/, {
+    message: "Invalid year month format. Expected YYYY-MM",
   }),
 });
 

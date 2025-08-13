@@ -100,21 +100,11 @@ export default function MetricsPage() {
     { requests: 0, bytes: 0 }
   );
 
-  // Generate date range based on selection
-  const getDateRange = (range: TimeRange): { start: Date; end: Date } => {
-    // Handle month selection (YYYY-MM format)
-    const [year, month] = range.split("-").map(Number);
-    const start = new Date(Date.UTC(year, month - 1, 1));
-    const endOfMonth = new Date(Date.UTC(year, month, 0));
-    return { start, end: endOfMonth };
-  };
-
   // Fetch metrics data
   const fetchMetrics = async (range: TimeRange) => {
     try {
-      const { start, end } = getDateRange(range);
       const response = await fetch(
-        `/api/metrics?startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        `/api/metrics?yearMonth=${range}`
       );
 
       if (!response.ok) {
@@ -141,9 +131,8 @@ export default function MetricsPage() {
     const loadInitialData = async () => {
       try {
         const currentMonth = getCurrentMonth();
-        const { start, end } = getDateRange(currentMonth);
         const response = await fetch(
-          `/api/metrics?startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+          `/api/metrics?yearMonth=${currentMonth}`
         );
 
         if (!response.ok) {

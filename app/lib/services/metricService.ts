@@ -71,15 +71,17 @@ export const getMonthToDateMetrics = async (
   return metrics;
 };
 
-export const getMetricsDateRange = async (
+export const getMetricsYearMonth = async (
   userId: string,
-  startDate: Date,
-  endDate: Date
+  yearMonth: string
 ): Promise<MetricPoint[]> => {
-  // Create cache key based on user ID and date range
-  const startDateStr = startDate.toISOString().split("T")[0];
-  const endDateStr = endDate.toISOString().split("T")[0];
-  const cacheKey = `date_range_metrics:${userId}:${startDateStr}:${endDateStr}`;
+  // Validate yearMonth format (YYYY-MM)
+  const yearMonthRegex = /^\d{4}-\d{2}$/;
+  if (!yearMonthRegex.test(yearMonth)) {
+    throw new Error("Invalid year month format. Expected YYYY-MM");
+  }
+
+  const cacheKey = `month_metrics:${userId}:${yearMonth}`;
 
   // Try to get from cache first
   const cachedMetrics = await metricCache.get(cacheKey);
@@ -89,41 +91,20 @@ export const getMetricsDateRange = async (
 
   await dbConnect();
 
-  // Validate date range - max 31 days
-  const timeDiff = endDate.getTime() - startDate.getTime();
-  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-  if (daysDiff > 31) {
-    throw new Error("Date range cannot exceed 31 days");
-  }
-
-  if (startDate > endDate) {
-    throw new Error("Start date must be before end date");
-  }
-
-  // Normalize dates to UTC midnight to ensure consistent querying
-  const normalizedStartDate = new Date(
-    Date.UTC(
-      startDate.getUTCFullYear(),
-      startDate.getUTCMonth(),
-      startDate.getUTCDate()
-    )
-  );
-  const normalizedEndDate = new Date(
-    Date.UTC(
-      endDate.getUTCFullYear(),
-      endDate.getUTCMonth(),
-      endDate.getUTCDate()
-    )
-  );
+  // Parse year and month from yearMonth string
+  const [year, month] = yearMonth.split("-").map(Number);
+  
+  // Create start and end dates for the month
+  const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const endOfMonth = new Date(Date.UTC(year, month, 0)); // Last day of the month
 
   try {
-    // Query metrics for the date range, aggregating by date
+    // Query metrics for the month, aggregating by date
     const dbMetrics = await UserOriginDailyEntity.aggregate([
       {
         $match: {
           user_id: userId,
-          date: { $gte: normalizedStartDate, $lte: normalizedEndDate },
+          date: { $gte: startOfMonth, $lte: endOfMonth },
         },
       },
       {
@@ -148,11 +129,11 @@ export const getMetricsDateRange = async (
       });
     });
 
-    // Generate all dates in the range and populate with data or zeros
+    // Generate all dates in the month and populate with data or zeros
     const result: MetricPoint[] = [];
-    const currentDate = new Date(normalizedStartDate);
+    const currentDate = new Date(startOfMonth);
 
-    while (currentDate <= normalizedEndDate) {
+    while (currentDate <= endOfMonth) {
       const dateKey = currentDate.toISOString().split("T")[0];
       const existingData = metricsMap.get(dateKey);
 
@@ -171,7 +152,7 @@ export const getMetricsDateRange = async (
 
     return result;
   } catch (error) {
-    console.error("Error fetching metrics for date range:", error);
+    console.error("Error fetching metrics for month:", error);
     throw error;
   }
 };

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getMetricsDateRange } from "@/lib/services/metricService";
+import { getMetricsYearMonth } from "@/lib/services/metricService";
 import { getUserId } from "@/lib/utils";
 import { GetMetricsSchema } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,34 +10,28 @@ export async function GET(request: NextRequest) {
     const userId = getUserId(session);
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const yearMonth = searchParams.get("yearMonth");
 
     // Validate the request parameters
     const validationResult = GetMetricsSchema.safeParse({
-      startDate,
-      endDate,
+      yearMonth,
     });
 
     if (!validationResult.success) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid date parameters",
+          message: "Invalid year month parameter. Expected YYYY-MM format",
           data: null,
         },
         { status: 400 }
       );
     }
 
-    const { startDate: validStartDate, endDate: validEndDate } = validationResult.data;
+    const { yearMonth: validYearMonth } = validationResult.data;
 
-    // Convert strings to Date objects
-    const start = new Date(validStartDate);
-    const end = new Date(validEndDate);
-
-    // Get metrics for the date range
-    const metrics = await getMetricsDateRange(userId, start, end);
+    // Get metrics for the month
+    const metrics = await getMetricsYearMonth(userId, validYearMonth);
 
     return NextResponse.json({
       success: true,
@@ -51,11 +45,8 @@ export async function GET(request: NextRequest) {
     let statusCode = 500;
 
     if (error instanceof Error) {
-      if (error.message.includes("Date range cannot exceed 31 days")) {
-        errorMessage = "Date range cannot exceed 31 days";
-        statusCode = 400;
-      } else if (error.message.includes("Start date must be before end date")) {
-        errorMessage = "Start date must be before end date";
+      if (error.message.includes("Invalid year month format")) {
+        errorMessage = "Invalid year month format. Expected YYYY-MM";
         statusCode = 400;
       } else if (error.message.includes("Invalid token")) {
         errorMessage = "Unauthorized";
