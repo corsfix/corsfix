@@ -303,7 +303,16 @@ export default function MetricsChart() {
                   return null;
                 }}
               />
-              <Legend />
+              <Legend 
+                onClick={(entry) => {
+                  if (entry.dataKey === "requests") {
+                    handleShowRequestsChange(!showRequests);
+                  } else if (entry.dataKey === "bytesMB") {
+                    handleShowBytesChange(!showBytes);
+                  }
+                }}
+                wrapperStyle={{ cursor: 'pointer' }}
+              />
               <Line
                 yAxisId="left"
                 type="monotone"
