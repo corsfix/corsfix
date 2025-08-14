@@ -174,3 +174,92 @@ export async function countSecret(user_id: string) {
 
   return secretCount;
 }
+
+export async function getSecretsForApplication(
+  user_id: string,
+  application_id: string
+): Promise<SecretItem[]> {
+  await dbConnect();
+
+  const secrets = await SecretEntity.find({
+    user_id: user_id,
+    application_id: application_id,
+  }).lean();
+
+  return secrets.map((secret) => ({
+    id: secret._id.toString(),
+    application_id: secret.application_id.toString(),
+    name: secret.name,
+    note: secret.note,
+    masked_value: secret.masked_value,
+  }));
+}
+
+export async function manageApplicationSecrets(
+  user_id: string,
+  kek: string,
+  application_id: string,
+  secrets: Array<{
+    id?: string;
+    name: string;
+    value: string | null;
+    delete?: boolean;
+  }>
+): Promise<void> {
+  await dbConnect();
+
+  for (const secretData of secrets) {
+    if (secretData.delete) {
+      // Delete the secret by ID (should always have ID for deletes)
+      await SecretEntity.deleteOne({
+        _id: secretData.id,
+        user_id: user_id,
+        application_id: application_id,
+      });
+    } else if (secretData.id) {
+      // Update existing secret (has ID)
+      const existingSecret = await SecretEntity.findOne({
+        _id: secretData.id,
+        user_id: user_id,
+        application_id: application_id,
+      });
+
+      if (existingSecret) {
+        // Update name (always allow name changes)
+        existingSecret.name = secretData.name;
+
+        // Update value if provided
+        if (secretData.value && secretData.value.trim()) {
+          const dek = crypto.randomBytes(32).toString("base64");
+          const encryptedData = await encrypt(secretData.value, dek);
+          const encryptedDek = await encrypt(dek, kek);
+
+          existingSecret.data = encryptedData;
+          existingSecret.dek = encryptedDek;
+          existingSecret.masked_value = maskSecret(secretData.value);
+          existingSecret.kek_version = getKekVersion();
+        }
+
+        await existingSecret.save();
+      }
+    } else if (secretData.value && secretData.value.trim()) {
+      // Create new secret (no ID, has value)
+      const dek = crypto.randomBytes(32).toString("base64");
+      const encryptedData = await encrypt(secretData.value, dek);
+      const encryptedDek = await encrypt(dek, kek);
+
+      const secret = new SecretEntity({
+        application_id: application_id,
+        user_id: user_id,
+        name: secretData.name,
+        note: "",
+        masked_value: maskSecret(secretData.value),
+        data: encryptedData,
+        dek: encryptedDek,
+        kek_version: getKekVersion(),
+      });
+
+      await secret.save();
+    }
+  }
+}

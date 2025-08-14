@@ -1,491 +1,359 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Pencil } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-import {
-  Application,
-  DeleteSecret,
-  SecretItem,
-  UpsertSecret,
-} from "@/types/api";
+import { Application, SecretItem } from "@/types/api";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./ui/alert-dialog";
-import { Label } from "./ui/label";
 import Link from "next/link";
 
 interface SecretListProps {
   initialApplications: Application[];
 }
 
+interface SecretFormData {
+  id?: string;
+  name: string;
+  value: string;
+  masked_value?: string;
+}
+
+interface UnsavedChanges {
+  [appId: string]: boolean;
+}
+
 export default function SecretList({ initialApplications }: SecretListProps) {
   const [applications, setApplications] =
     useState<Application[]>(initialApplications);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
-  const [newSecret, setNewSecret] = useState<SecretItem>({
-    application_id: "",
-    name: "",
-    note: "",
-    value: "",
-  });
+  const [appSecrets, setAppSecrets] = useState<{
+    [appId: string]: SecretFormData[];
+  }>({});
 
-  const [validationErrors, setValidationErrors] = useState({
-    name: false,
-    value: false,
-  });
+  // Store original secrets for comparison
+  const [originalSecrets, setOriginalSecrets] = useState<{
+    [appId: string]: SecretItem[];
+  }>({});
+
+  const [unsavedChanges, setUnsavedChanges] = useState<UnsavedChanges>({});
+  const [saveLoading, setSaveLoading] = useState<{ [appId: string]: boolean }>(
+    {}
+  );
 
   useEffect(() => {
     setApplications(initialApplications);
+
+    const initialSecrets: { [appId: string]: SecretFormData[] } = {};
+    const originalSecretsData: { [appId: string]: SecretItem[] } = {};
+
+    initialApplications.forEach((app) => {
+      if (app.secrets) {
+        // Store original secrets for comparison
+        originalSecretsData[app.id] = [...app.secrets];
+
+        // Initialize form data with empty values
+        initialSecrets[app.id] = app.secrets.map((secret) => ({
+          id: secret.id,
+          name: secret.name,
+          value: "",
+          masked_value: secret.masked_value,
+        }));
+      } else {
+        originalSecretsData[app.id] = [];
+        initialSecrets[app.id] = [];
+      }
+    });
+
+    setOriginalSecrets(originalSecretsData);
+    setAppSecrets(initialSecrets);
   }, [initialApplications]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    if (e.target.name === "name") {
-      const value = e.target.value.toUpperCase();
-      const validValue = value.replace(/[^A-Z0-9_]/g, "");
+  const addNewSecretRow = (appId: string) => {
+    setAppSecrets((prev) => ({
+      ...prev,
+      [appId]: [...(prev[appId] || []), { name: "", value: "" }],
+    }));
+    setUnsavedChanges((prev) => ({ ...prev, [appId]: true }));
+  };
 
-      setNewSecret({
-        ...newSecret,
-        [e.target.name]: validValue,
-      });
-      return;
+  const updateSecretRow = (
+    appId: string,
+    index: number,
+    field: "name" | "value",
+    value: string
+  ) => {
+    setAppSecrets((prev) => {
+      const updated = [...(prev[appId] || [])];
+      if (field === "name") {
+        const upperValue = value.toUpperCase();
+        const validValue = upperValue.replace(/[^A-Z0-9_]/g, "");
+        updated[index][field] = validValue;
+      } else {
+        updated[index][field] = value;
+      }
+      return { ...prev, [appId]: updated };
+    });
+    setUnsavedChanges((prev) => ({ ...prev, [appId]: true }));
+  };
+
+  const deleteSecretRow = (appId: string, index: number) => {
+    setAppSecrets((prev) => {
+      const updated = [...(prev[appId] || [])];
+      updated.splice(index, 1);
+      return { ...prev, [appId]: updated };
+    });
+    setUnsavedChanges((prev) => ({ ...prev, [appId]: true }));
+  };
+
+  const handleSaveSecrets = async (appId: string) => {
+    setSaveLoading((prev) => ({ ...prev, [appId]: true }));
+
+    const currentSecrets = appSecrets[appId] || [];
+    const originalSecretsForApp = originalSecrets[appId] || [];
+
+    // Create maps for easier comparison using ID as key
+    const originalSecretsMap = new Map(
+      originalSecretsForApp.map((secret) => [secret.id!, secret])
+    );
+    const currentSecretsMap = new Map(
+      currentSecrets
+        .filter((s) => s.id && s.name.trim())
+        .map((secret) => [secret.id!, secret])
+    );
+
+    const secretsData: Array<{
+      id?: string;
+      name: string;
+      value: string | null;
+      delete?: boolean;
+    }> = [];
+
+    // Check for deletions (exists in original but not in current)
+    for (const [id, originalSecret] of originalSecretsMap) {
+      if (!currentSecretsMap.has(id)) {
+        secretsData.push({
+          id: originalSecret.id,
+          name: originalSecret.name,
+          value: null,
+          delete: true,
+        });
+      }
     }
 
-    setNewSecret({ ...newSecret, [e.target.name]: e.target.value });
-  };
+    // Check for updates (existing secrets with ID)
+    for (const [id, currentSecret] of currentSecretsMap) {
+      const originalSecret = originalSecretsMap.get(id);
 
-  const startAdding = (appId: string) => {
-    setIsEditing(false);
-    setNewSecret({
-      application_id: appId,
-      name: "",
-      note: "",
-      value: "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const startEditing = (secret: SecretItem) => {
-    setIsEditing(true);
-    setNewSecret({
-      application_id: secret.application_id,
-      id: secret.id,
-      name: secret.name,
-      note: secret.note || "",
-      value: secret.value || "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveSecret = async () => {
-    setValidationErrors({ name: false, value: false });
-
-    if (isEditing) {
-      const errors = {
-        name: !newSecret.name.trim(),
-        value: false,
-      };
-
-      setValidationErrors(errors);
-      if (Object.values(errors).some((error) => error)) {
-        toast("Please fix the following errors:", {
-          description: (
-            <ul className="list-disc pl-4">
-              {errors.name && <li>Name: This field is required.</li>}
-            </ul>
-          ),
-        });
-        return;
+      if (originalSecret) {
+        // Existing secret - update if value is provided (empty means keep current)
+        if (currentSecret.value && currentSecret.value.trim()) {
+          secretsData.push({
+            id: currentSecret.id,
+            name: currentSecret.name,
+            value: currentSecret.value.trim(),
+          });
+        } else if (originalSecret.name !== currentSecret.name) {
+          // Name changed but no value - just update name
+          secretsData.push({
+            id: currentSecret.id,
+            name: currentSecret.name,
+            value: null,
+          });
+        }
       }
+    }
 
-      const response = await apiClient.put<SecretItem>(
-        `/secrets/${newSecret.id}`,
-        {
-          application_id: newSecret.application_id,
-          id: newSecret.id,
-          name: newSecret.name.trim(),
-          value: newSecret.value?.trim(),
-          note: newSecret.note.trim(),
-        } as UpsertSecret
-      );
+    // Check for additions (new secrets without ID)
+    for (const currentSecret of currentSecrets) {
+      if (!currentSecret.id && currentSecret.name.trim()) {
+        // New secret - only add if it has a value
+        if (currentSecret.value && currentSecret.value.trim()) {
+          secretsData.push({
+            name: currentSecret.name,
+            value: currentSecret.value.trim(),
+          });
+        }
+      }
+    }
+
+    try {
+      const response = await apiClient.post<SecretItem[]>(`/secrets`, {
+        application_id: appId,
+        secrets: secretsData,
+      });
 
       if (!response.success) {
         toast.error(response.message);
         return;
       }
 
-      setApplications(
-        applications.map((app) => {
-          if (app.id !== newSecret.application_id) return app;
-          return {
-            ...app,
-            secrets: app.secrets?.map((s) =>
-              s.id === newSecret.id ? response.data : s
-            ),
-          };
-        })
-      );
-      toast.success("Secret updated successfully");
-    } else {
-      const errors = {
-        name: !newSecret.name.trim(),
-        value: !newSecret.value?.trim(),
-      };
-
-      setValidationErrors(errors);
-      if (Object.values(errors).some((error) => error)) {
-        toast("Please fix the following errors:", {
-          description: (
-            <ul className="list-disc pl-4">
-              {errors.name && <li>Name: This field is required.</li>}
-              {errors.value && <li>Secret value: This field is required.</li>}
-            </ul>
-          ),
-        });
-        return;
-      }
-
-      const response = await apiClient.post<SecretItem>("/secrets", {
-        application_id: newSecret.application_id,
-        name: newSecret.name.trim(),
-        value: newSecret.value?.trim(),
-        note: newSecret.note.trim(),
-      } as UpsertSecret);
-
-      if (!response.success) {
-        toast.error(response.message);
-        return;
-      }
-
-      setApplications(
-        applications.map((app) =>
-          app.id === newSecret.application_id
-            ? { ...app, secrets: [...(app.secrets || []), response.data] }
-            : app
+      // Update the applications state with the new secrets
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === appId ? { ...app, secrets: response.data } : app
         )
       );
-      toast.success("Secret added successfully");
+
+      // Update the original secrets for future comparisons
+      setOriginalSecrets((prev) => ({
+        ...prev,
+        [appId]: [...response.data],
+      }));
+
+      // Update the form secrets state with the returned secrets
+      setAppSecrets((prev) => ({
+        ...prev,
+        [appId]: response.data.map((secret) => ({
+          id: secret.id,
+          name: secret.name,
+          value: "",
+          masked_value: secret.masked_value,
+        })),
+      }));
+
+      setUnsavedChanges((prev) => ({ ...prev, [appId]: false }));
+      toast.success("Secrets updated successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save secrets");
+    } finally {
+      setSaveLoading((prev) => ({ ...prev, [appId]: false }));
     }
-
-    setIsDialogOpen(false);
   };
 
-  const handleDeleteSecret = async (
-    secretId: string | undefined,
-    appId: string
-  ) => {
-    const response = await apiClient.delete<SecretItem>(
-      `/secrets/${secretId}`,
-      {
-        application_id: appId,
-      } as DeleteSecret
+  if (applications.length === 0) {
+    return (
+      <div className="w-full space-y-6">
+        <div className="text-center space-y-4 p-8 border rounded-lg">
+          <div className="text-sm text-muted-foreground">
+            Add your web application to start using secrets.
+          </div>
+          <Link href="/applications">
+            <Button data-umami-event="secrets-applications">
+              Add Application
+            </Button>
+          </Link>
+        </div>
+      </div>
     );
-
-    if (!response.success) {
-      toast.error(response.message);
-      return;
-    }
-
-    setApplications(
-      applications.map((app) => {
-        if (app.id !== appId) return app;
-        return {
-          ...app,
-          secrets: app.secrets && app.secrets.filter((s) => s.id !== secretId),
-        };
-      })
-    );
-    toast.success("Secret deleted successfully");
-  };
-
-  const appUsingAllowedAllDomains = (app: Application) => {
-    return app.targetDomains?.some((domain) => domain === "*");
-  };
+  }
 
   return (
-    <>
-      <div className="space-y-6">
-        {applications.length === 0 && (
-          <Card className="text-center py-8 px-4">
-            <div className="text-sm text-muted-foreground mb-4">
-              No applications found. Add your web applications before using
-              secrets.
-            </div>
-            <Link href="/applications">
-              <Button data-umami-event="secrets-applications">
-                Add Application
-              </Button>
-            </Link>
-          </Card>
-        )}
-        {applications.map((app) => (
+    <div className="w-full space-y-6">
+      {applications.map((app) => {
+        const secrets = appSecrets[app.id] || [];
+        const hasUnsavedChanges = unsavedChanges[app.id];
+        const secretCount = app.secrets?.length || 0;
+        const hasNoTargetDomains = app.targetDomains?.includes("*");
+
+        return (
           <Card key={app.id} className="w-full">
-            <CardHeader className="pb-2">
-              <div className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-xl">{app.name}</CardTitle>
-                  <CardDescription>
-                    {app.secrets?.length ? app.secrets.length : 0} secret(s){" "}
-                    <br />
-                  </CardDescription>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-2">
+                  <div>{app.name}&apos;s secrets</div>
+                  <div className="text-sm font-normal text-muted-foreground">
+                    ({secretCount} {secretCount === 1 ? "secret" : "secrets"})
+                  </div>
                 </div>
-                <Button size="sm" onClick={() => startAdding(app.id)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Secret
-                </Button>
-              </div>
-              {appUsingAllowedAllDomains(app) && (
-                <span className="text-sm text-yellow-600">
+                <div className="flex gap-2 items-center">
+                  {hasUnsavedChanges && (
+                    <span className="text-sm text-amber-600">
+                      Unsaved changes
+                    </span>
+                  )}
+                  <Button
+                    onClick={() => handleSaveSecrets(app.id)}
+                    disabled={!hasUnsavedChanges || saveLoading[app.id]}
+                  >
+                    {saveLoading[app.id] ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </CardTitle>
+              {hasNoTargetDomains && (
+                <div className="text-sm text-yellow-600">
                   Warning: Protect your secrets from being leaked by specifying
                   target domains for this application.
-                </span>
-              )}
-            </CardHeader>
-            <CardContent>
-              {app.secrets && app.secrets.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-1/3">Name</TableHead>
-                      <TableHead className="w-2/3">Notes</TableHead>
-                      <TableHead className="w-[100px] text-right">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {app.secrets.map((secret) => (
-                      <TableRow key={secret.id}>
-                        <TableCell className="font-mono font-medium">
-                          {secret.name}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {secret.note ? (
-                            <span className="line-clamp-2">{secret.note}</span>
-                          ) : (
-                            <span className="text-muted-foreground/50 italic">
-                              No notes
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              data-umami-event="secret-edit"
-                              variant="outline"
-                              size="icon"
-                              onClick={() => startEditing(secret)}
-                              title="Edit Secret"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  data-umami-event="application-delete"
-                                  variant="destructive"
-                                  size="icon"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="mx-1">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Are you sure?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will
-                                    permanently delete the secret.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() =>
-                                      handleDeleteSecret(
-                                        secret.id,
-                                        secret.application_id
-                                      )
-                                    }
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  No secrets found for this application.
                 </div>
               )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                {secrets.length > 0 && (
+                  <div className="flex gap-2 items-start">
+                    <div className="w-1/2 md:w-1/4">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Name
+                      </label>
+                    </div>
+                    <div className="w-1/2 md:w-3/4">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Value
+                      </label>
+                    </div>
+                  </div>
+                )}
+                {secrets.map((secret, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <div className="w-1/2 md:w-1/4">
+                      <Input
+                        value={secret.name}
+                        onChange={(e) =>
+                          updateSecretRow(app.id, index, "name", e.target.value)
+                        }
+                        placeholder="API_KEY"
+                        className="font-mono font-bold"
+                        maxLength={64}
+                      />
+                    </div>
+                    <div className="w-1/2 md:w-3/4">
+                      <Input
+                        value={secret.value}
+                        onChange={(e) =>
+                          updateSecretRow(
+                            app.id,
+                            index,
+                            "value",
+                            e.target.value
+                          )
+                        }
+                        placeholder={
+                          secret.id && secret.masked_value
+                            ? secret.masked_value
+                            : secret.id
+                            ? "Leave empty to keep current value"
+                            : "your-secret-value"
+                        }
+                        className="font-mono"
+                        maxLength={255}
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteSecretRow(app.id, index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex">
+                <Button
+                  variant="outline"
+                  onClick={() => addNewSecretRow(app.id)}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add new
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
-      {/* Add/Edit Secret Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {isEditing ? "Edit Secret" : "Add Secret"}
-            </DialogTitle>
-            <DialogDescription>
-              {isEditing
-                ? "Modify the details of your existing secret."
-                : "Add a new secret to your application."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-5 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="application">Application</Label>
-              <Select defaultValue={newSecret.application_id} disabled>
-                <SelectTrigger id="application">
-                  <SelectValue>
-                    {
-                      applications.find(
-                        (app) => app.id == newSecret.application_id
-                      )?.name
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {applications.map((app) => (
-                    <SelectItem key={app.id} value={app.id}>
-                      {app.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">Secret Name</Label>
-              <p className="text-sm text-muted-foreground">
-                Valid characters: A-Z, 0-9, _ (underscore).
-              </p>
-              <Input
-                id="name"
-                name="name"
-                value={newSecret.name}
-                onChange={handleInputChange}
-                placeholder="API_KEY"
-                className="font-mono"
-                maxLength={64}
-              />
-              {validationErrors.name && (
-                <p className="text-xs text-red-500">Name is required</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="value">Secret Value</Label>
-              {isEditing && (
-                <p className="text-sm text-muted-foreground">
-                  Leave empty to use existing value.
-                </p>
-              )}
-              <Input
-                id="value"
-                name="value"
-                value={newSecret.value}
-                onChange={handleInputChange}
-                placeholder={
-                  applications
-                    .find((app) => app.id == newSecret.application_id)
-                    ?.secrets?.find((s) => s.id == newSecret.id)
-                    ?.masked_value || "your-secret-value"
-                }
-                className="font-mono"
-                maxLength={255}
-              />
-              {validationErrors.value && (
-                <p className="text-xs text-red-500">Secret value is required</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="note">Notes (optional)</Label>
-              <Textarea
-                id="note"
-                name="note"
-                value={newSecret.note}
-                onChange={handleInputChange}
-                placeholder="Add any relevant notes about this secret..."
-                rows={3}
-                maxLength={255}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSaveSecret}
-              data-umami-event={
-                isEditing ? "save-edit-secret" : "save-new-secret"
-              }
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        );
+      })}
+    </div>
   );
 }
