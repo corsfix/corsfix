@@ -65,7 +65,7 @@ async function canManageSecrets(
   }
 
   // Free tier validation: only allow 1 secret in the request
-  if (context.newSecretsCount > 1) {
+  if (context.newSecretsCount > freeTierLimit.secret_count) {
     return {
       allowed: false,
       message: `Max ${freeTierLimit.secret_count} secrets per app on free tier. You're trying to add ${context.newSecretsCount} secrets. Upgrade for higher limits.`,
