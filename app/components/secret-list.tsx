@@ -115,6 +115,39 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     const currentSecrets = appSecrets[appId] || [];
     const originalSecretsForApp = originalSecrets[appId] || [];
 
+    // Validation
+    const errors: string[] = [];
+    const secretNames = new Set<string>();
+
+    for (const secret of currentSecrets) {
+      if (!secret.name.trim()) continue; // Skip empty names
+
+      // Check for duplicate names
+      if (secretNames.has(secret.name)) {
+        errors.push(`Duplicate secret name: ${secret.name}`);
+      }
+      secretNames.add(secret.name);
+
+      // Check if new secret without value
+      if (!secret.id && (!secret.value || !secret.value.trim())) {
+        errors.push(`New secret "${secret.name}" must have a value`);
+      }
+    }
+
+    if (errors.length > 0) {
+      toast("Please fix the following errors:", {
+        description: (
+          <ul className="list-disc pl-4">
+            {errors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ),
+      });
+      setSaveLoading((prev) => ({ ...prev, [appId]: false }));
+      return;
+    }
+
     // Create maps for easier comparison using ID as key
     const originalSecretsMap = new Map(
       originalSecretsForApp.map((secret) => [secret.id!, secret])
