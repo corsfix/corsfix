@@ -182,21 +182,11 @@ export default function SecretList({ initialApplications }: SecretListProps) {
       const originalSecret = originalSecretsMap.get(id);
 
       if (originalSecret) {
-        // Existing secret - update if value is provided (empty means keep current)
-        if (currentSecret.value?.trim()) {
-          secretsData.push({
-            id: currentSecret.id,
-            name: currentSecret.name,
-            value: currentSecret.value.trim(),
-          });
-        } else if (originalSecret.name !== currentSecret.name) {
-          // Name changed but no value - just update name
-          secretsData.push({
-            id: currentSecret.id,
-            name: currentSecret.name,
-            value: null,
-          });
-        }
+        secretsData.push({
+          id: currentSecret.id,
+          name: currentSecret.name,
+          value: currentSecret.value.trim(),
+        });
       }
     }
 
@@ -262,7 +252,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     return (
       <div className="w-full space-y-6">
         <div className="text-center space-y-4 p-8 border rounded-lg">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground mb-2">
             Add your web application to start using secrets.
           </div>
           <Link href="/applications">

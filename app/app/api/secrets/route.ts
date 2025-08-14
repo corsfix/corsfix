@@ -26,20 +26,25 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     const idToken = getUserId(session);
 
-    const authz = await authorize(idToken, "add_secrets");
-    if (!authz.allowed) {
+    const json = await request.json();
+    const body = ManageSecretsSchema.parse(json);
+
+    // Authorization check for managing secrets
+    const newSecretsCount = body.secrets.filter((s) => !s.delete).length;
+    const authResult = await authorize(idToken, "manage_secrets", {
+      newSecretsCount,
+    });
+
+    if (!authResult.allowed) {
       return NextResponse.json<ApiResponse<null>>(
         {
           data: null,
-          message: authz.message || "Unauthorized",
+          message: authResult.message || "Not authorized to manage secrets",
           success: false,
         },
         { status: 403 }
       );
     }
-
-    const json = await request.json();
-    const body = ManageSecretsSchema.parse(json);
 
     // Validation
     const errors: string[] = [];
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     for (const secret of body.secrets) {
       if (!secret.name.trim()) continue; // Skip empty names
-      
+
       // Check for duplicate names
       if (secretNames.has(secret.name)) {
         errors.push(`Duplicate secret name: ${secret.name}`);
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           data: null,
-          message: errors.join(', '),
+          message: errors.join(", "),
           success: false,
         },
         { status: 400 }

@@ -33,10 +33,10 @@ function getCustomerCheckoutLink(
 
 const freeBenefits = [
   `${freeTierLimit.req_count} proxy requests`,
-  `${freeTierLimit.app_count} web application(s)`,
+  `Up to ${freeTierLimit.app_count} web applications`,
   `${formatBytes(freeTierLimit.bytes)} data transfer`,
   `${freeTierLimit.rpm} RPM (per IP)`,
-  `${freeTierLimit.secret_count} secret variable(s)`,
+  `${freeTierLimit.secret_count} secret (per app)`,
 ];
 
 const paidBenefits = [

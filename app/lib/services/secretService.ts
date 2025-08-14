@@ -165,16 +165,6 @@ export async function secretExistsForApplication(
   return !!existingSecret;
 }
 
-export async function countSecret(user_id: string) {
-  await dbConnect();
-
-  const secretCount = await SecretEntity.countDocuments({
-    user_id: user_id,
-  }).lean();
-
-  return secretCount;
-}
-
 export async function getSecretsForApplication(
   user_id: string,
   application_id: string
