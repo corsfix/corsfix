@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       secretNames.add(secret.name);
 
       // Check if new secret (no ID) without value
-      if (!secret.id && (!secret.value || !secret.value.trim())) {
+      if (!secret.id && !secret.value?.trim()) {
         errors.push(`New secret "${secret.name}" must have a value`);
       }
     }

@@ -129,7 +129,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
       secretNames.add(secret.name);
 
       // Check if new secret without value
-      if (!secret.id && (!secret.value || !secret.value.trim())) {
+      if (!secret.id && !secret.value?.trim()) {
         errors.push(`New secret "${secret.name}" must have a value`);
       }
     }
@@ -183,7 +183,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
 
       if (originalSecret) {
         // Existing secret - update if value is provided (empty means keep current)
-        if (currentSecret.value && currentSecret.value.trim()) {
+        if (currentSecret.value?.trim()) {
           secretsData.push({
             id: currentSecret.id,
             name: currentSecret.name,
@@ -204,7 +204,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     for (const currentSecret of currentSecrets) {
       if (!currentSecret.id && currentSecret.name.trim()) {
         // New secret - only add if it has a value
-        if (currentSecret.value && currentSecret.value.trim()) {
+        if (currentSecret.value?.trim()) {
           secretsData.push({
             name: currentSecret.name,
             value: currentSecret.value.trim(),

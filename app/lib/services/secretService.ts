@@ -229,7 +229,7 @@ export async function manageApplicationSecrets(
         existingSecret.name = secretData.name;
 
         // Update value if provided
-        if (secretData.value && secretData.value.trim()) {
+        if (secretData.value?.trim()) {
           const dek = crypto.randomBytes(32).toString("base64");
           const encryptedData = await encrypt(secretData.value, dek);
           const encryptedDek = await encrypt(dek, kek);
@@ -242,7 +242,7 @@ export async function manageApplicationSecrets(
 
         await existingSecret.save();
       }
-    } else if (secretData.value && secretData.value.trim()) {
+    } else if (secretData.value?.trim()) {
       // Create new secret (no ID, has value)
       const dek = crypto.randomBytes(32).toString("base64");
       const encryptedData = await encrypt(secretData.value, dek);
