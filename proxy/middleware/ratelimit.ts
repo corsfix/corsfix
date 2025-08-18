@@ -31,7 +31,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       return res
         .status(403)
         .end(
-          `Corsfix: No application found for this domain (${domain}). Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)`
+          `Corsfix: Please add your website domain (${domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
@@ -65,7 +65,7 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       return res
         .status(403)
         .end(
-          `Corsfix: No application found for this domain (${domain}). Check the documentation for adding applications. (https://corsfix.com/docs/dashboard/application)`
+          `Corsfix: Please add your website domain (${domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
