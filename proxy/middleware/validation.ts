@@ -15,7 +15,7 @@ export const validateOriginHeader = (
     return res
       .status(400)
       .end(
-        "Corsfix: This CORS proxy is intended for use with fetch/AJAX requests in your JavaScript code, not as a generic web proxy. ((https://corsfix.com/docs/cors-proxy/api))"
+        "Corsfix: This CORS proxy is intended for use with fetch/AJAX requests in your JavaScript code, not as a generic web proxy. (https://corsfix.com/docs/cors-proxy/api)"
       );
   }
   req.ctx_origin = origin;
