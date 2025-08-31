@@ -1,5 +1,18 @@
-import { afterAll, beforeAll, expect, test } from "vitest";
+import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { app } from "./app";
+
+// Mock the cacheService before importing app
+vi.mock("./lib/services/cacheService", () => ({
+  initRedis: vi.fn().mockResolvedValue(undefined),
+  getRedisClient: vi.fn().mockReturnValue({
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+    incr: vi.fn(),
+    expire: vi.fn(),
+    exists: vi.fn(),
+  }),
+}));
 
 const PORT = 8090;
 
