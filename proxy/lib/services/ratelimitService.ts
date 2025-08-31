@@ -13,43 +13,22 @@ interface RateLimitResult {
 
 const SYNC_THRESHOLD = 10;
 
-const redisClient = getRedisClient();
-
 const rpm60 = new RateLimiterMemory({
   points: 60,
   duration: 60,
 });
-
-const rpm60Redis = new RateLimiterRedis({
-  points: 60,
-  duration: 60,
-  storeClient: redisClient,
-  keyPrefix: "rpm60",
-});
-
 const rpm120 = new RateLimiterMemory({
   points: 120,
   duration: 60,
 });
-
-const rpm120Redis = new RateLimiterRedis({
-  points: 120,
-  duration: 60,
-  storeClient: redisClient,
-  keyPrefix: "rpm120",
-});
-
 const rpm180 = new RateLimiterMemory({
   points: 180,
   duration: 60,
 });
 
-const rpm180Redis = new RateLimiterRedis({
-  points: 180,
-  duration: 60,
-  storeClient: redisClient,
-  keyPrefix: "rpm180",
-});
+let rpm60Redis: RateLimiterRedis;
+let rpm120Redis: RateLimiterRedis;
+let rpm180Redis: RateLimiterRedis;
 
 const consumeSyncRedis = async (
   rateLimiterMemory: RateLimiterMemory,
@@ -148,4 +127,29 @@ const getRateLimitHeaders = (rateLimiterRes: RateLimiterRes, rpm: number) => {
       .getTime()
       .toString(),
   };
+};
+
+export const registerGlobalRateLimiter = () => {
+  const redisClient = getRedisClient();
+
+  rpm60Redis = new RateLimiterRedis({
+    points: 60,
+    duration: 60,
+    storeClient: redisClient,
+    keyPrefix: "rpm60",
+  });
+
+  rpm120Redis = new RateLimiterRedis({
+    points: 120,
+    duration: 60,
+    storeClient: redisClient,
+    keyPrefix: "rpm120",
+  });
+
+  rpm180Redis = new RateLimiterRedis({
+    points: 180,
+    duration: 60,
+    storeClient: redisClient,
+    keyPrefix: "rpm180",
+  });
 };

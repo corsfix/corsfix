@@ -4,6 +4,7 @@ import { registerAppInvalidateCacheHandlers } from "./lib/services/applicationSe
 import { initRedis } from "./lib/services/cacheService";
 import { registerMetricShutdownHandlers } from "./lib/services/metricService";
 import { initPubSub } from "./lib/services/pubSubService";
+import { registerGlobalRateLimiter } from "./lib/services/ratelimitService";
 
 import "dotenv/config";
 
@@ -11,11 +12,14 @@ const PORT = 80;
 
 (async () => {
   await dbConnect();
+
   await initRedis();
+  registerGlobalRateLimiter();
+
   await initPubSub();
+  registerAppInvalidateCacheHandlers();
 
   registerMetricShutdownHandlers();
-  registerAppInvalidateCacheHandlers();
 
   app
     .listen(PORT)
