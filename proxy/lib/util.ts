@@ -150,7 +150,7 @@ export const proxyFetch = async (
         const url = new URL(origin || "");
 
         if (!["http:", "https:"].includes(url.protocol)) {
-          opts.origin = `http://127.0.0.1:`;
+          opts.origin = `http://127.0.0.1`;
           opts.path = "/error";
         }
 
@@ -165,7 +165,7 @@ export const proxyFetch = async (
             "reserved",
           ].includes(range)
         ) {
-          opts.origin = `http://127.0.0.1:`;
+          opts.origin = `http://127.0.0.1`;
           opts.path = "/error";
         }
 
