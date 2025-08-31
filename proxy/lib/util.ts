@@ -143,8 +143,6 @@ export const proxyFetch = async (
   input: RequestInfo,
   init?: RequestInit
 ): Promise<Response> => {
-  const port = (input as URL).port;
-
   let dispatcher = new EnvHttpProxyAgent().compose([
     (dispatch: Dispatcher.Dispatch) => {
       return (opts, handler) => {
@@ -152,7 +150,7 @@ export const proxyFetch = async (
         const url = new URL(origin || "");
 
         if (!["http:", "https:"].includes(url.protocol)) {
-          opts.origin = `http://127.0.0.1:${port}`;
+          opts.origin = `http://127.0.0.1:`;
           opts.path = "/error";
         }
 
@@ -167,7 +165,7 @@ export const proxyFetch = async (
             "reserved",
           ].includes(range)
         ) {
-          opts.origin = `http://127.0.0.1:${port}`;
+          opts.origin = `http://127.0.0.1:`;
           opts.path = "/error";
         }
 
