@@ -8,6 +8,7 @@
     "start:app": "pnpm --filter app start",
     "dev:proxy": "pnpm --filter proxy dev",
     "build:proxy": "pnpm --filter proxy build",
-    "start:proxy": "pnpm --filter proxy start"
+    "start:proxy": "pnpm --filter proxy start",
+    "test:proxy": "pnpm --filter proxy test"
   }
 }
