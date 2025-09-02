@@ -66,7 +66,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       lowerKey != "origin" &&
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
-      !lowerKey.startsWith("x-forwarded-")
+      !lowerKey.startsWith("x-forwarded-") &&
+      !(callback && lowerKey == "accept-encoding")
     ) {
       filteredHeaders[key] = value;
     }
@@ -156,21 +157,42 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       return res.end();
     } else {
       // JSONP request
-      let bodyBase64 = "";
+      let body;
+      let type: "json" | "text" | "base64" | "empty" = "empty";
       if (response.body) {
         const contentLength = response.headers.get("content-length");
         if (contentLength && parseInt(contentLength) > 3 * 1024 * 1024) {
           throw new Error("Response body too large for JSONP (max 3MB)");
         }
 
-        const bodyBuffer = Buffer.from(await response.arrayBuffer());
+        const buf = await response.arrayBuffer();
 
         // Check actual buffer size in case content-length header was missing
-        if (bodyBuffer.length > 3 * 1024 * 1024) {
+        if (buf.byteLength > 3 * 1024 * 1024) {
           throw new Error("Response body too large for JSONP (max 3MB)");
         }
 
-        bodyBase64 = bodyBuffer.toString("base64");
+        // Detect content type and set body value
+        const decoder = new TextDecoder("utf-8", { fatal: true });
+        try {
+          const text = decoder.decode(buf);
+          // Try to parse as JSON first
+          try {
+            const json = JSON.parse(text);
+            type = "json";
+            body = json;
+          } catch {
+            // If not JSON, use as text
+            type = "text";
+            body = text;
+          }
+        } catch {
+          // If text decoding fails, treat as binary and base64 encode
+          type = "base64";
+          body = Buffer.from(buf).toString("base64");
+        }
+      } else {
+        body = "";
       }
 
       const headersObject: Record<string, string> = {};
@@ -181,7 +203,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       const json = JSON.stringify({
         status: response.status,
         headers: headersObject,
-        body: bodyBase64,
+        type: type,
+        body: body,
       });
       res.header("content-type", "application/javascript");
       return res.send(`${callback}(${json})`);
