@@ -20,6 +20,8 @@ import { handleFreeTier } from "./middleware/free";
 
 const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
 
+const decoder = new TextDecoder("utf-8", { fatal: true });
+
 export const app = new Server({
   max_body_length: 10 * 1024 * 1024,
   fast_abort: true,
@@ -178,7 +180,6 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
         }
 
         // Detect content type and set body value
-        const decoder = new TextDecoder("utf-8", { fatal: true });
         try {
           const text = decoder.decode(buf);
           // Try to parse as JSON first
