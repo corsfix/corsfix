@@ -53,7 +53,7 @@ app.use("/", handleFreeTier);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const { url: targetUrl, callback } = getProxyRequest(req);
-  const origin = req.header("Origin");
+  const origin = req.ctx_origin || "";
 
   const hasCacheHeader = "x-corsfix-cache" in req.headers;
   req.ctx_cache = hasCacheHeader;

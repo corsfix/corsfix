@@ -12,7 +12,7 @@ import { checkRateLimit } from "../lib/services/ratelimitService";
 import { freeTierLimit, IS_SELFHOST } from "../config/constants";
 
 export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
-  const origin = req.header("Origin");
+  const origin = req.ctx_origin || "";
   const domain = new URL(origin).hostname;
   const { url } = getProxyRequest(req);
 

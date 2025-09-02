@@ -8,7 +8,9 @@ export const validateOriginHeader = (
   next: MiddlewareNext
 ) => {
   const origin = req.header("Origin");
-  if (!req.ctx_origin && isValidUrl(origin)) {
+  if (req.ctx_origin) {
+    next();
+  } else if (isValidUrl(origin)) {
     req.ctx_origin = origin;
     next();
   } else {
