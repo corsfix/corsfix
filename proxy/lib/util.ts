@@ -15,7 +15,7 @@ import { config } from "../config/constants";
 
 interface ProxyRequest {
   url: URL;
-  ignore_ssl?: boolean;
+  callback?: string;
 }
 
 export function isLocalOrigin(origin: string): boolean {
@@ -39,6 +39,15 @@ export function isRegisteredOrigin(origin: string, url: string): boolean {
   );
 }
 
+export const isValidUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 const processUrlString = (urlString: string): URL => {
   const processedUrl = /^https?:\/\//.test(urlString)
     ? urlString
@@ -48,16 +57,18 @@ const processUrlString = (urlString: string): URL => {
 
 export const getProxyRequest = (req: Request): ProxyRequest => {
   let inputUrl: string;
+  let callback: string | undefined;
 
   if (req.path !== "/") {
     inputUrl = req.path.substring(1);
   } else if ("url" in req.query_parameters) {
     inputUrl = req.query_parameters.url;
+    callback = req.query_parameters.callback;
   } else {
     inputUrl = req.path_query;
   }
 
-  return { url: processUrlString(inputUrl) };
+  return { url: processUrlString(inputUrl), callback: callback };
 };
 
 export const getPreviousMidnightEpoch = (): number => {

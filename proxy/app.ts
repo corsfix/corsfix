@@ -7,9 +7,10 @@ import {
 } from "./lib/util";
 import { getApplication } from "./lib/services/applicationService";
 import {
+  validateJsonpRequest,
   validateOriginHeader,
   validatePayloadSize,
-  validateUrl,
+  validateTargetUrl,
 } from "./middleware/validation";
 import { handlePreflight } from "./middleware/preflight";
 import { handleRateLimit } from "./middleware/ratelimit";
@@ -39,9 +40,10 @@ app.use("/", (req: Request, res: Response, next: MiddlewareNext) => {
 });
 
 app.use("/", handleMetrics);
-app.use("/", validatePayloadSize);
 
-app.use("/", validateUrl);
+app.use("/", validatePayloadSize);
+app.use("/", validateTargetUrl);
+app.use("/", validateJsonpRequest);
 app.use("/", validateOriginHeader);
 
 app.use("/", handlePreflight);
@@ -50,7 +52,7 @@ app.use("/", handleRateLimit);
 app.use("/", handleFreeTier);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
-  const { url: targetUrl } = getProxyRequest(req);
+  const { url: targetUrl, callback } = getProxyRequest(req);
   const origin = req.header("Origin");
 
   const hasCacheHeader = "x-corsfix-cache" in req.headers;
@@ -110,8 +112,10 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       responseHeaders.set(key, value);
     }
 
-    responseHeaders.set("Access-Control-Allow-Origin", origin);
-    responseHeaders.set("Access-Control-Expose-Headers", "*");
+    if (!callback) {
+      responseHeaders.set("Access-Control-Allow-Origin", origin);
+      responseHeaders.set("Access-Control-Expose-Headers", "*");
+    }
 
     responseHeaders.delete("content-encoding");
     responseHeaders.delete("transfer-encoding");
@@ -119,7 +123,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     responseHeaders.delete("set-cookie");
     responseHeaders.delete("set-cookie2");
 
-    if (hasCacheHeader) {
+    if (hasCacheHeader && !callback) {
       responseHeaders.delete("expires");
       responseHeaders.set("Cache-Control", "public, max-age=3600");
     }
@@ -129,25 +133,59 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       responseHeaders.set("Cache-Control", "no-store");
     }
 
-    res.status(response.status);
+    if (!callback) {
+      // CORS request
+      res.status(response.status);
 
-    for (const [key, value] of responseHeaders.entries()) {
-      res.header(key, value);
-    }
-
-    if (response.body) {
-      const reader = response.body.getReader();
-      let bytes = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-        bytes += value.length;
+      for (const [key, value] of responseHeaders.entries()) {
+        res.header(key, value);
       }
-      req.ctx_bytes = bytes;
-    }
 
-    return res.end();
+      if (response.body) {
+        const reader = response.body.getReader();
+        let bytes = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+          bytes += value.length;
+        }
+        req.ctx_bytes = bytes;
+      }
+
+      return res.end();
+    } else {
+      // JSONP request
+      let bodyBase64 = "";
+      if (response.body) {
+        const contentLength = response.headers.get("content-length");
+        if (contentLength && parseInt(contentLength) > 3 * 1024 * 1024) {
+          throw new Error("Response body too large for JSONP (max 3MB)");
+        }
+
+        const bodyBuffer = Buffer.from(await response.arrayBuffer());
+
+        // Check actual buffer size in case content-length header was missing
+        if (bodyBuffer.length > 3 * 1024 * 1024) {
+          throw new Error("Response body too large for JSONP (max 3MB)");
+        }
+
+        bodyBase64 = bodyBuffer.toString("base64");
+      }
+
+      const headersObject: Record<string, string> = {};
+      for (const [key, value] of responseHeaders.entries()) {
+        headersObject[key] = value;
+      }
+
+      const json = JSON.stringify({
+        status: response.status,
+        headers: headersObject,
+        body: bodyBase64,
+      });
+      res.header("content-type", "application/javascript");
+      return res.send(`${callback}(${json})`);
+    }
   } catch (error: unknown) {
     const { name, message, cause } = error as Error;
     if (name === "AbortError" || name === "TimeoutError") {

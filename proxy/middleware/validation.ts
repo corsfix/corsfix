@@ -1,5 +1,5 @@
 import { MiddlewareNext, Request, Response } from "hyper-express";
-import { getProxyRequest } from "../lib/util";
+import { getProxyRequest, isValidUrl } from "../lib/util";
 import { CorsfixRequest } from "../types/api";
 
 export const validateOriginHeader = (
@@ -8,9 +8,10 @@ export const validateOriginHeader = (
   next: MiddlewareNext
 ) => {
   const origin = req.header("Origin");
-  try {
-    new URL(origin);
-  } catch (error) {
+  if (!req.ctx_origin && isValidUrl(origin)) {
+    req.ctx_origin = origin;
+    next();
+  } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
     return res
       .status(400)
@@ -18,11 +19,23 @@ export const validateOriginHeader = (
         "Corsfix: Missing or invalid Origin header. This CORS proxy is intended for use with fetch/AJAX requests in your JavaScript code, not as a generic web proxy. (https://corsfix.com/docs/cors-proxy/api)"
       );
   }
-  req.ctx_origin = origin;
+};
+
+export const validateJsonpRequest = (
+  req: CorsfixRequest,
+  res: Response,
+  next: MiddlewareNext
+) => {
+  const referer = req.header("Referer");
+  const secFetchDest = req.header("Sec-Fetch-Dest");
+
+  if (isValidUrl(referer) && secFetchDest === "script") {
+    req.ctx_origin = referer;
+  }
   next();
 };
 
-export const validateUrl = (
+export const validateTargetUrl = (
   req: Request,
   res: Response,
   next: MiddlewareNext
