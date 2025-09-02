@@ -31,9 +31,19 @@ export const validateJsonpRequest = (
   const referer = req.header("Referer");
   const secFetchDest = req.header("Sec-Fetch-Dest");
 
-  if (isValidUrl(referer) && secFetchDest === "script") {
-    req.ctx_origin = referer;
+  if (secFetchDest === "script") {
+    if (isValidUrl(referer)) {
+      req.ctx_origin = referer;
+    } else {
+      // invalid jsonp use
+      return res
+        .status(400)
+        .end(
+          "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
+        );
+    }
   }
+
   next();
 };
 
