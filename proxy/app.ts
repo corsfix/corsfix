@@ -69,7 +69,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
       !lowerKey.startsWith("x-forwarded-") &&
-      !(callback && lowerKey == "accept-encoding")
+      !(callback && lowerKey === "accept-encoding")
     ) {
       filteredHeaders[key] = value;
     }
