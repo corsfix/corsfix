@@ -18,6 +18,8 @@ import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
 import { handleFreeTier } from "./middleware/free";
 
+const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
+
 export const app = new Server({
   max_body_length: 10 * 1024 * 1024,
   fast_abort: true,
@@ -161,14 +163,17 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       let type: "json" | "text" | "base64" | "empty" = "empty";
       if (response.body) {
         const contentLength = response.headers.get("content-length");
-        if (contentLength && parseInt(contentLength) > 3 * 1024 * 1024) {
+        if (
+          contentLength &&
+          parseInt(contentLength) > MAX_JSONP_RESPONSE_SIZE
+        ) {
           throw new Error("Response body too large for JSONP (max 3MB)");
         }
 
         const buf = await response.arrayBuffer();
 
         // Check actual buffer size in case content-length header was missing
-        if (buf.byteLength > 3 * 1024 * 1024) {
+        if (buf.byteLength > MAX_JSONP_RESPONSE_SIZE) {
           throw new Error("Response body too large for JSONP (max 3MB)");
         }
 
