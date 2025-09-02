@@ -60,9 +60,8 @@ test("return preflight headers if options request", async () => {
   expect(result.status).toBe(204);
 });
 
-test("basic proxy request", async () => {
+test("proxy request (query string)", async () => {
   const origin = "http://127.0.0.1:3000";
-
   const targetUrl = `https://httpbin.agrd.workers.dev/get`;
 
   const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
@@ -71,4 +70,75 @@ test("basic proxy request", async () => {
     },
   });
   expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+});
+
+test("proxy request (query param)", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/?url=${targetUrl}`, {
+    headers: {
+      Origin: origin,
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+});
+
+test("proxy request (path)", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
+    headers: {
+      Origin: origin,
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+});
+
+test("jsonp request", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+  const result = await fetch(
+    `http://127.0.0.1:${PORT}/?url=${encodeURIComponent(
+      targetUrl
+    )}&callback=test`,
+    {
+      headers: {
+        Referer: origin,
+        "Sec-Fetch-Dest": "script",
+      },
+    }
+  );
+  const data = await result.text();
+
+  // Check if it returns the callback function
+  expect(data).toMatch(/^test\(/);
+  expect(data).toMatch(/\)$/);
+
+  // Check if the JSON object has status 200
+  expect(data).toContain('"status":200');
+});
+
+test("invalid jsonp request without referer", async () => {
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+  const result = await fetch(
+    `http://127.0.0.1:${PORT}/?url=${encodeURIComponent(
+      targetUrl
+    )}&callback=test`,
+    {
+      headers: {
+        "Sec-Fetch-Dest": "script",
+      },
+    }
+  );
+  const text = await result.text();
+
+  expect(text).toContain("invalid Referer header");
+  expect(result.status).toBe(400);
 });
