@@ -33,7 +33,7 @@ export const validateJsonpRequest = (
 
   if (secFetchDest === "script") {
     if (isValidUrl(referer)) {
-      req.ctx_origin = referer;
+      req.ctx_origin = new URL(referer).origin;
     } else {
       // invalid jsonp use
       return res
