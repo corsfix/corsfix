@@ -13,7 +13,7 @@ import { ExternalLink, NotepadText } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
-import { freeTierLimit, IS_CLOUD } from "@/config/constants";
+import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
   title: "Get Started | Corsfix Dashboard",
@@ -30,10 +30,10 @@ export default async function GetStarted() {
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
-    subscription = { active: false, name: "Free" };
+    subscription = { active: false, name: "Trial" };
   }
 
-  const isFreePlan = !subscription.active || subscription.name === "Free";
+  const isFreePlan = !subscription.active || subscription.name === "Trial";
 
   return (
     <>
@@ -75,11 +75,12 @@ export default async function GetStarted() {
                   <p className="text-sm text-muted-foreground">
                     Add Corsfix proxy in your code, no API keys required.
                   </p>
-                  <div className="my-6 md:mb-0">
+                  <div className="flex flex-wrap my-6 md:mb-0 gap-2">
                     <Link
-                      href="https://corsfix.com/docs/code-examples/fetch"
+                      href="https://corsfix.com/docs/code-examples/overview"
                       target="_blank"
                       data-umami-event="get-started-code-example"
+                      className="inline-block"
                     >
                       <Button variant="secondary">
                         Code examples{" "}
@@ -87,10 +88,10 @@ export default async function GetStarted() {
                       </Button>
                     </Link>
                     <Link
-                      href="https://corsfix.com/docs/platform/netlify"
+                      href="https://corsfix.com/docs/platform/overview"
                       target="_blank"
                       data-umami-event="get-started-platform-integrations"
-                      className="ml-2"
+                      className="inline-block"
                     >
                       <Button variant="secondary">
                         Hosting platform{" "}
@@ -165,7 +166,7 @@ fetch("https://proxy.corsfix.com/?" + url);`}
                 </CardTitle>
                 <CardDescription>
                   {isFreePlan
-                    ? `Try Corsfix wth ${freeTierLimit.req_count} free requests. Upgrade for unlimited requests and added benefits.`
+                    ? `Trial plan with limited access. Upgrade for unlimited requests and extra features.`
                     : "You have full access to Corsfix and all the benefits of your plan."}
                 </CardDescription>
               </CardHeader>
