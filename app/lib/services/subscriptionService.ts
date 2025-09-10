@@ -1,7 +1,7 @@
 import { Subscription } from "@/types/api";
 import dbConnect from "../dbConnect";
 import { SubscriptionEntity } from "@/models/SubscriptionEntity";
-import { config } from "@/config/constants";
+import { config, freeTierLimit } from "@/config/constants";
 
 export async function getActiveSubscription(
   user_id: string
@@ -15,9 +15,9 @@ export async function getActiveSubscription(
 
   if (!subscription) {
     return {
-      name: "free",
+      name: "trial",
       customer_id: user_id,
-      bandwidth: 50_000_000,
+      bandwidth: freeTierLimit.bytes,
       active: false,
     };
   }

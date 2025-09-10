@@ -1,6 +1,12 @@
-name: Node.js CI (Proxy)
+name: App CI
 
-on: [push]
+on:
+  push:
+    paths:
+      - "app/**"
+  pull_request:
+    paths:
+      - "app/**"
 
 jobs:
   build:
@@ -21,6 +27,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
       - name: Install dependencies
-        run: pnpm --filter proxy i
-      - run: pnpm run build:proxy
-      - run: pnpm run test:proxy
+        run: pnpm --filter app i
+      - run: pnpm run build:app

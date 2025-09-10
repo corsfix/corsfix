@@ -37,7 +37,7 @@ const generateMonthOptions = () => {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
     );
     const monthName = date.toLocaleString("default", {
-      month: "long",
+      month: "short",
       year: "numeric",
       timeZone: "UTC",
     });
@@ -213,7 +213,7 @@ export default function MetricsChart() {
             }
             onValueChange={handleRangeChange}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-28">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>

@@ -69,7 +69,7 @@ export default async function CreditsPage() {
     idToken = null;
     activeSubscription = {
       active: false,
-      name: "Free",
+      name: "trial",
       bandwidth: freeTierLimit.bytes,
     };
     bandwidthMtd = 0;
@@ -194,7 +194,7 @@ export default async function CreditsPage() {
             <h2 className="text-2xl font-bold mb-6">Plans</h2>
             <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
               <div
-                key={"free"}
+                key={"trial"}
                 className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
               >
                 <Card
@@ -205,7 +205,7 @@ export default async function CreditsPage() {
                 >
                   <CardHeader className="flex-none">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">Free</CardTitle>
+                      <CardTitle className="text-xl">Trial</CardTitle>
                       {isOnFreePlan && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                           Current Plan

@@ -35,7 +35,7 @@ export default async function ApplicationsPage() {
           Applications
         </h1>
         <p className="text-muted-foreground mb-1">
-          Add your website (origin) domain to start using Corsfix.
+          Add your domain to start using Corsfix in your website.
         </p>
         <Link
           href="https://corsfix.com/docs/dashboard/application"
