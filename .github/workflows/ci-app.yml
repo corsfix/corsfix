@@ -1,6 +1,9 @@
-name: Node.js CI (App)
+name: App CI
 
-on: [push]
+on:
+  push:
+    paths:
+      - "app/**"
 
 jobs:
   build:
