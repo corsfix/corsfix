@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - "proxy/**"
+  pull_request:
+    paths:
+      - "proxy/**"
 
 jobs:
   build:
