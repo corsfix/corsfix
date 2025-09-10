@@ -69,7 +69,7 @@ export default async function CreditsPage() {
     idToken = null;
     activeSubscription = {
       active: false,
-      name: "Trial",
+      name: "trial",
       bandwidth: freeTierLimit.bytes,
     };
     bandwidthMtd = 0;

@@ -30,10 +30,10 @@ export default async function GetStarted() {
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
-    subscription = { active: false, name: "Trial" };
+    subscription = { active: false, name: "trial" };
   }
 
-  const isFreePlan = !subscription.active || subscription.name === "Trial";
+  const isOnFreePlan = !subscription.active;
 
   return (
     <>
@@ -165,7 +165,7 @@ fetch("https://proxy.corsfix.com/?" + url);`}
                   </span>
                 </CardTitle>
                 <CardDescription>
-                  {isFreePlan
+                  {isOnFreePlan
                     ? `Trial plan with limited access. Upgrade for unlimited requests and extra features.`
                     : "You have full access to Corsfix and all the benefits of your plan."}
                 </CardDescription>
@@ -173,7 +173,7 @@ fetch("https://proxy.corsfix.com/?" + url);`}
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Link href="/billing">
-                    {isFreePlan ? (
+                    {isOnFreePlan ? (
                       <Button data-umami-event="get-started-upgrade">
                         Upgrade Plan
                       </Button>
