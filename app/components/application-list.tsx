@@ -593,7 +593,7 @@ export default function ApplicationList({
                             <TooltipTrigger asChild>
                               <Badge variant="outline">+{app.originDomains.length - 1}</Badge>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-muted text-muted-foreground border shadow-sm">
+                            <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
                               <div className="max-w-xs">
                                 {app.originDomains.slice(1).map((domain, index) => (
                                   <div key={index}>{domain}</div>
@@ -620,7 +620,7 @@ export default function ApplicationList({
                                 <TooltipTrigger asChild>
                                   <Badge variant="outline">+{app.targetDomains.length - 1}</Badge>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-muted text-muted-foreground border shadow-sm">
+                                <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
                                   <div className="max-w-xs">
                                     {app.targetDomains.slice(1).map((domain, index) => (
                                       <div key={index}>{domain}</div>
