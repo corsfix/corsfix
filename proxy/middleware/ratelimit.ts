@@ -1,10 +1,5 @@
 import { Response } from "hyper-express";
-import {
-  getProxyRequest,
-  getRpmByProductId,
-  isLocalOrigin,
-  isRegisteredOrigin,
-} from "../lib/util";
+import { getProxyRequest, getRpmByProductId, isLocalOrigin } from "../lib/util";
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
@@ -52,11 +47,6 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
       key: req.header("x-real-ip") || req.ip,
       rpm: 180,
       local: true,
-    };
-  } else if (isRegisteredOrigin(origin, url.href)) {
-    rateLimitConfig = {
-      key: origin,
-      rpm: 60,
     };
   } else {
     const application = await getApplication(domain);

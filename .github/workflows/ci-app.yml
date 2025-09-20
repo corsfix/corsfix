@@ -1,9 +1,6 @@
 name: App CI
 
 on:
-  push:
-    paths:
-      - "app/**"
   pull_request:
     paths:
       - "app/**"

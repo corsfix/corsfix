@@ -1,5 +1,4 @@
 import { Request } from "hyper-express";
-import { registeredOrigins } from "free-cors-proxy";
 import {
   EnvHttpProxyAgent,
   fetch,
@@ -28,15 +27,6 @@ export function isLocalOrigin(origin: string): boolean {
     /^https:\/\/app\.corsfix\.com$/,
   ];
   return localOriginPatterns.some((pattern) => pattern.test(origin));
-}
-
-export function isRegisteredOrigin(origin: string, url: string): boolean {
-  return (
-    origin in registeredOrigins &&
-    Array.from(registeredOrigins[origin]).some(
-      (pattern) => url.includes(pattern) || pattern == "*"
-    )
-  );
 }
 
 export const isValidUrl = (url: string) => {
