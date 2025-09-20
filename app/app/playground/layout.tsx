@@ -8,5 +8,5 @@ export const metadata: Metadata = {
   title: "Playground | Corsfix Dashboard",
 };
 export default function PageLayout() {
-  return <Page IS_CLOUD={IS_CLOUD} DOMAIN={process.env.DOMAIN as string} />;
+  return <Page isCloud={IS_CLOUD} domain={process.env.DOMAIN as string} />;
 }

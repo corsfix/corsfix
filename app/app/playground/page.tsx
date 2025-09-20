@@ -192,14 +192,14 @@ function getDefaultConfig(): RequestConfig {
 }
 
 export default function Playground({
-  IS_CLOUD,
-  DOMAIN,
+  isCloud,
+  domain,
 }: {
-  IS_CLOUD: boolean;
-  DOMAIN: string;
+  isCloud: boolean;
+  domain: string;
 }) {
   const PROXY_REGIONS = {
-    auto: IS_CLOUD ? "proxy.corsfix.com" : `proxy.${DOMAIN}`,
+    auto: isCloud ? "proxy.corsfix.com" : `proxy.${domain}`,
     ap: "proxy-ap.corsfix.com",
     us: "proxy-us.corsfix.com",
     eu: "proxy-eu.corsfix.com",
@@ -733,7 +733,7 @@ export default function Playground({
                     >
                       Cache
                     </button>
-                    {IS_CLOUD && (
+                    {isCloud && (
                       <button
                         className={`px-4 py-2 text-sm ${
                           requestTab === "region"
