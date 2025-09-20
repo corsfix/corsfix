@@ -90,13 +90,6 @@ interface ExamplePreset {
   config: Partial<RequestConfig>;
 }
 
-const PROXY_REGIONS = {
-  auto: "proxy.corsfix.com",
-  ap: "proxy-ap.corsfix.com",
-  us: "proxy-us.corsfix.com",
-  eu: "proxy-eu.corsfix.com",
-};
-
 // Example presets
 const EXAMPLE_PRESETS: ExamplePreset[] = [
   {
@@ -177,46 +170,6 @@ function ensureValidUrl(url: string): string {
   return url;
 }
 
-function getProxiedUrl(url: string, region: ProxyRegion = "auto"): string {
-  const proxyBaseUrl = `https://${PROXY_REGIONS[region]}/?`;
-  return `${proxyBaseUrl}${url}`;
-}
-
-function stripProxyUrl(url: string): string {
-  // Check against all possible proxy URLs
-  for (const domain of Object.values(PROXY_REGIONS)) {
-    const proxyUrl = `https://${domain}/?`;
-    if (url.startsWith(proxyUrl)) {
-      return url.slice(proxyUrl.length);
-    }
-  }
-  return url;
-}
-
-function generateFetch(config: RequestConfig): string {
-  const proxiedUrl = getProxiedUrl(config.url, config.region);
-  const options: Record<string, unknown> = {
-    method: config.method,
-  };
-
-  const headers: Record<string, string> = { ...config.headers };
-
-  // Add override headers via x-corsfix-headers if any exist
-  if (Object.keys(config.overrideHeaders).length > 0) {
-    headers["x-corsfix-headers"] = JSON.stringify(config.overrideHeaders);
-  }
-
-  if (Object.keys(headers).length > 0) {
-    options.headers = headers;
-  }
-
-  if (config.body) {
-    options.body = config.body;
-  }
-
-  return `fetch("${proxiedUrl}", ${JSON.stringify(options, null, 2)})`;
-}
-
 // Generate a unique ID
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -238,7 +191,20 @@ function getDefaultConfig(): RequestConfig {
   };
 }
 
-export default function Playground() {
+export default function Playground({
+  IS_CLOUD,
+  DOMAIN,
+}: {
+  IS_CLOUD: boolean;
+  DOMAIN: string;
+}) {
+  const PROXY_REGIONS = {
+    auto: IS_CLOUD ? "proxy.corsfix.com" : `proxy.${DOMAIN}`,
+    ap: "proxy-ap.corsfix.com",
+    us: "proxy-us.corsfix.com",
+    eu: "proxy-eu.corsfix.com",
+  };
+
   const [config, setConfig] = useState<RequestConfig>(getDefaultConfig());
   const [response, setResponse] = useState<RequestResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -261,6 +227,46 @@ export default function Playground() {
   const isImageResponse = response?.headers["content-type"]?.includes("image/");
   const isVideoResponse = response?.headers["content-type"]?.includes("video/");
   const hasPreview = isHtmlResponse || isImageResponse || isVideoResponse;
+
+  function getProxiedUrl(url: string, region: ProxyRegion = "auto"): string {
+    const proxyBaseUrl = `https://${PROXY_REGIONS[region]}/?`;
+    return `${proxyBaseUrl}${url}`;
+  }
+
+  function stripProxyUrl(url: string): string {
+    // Check against all possible proxy URLs
+    for (const domain of Object.values(PROXY_REGIONS)) {
+      const proxyUrl = `https://${domain}/?`;
+      if (url.startsWith(proxyUrl)) {
+        return url.slice(proxyUrl.length);
+      }
+    }
+    return url;
+  }
+
+  function generateFetch(config: RequestConfig): string {
+    const proxiedUrl = getProxiedUrl(config.url, config.region);
+    const options: Record<string, unknown> = {
+      method: config.method,
+    };
+
+    const headers: Record<string, string> = { ...config.headers };
+
+    // Add override headers via x-corsfix-headers if any exist
+    if (Object.keys(config.overrideHeaders).length > 0) {
+      headers["x-corsfix-headers"] = JSON.stringify(config.overrideHeaders);
+    }
+
+    if (Object.keys(headers).length > 0) {
+      options.headers = headers;
+    }
+
+    if (config.body) {
+      options.body = config.body;
+    }
+
+    return `fetch("${proxiedUrl}", ${JSON.stringify(options, null, 2)})`;
+  }
 
   // Set preview tab as default when preview is available
   useEffect(() => {
@@ -727,16 +733,18 @@ export default function Playground() {
                     >
                       Cache
                     </button>
-                    <button
-                      className={`px-4 py-2 text-sm ${
-                        requestTab === "region"
-                          ? "border-b-2 border-primary"
-                          : ""
-                      }`}
-                      onClick={() => setRequestTab("region")}
-                    >
-                      Region
-                    </button>
+                    {IS_CLOUD && (
+                      <button
+                        className={`px-4 py-2 text-sm ${
+                          requestTab === "region"
+                            ? "border-b-2 border-primary"
+                            : ""
+                        }`}
+                        onClick={() => setRequestTab("region")}
+                      >
+                        Region
+                      </button>
+                    )}
                   </div>
                   <div className="flex-grow overflow-y-auto">
                     {requestTab === "headers" && (
