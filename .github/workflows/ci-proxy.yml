@@ -1,9 +1,6 @@
 name: Proxy CI
 
 on:
-  push:
-    paths:
-      - "proxy/**"
   pull_request:
     paths:
       - "proxy/**"
