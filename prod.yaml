@@ -31,6 +31,7 @@ services:
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true
       - AUTH_URL=https://app.${DOMAIN}
+      - DOMAIN=${DOMAIN}
   proxy:
     image: ghcr.io/corsfix/corsfix-proxy:latest
     restart: always
