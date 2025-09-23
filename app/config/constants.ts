@@ -90,3 +90,4 @@ export const freeTierLimit: FreeTierLimit = {
 
 export const config = configList[ENV];
 export const IS_CLOUD = process.env.CLOUD === "true";
+export const IS_SELFHOST = !IS_CLOUD;
