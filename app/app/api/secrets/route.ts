@@ -11,14 +11,16 @@ import * as z from "zod";
 
 const ManageSecretsSchema = z.object({
   application_id: z.string().max(32),
-  secrets: z.array(
-    z.object({
-      id: z.string().optional(),
-      name: z.string().max(64),
-      value: z.string().max(255).nullable(),
-      delete: z.boolean().optional(),
-    })
-  ),
+  secrets: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().max(64),
+        value: z.string().max(255).nullable(),
+        delete: z.boolean().optional(),
+      })
+    )
+    .max(20),
 });
 
 export async function POST(request: NextRequest) {
@@ -30,10 +32,7 @@ export async function POST(request: NextRequest) {
     const body = ManageSecretsSchema.parse(json);
 
     // Authorization check for managing secrets
-    const newSecretsCount = body.secrets.filter((s) => !s.delete).length;
-    const authResult = await authorize(idToken, "manage_secrets", {
-      newSecretsCount,
-    });
+    const authResult = await authorize(idToken, "manage_secrets");
 
     if (!authResult.allowed) {
       return NextResponse.json<ApiResponse<null>>(

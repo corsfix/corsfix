@@ -31,12 +31,13 @@ function getCustomerCheckoutLink(
   return url.toString();
 }
 
-const freeBenefits = [
-  `${freeTierLimit.req_count} proxy requests`,
+const trialBenefits = [
+  `Unlimited proxy requests`,
   `Up to ${freeTierLimit.app_count} web applications`,
   `${formatBytes(freeTierLimit.bytes)} data transfer`,
   `${freeTierLimit.rpm} RPM (per IP)`,
-  `${freeTierLimit.secret_count} secret (per app)`,
+  "Cached response",
+  `Secrets variable`,
 ];
 
 const paidBenefits = [
@@ -56,14 +57,13 @@ export const metadata: Metadata = {
 export default async function CreditsPage() {
   const session = await auth();
 
-  let idToken, activeSubscription, bandwidthMtd, requestsMtd;
+  let idToken, activeSubscription, bandwidthMtd;
 
   try {
     idToken = getUserId(session);
     activeSubscription = await getActiveSubscription(idToken);
     const metricsMtd = await getMonthToDateMetrics(idToken);
     bandwidthMtd = metricsMtd.bytes;
-    requestsMtd = metricsMtd.req_count;
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
@@ -73,7 +73,6 @@ export default async function CreditsPage() {
       bandwidth: freeTierLimit.bytes,
     };
     bandwidthMtd = 0;
-    requestsMtd = 0;
   }
 
   const isOnFreePlan = !activeSubscription.active;
@@ -112,40 +111,11 @@ export default async function CreditsPage() {
             <CardContent>
               <div className="mt-3 space-y-1">
                 <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: isOnFreePlan
-                        ? `${Math.min(
-                            Math.ceil(
-                              (requestsMtd / freeTierLimit.req_count) * 100
-                            ),
-                            100
-                          )}%`
-                        : "100%",
-                    }}
-                  ></div>
+                  <div className="bg-primary h-2 rounded-full transition-all duration-300 w-full"></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  {isOnFreePlan ? (
-                    <>
-                      <div className="text-sm">
-                        {new Date().toLocaleDateString("en-US", {
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <span>
-                        {requestsMtd}&nbsp;/&nbsp;
-                        {freeTierLimit.req_count}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-sm">You have unlimited requests</div>
-                      <Infinity />
-                    </>
-                  )}
+                  <div className="text-sm">You have unlimited requests</div>
+                  <Infinity />
                 </div>
               </div>
             </CardContent>
@@ -215,13 +185,13 @@ export default async function CreditsPage() {
                     <div className="flex items-end gap-2 mt-4">
                       <span className="text-4xl font-bold">$0</span>
                       <span className="text-muted-foreground pb-1">
-                        per month
+                        during trial period
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col">
                     <ul className="space-y-4 flex-1">
-                      {freeBenefits.map((benefit, index) => (
+                      {trialBenefits.map((benefit, index) => (
                         <li key={index} className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary flex-shrink-0" />
                           <span>{benefit}</span>

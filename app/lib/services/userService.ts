@@ -15,3 +15,14 @@ export async function getUser(email: string): Promise<User | null> {
     email: user.email,
   };
 }
+
+export async function isUserOnActiveTrial(user_id: string): Promise<boolean> {
+  await dbConnect();
+  const user = await UserV2Entity.findById(user_id).lean();
+
+  if (!user || !user.trial_ends_at) {
+    return false;
+  }
+
+  return new Date() < new Date(user.trial_ends_at);
+}

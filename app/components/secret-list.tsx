@@ -365,14 +365,16 @@ export default function SecretList({ initialApplications }: SecretListProps) {
                   </div>
                 ))}
               </div>
-              <div className="flex">
-                <Button
-                  variant="outline"
-                  onClick={() => addNewSecretRow(app.id)}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Add new
-                </Button>
-              </div>
+              {secrets.length < 20 && (
+                <div className="flex">
+                  <Button
+                    variant="outline"
+                    onClick={() => addNewSecretRow(app.id)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add new
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
