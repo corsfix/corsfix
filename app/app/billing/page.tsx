@@ -133,8 +133,16 @@ export default async function CreditsPage() {
                   <div className="bg-primary h-2 rounded-full transition-all duration-300 w-full"></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm">You have unlimited requests</div>
-                  <Infinity />
+                  {isTrial || subscription.active ? (
+                    <>
+                      <div className="text-sm">You have unlimited requests</div>
+                      <Infinity />
+                    </>
+                  ) : (
+                    <div className="text-sm">
+                      Upgrade to use Corsfix on live web applications
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

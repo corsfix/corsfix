@@ -112,7 +112,7 @@ export const getTrialEnds = (session: Session | null): Date => {
 
   return session.user.trial_ends_at
     ? new Date(session.user.trial_ends_at)
-    : new Date("2025-10-05T00:00:00.000Z"); // Default for existing users
+    : new Date("2024-10-05T00:00:00.000Z"); // Default for existing users
 };
 
 export const isTrialActive = (session: Session | null): boolean => {
