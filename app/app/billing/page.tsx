@@ -178,14 +178,14 @@ export default async function CreditsPage() {
                       <CardTitle className="text-xl">Trial</CardTitle>
                       {isOnFreePlan && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                          Current Plan
+                          Active
                         </span>
                       )}
                     </div>
                     <div className="flex items-end gap-2 mt-4">
                       <span className="text-4xl font-bold">$0</span>
                       <span className="text-muted-foreground pb-1">
-                        during trial period
+                        during trial
                       </span>
                     </div>
                   </CardHeader>
@@ -222,7 +222,7 @@ export default async function CreditsPage() {
                           </CardTitle>
                           {isCurrentPlan && (
                             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                              Current Plan
+                              Active
                             </span>
                           )}
                         </div>
