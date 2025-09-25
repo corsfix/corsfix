@@ -105,27 +105,25 @@ export const getUserId = (session: Session | null): string => {
   return session.user.legacy_id || session.user.id || "";
 };
 
+export const getTrialEnds = (session: Session | null): Date => {
+  if (!session || !session.user) {
+    return new Date("1970-01-01T00:00:00.000Z");
+  }
+
+  return session.user.trial_ends_at
+    ? new Date(session.user.trial_ends_at)
+    : new Date("2025-10-05T00:00:00.000Z"); // Default for existing users
+};
+
 export const isTrialActive = (session: Session | null): boolean => {
   if (!session || !session.user) {
     return false;
   }
 
   const now = new Date();
-  const trialEndDate = session.user.trial_ends_at
-    ? new Date(session.user.trial_ends_at)
-    : new Date("2025-10-05T00:00:00.000Z"); // Default for existing users
+  const trialEndDate = getTrialEnds(session);
 
   return now < trialEndDate;
-};
-
-export const getTrialEnds = (session: Session | null): Date | null => {
-  if (!session || !session.user) {
-    return null;
-  }
-
-  return session.user.trial_ends_at
-    ? new Date(session.user.trial_ends_at)
-    : new Date("2025-10-05T00:00:00.000Z"); // Default for existing users
 };
 
 export function formatBytes(bytes: number, decimals: number = 2): string {

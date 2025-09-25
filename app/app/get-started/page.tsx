@@ -33,7 +33,7 @@ export default async function GetStarted() {
       planDescription =
         "You have full access to use Corsfix on live web applications.";
     } else if (isTrial) {
-      const trialEnds = getTrialEnds(session) as Date;
+      const trialEnds = getTrialEnds(session);
       const formattedDate = trialEnds.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",

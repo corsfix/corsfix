@@ -72,13 +72,13 @@ const configList: Record<string, Config> = {
   },
 };
 
-interface FreeTierLimit {
+interface TrialLimit {
   bytes: number;
   app_count: number;
   rpm: number;
 }
 
-export const freeTierLimit: FreeTierLimit = {
+export const trialLimit: TrialLimit = {
   bytes: 1_000_000_000,
   app_count: 3,
   rpm: 60,
