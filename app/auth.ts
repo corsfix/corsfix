@@ -100,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       adapter.updateUser?.({
         id: user.id,
         created_at: new Date(),
+        trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       });
     },
   },
@@ -111,12 +112,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.legacy_id) {
         session.user.legacy_id = token.legacy_id;
       }
+      if (token.trial_ends_at) {
+        session.user.trial_ends_at = token.trial_ends_at;
+      }
       return session;
     },
     async jwt({ token, user, profile }) {
       if (user) {
         token.id = user.id;
         token.legacy_id = user?.legacy_id;
+        token.trial_ends_at = user?.trial_ends_at;
       }
       if (profile && profile.name) {
         token.name = profile.name;

@@ -15,7 +15,7 @@ export async function getActiveSubscription(
 
   if (!subscription) {
     return {
-      name: "trial",
+      name: "-",
       customer_id: user_id,
       bandwidth: freeTierLimit.bytes,
       active: false,

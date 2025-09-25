@@ -12,7 +12,7 @@ import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { ExternalLink, NotepadText } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { getUserId } from "@/lib/utils";
+import { getTrialEnds, getUserId, isTrialActive } from "@/lib/utils";
 import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
@@ -21,19 +21,33 @@ export const metadata: Metadata = {
 
 export default async function GetStarted() {
   const session = await auth();
-
-  let idToken, subscription;
+  let subscription, planDescription;
 
   try {
-    idToken = getUserId(session);
+    const idToken = getUserId(session);
+    const isTrial = isTrialActive(session);
+
     subscription = await getActiveSubscription(idToken);
+
+    if (subscription.active) {
+      planDescription =
+        "You have full access to use Corsfix on live web applications.";
+    } else if (isTrial) {
+      const trialEnds = getTrialEnds(session) as Date;
+      const formattedDate = trialEnds.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      subscription.name = `trial (until ${formattedDate})`;
+      planDescription =
+        "Try all the features for free. Upgrade to keep using Corsfix on live web applications.";
+    } else {
+      planDescription = "Upgrade to use Corsfix on live web applications.";
+    }
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
-    idToken = null;
-    subscription = { active: false, name: "trial" };
+    subscription = { active: false, name: "-" };
   }
-
-  const isOnFreePlan = !subscription.active;
 
   return (
     <>
@@ -166,25 +180,21 @@ fetch("https://proxy.${
                       subscription.name.slice(1)}
                   </span>
                 </CardTitle>
-                <CardDescription>
-                  {isOnFreePlan
-                    ? `Trial plan with limited access. Upgrade for unlimited requests and extra features.`
-                    : "You have full access to Corsfix and all the benefits of your plan."}
-                </CardDescription>
+                <CardDescription>{planDescription}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <Link href="/billing">
-                    {isOnFreePlan ? (
-                      <Button data-umami-event="get-started-upgrade">
-                        Upgrade Plan
-                      </Button>
-                    ) : (
+                    {subscription.active ? (
                       <Button
                         variant="secondary"
                         data-umami-event="get-started-benefits"
                       >
                         See benefits
+                      </Button>
+                    ) : (
+                      <Button data-umami-event="get-started-upgrade">
+                        Upgrade Plan
                       </Button>
                     )}
                   </Link>
