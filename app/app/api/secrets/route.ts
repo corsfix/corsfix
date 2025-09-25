@@ -26,13 +26,13 @@ const ManageSecretsSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const idToken = getUserId(session);
+    const userId = getUserId(session);
 
     const json = await request.json();
     const body = ManageSecretsSchema.parse(json);
 
     // Authorization check for managing secrets
-    const authResult = await authorize(idToken, "manage_secrets");
+    const authResult = await authorize(session, "manage_secrets");
 
     if (!authResult.allowed) {
       return NextResponse.json<ApiResponse<null>>(
@@ -88,17 +88,14 @@ export async function POST(request: NextRequest) {
     }
 
     await manageApplicationSecrets(
-      idToken,
+      userId,
       kek,
       body.application_id,
       body.secrets
     );
 
     // Return updated secrets for this application
-    const secrets = await getSecretsForApplication(
-      idToken,
-      body.application_id
-    );
+    const secrets = await getSecretsForApplication(userId, body.application_id);
 
     return NextResponse.json<ApiResponse<SecretItem[]>>({
       data: secrets,
