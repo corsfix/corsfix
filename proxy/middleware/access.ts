@@ -1,5 +1,5 @@
 import { Response } from "hyper-express";
-import { getRpmByProductId, isDomainAllowed, isLocalDomain } from "../lib/util";
+import { getRpmByProductId, isDomainAllowed, isLocalOrigin } from "../lib/util";
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
@@ -12,11 +12,13 @@ export const validateProxyAccess = async (
   req: CorsfixRequest,
   res: Response
 ) => {
+  const origin = req.ctx_origin!;
   const domain = req.ctx_domain!;
 
   let rateLimitConfig: RateLimitConfig;
 
-  if (isLocalDomain(domain)) {
+  if (isLocalOrigin(origin)) {
+    console.log("here2");
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 60,

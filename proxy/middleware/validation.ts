@@ -28,16 +28,19 @@ export const validateJsonpRequest = (
   res: Response,
   next: MiddlewareNext
 ) => {
+  const callback = req.ctx_callback!;
   const referer = req.header("Referer");
 
-  if (isValidUrl(referer)) {
-    req.ctx_origin = new URL(referer).origin;
-  } else {
-    return res
-      .status(400)
-      .end(
-        "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
-      );
+  if (callback) {
+    if (isValidUrl(referer)) {
+      req.ctx_origin = new URL(referer).origin;
+    } else {
+      return res
+        .status(400)
+        .end(
+          "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
+        );
+    }
   }
 
   next();

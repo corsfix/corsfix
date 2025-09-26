@@ -24,24 +24,17 @@ export const isDomainAllowed = (
   return allowedDomains.includes("*") || allowedDomains.includes(domain);
 };
 
-export const isLocalDomain = (domain: string): boolean => {
-  const localDomains = [
-    "localhost",
-    "127.0.0.1",
-    "0.0.0.0",
-    "corsfix.com",
-    "app.corsfix.com",
+export function isLocalOrigin(origin: string): boolean {
+  const localOriginPatterns = [
+    /^https?:\/\/localhost(:\d+)?$/,
+    /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+    /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/,
+    /^https?:\/\/0\.0\.0\.0(:\d+)?$/,
+    /^https:\/\/corsfix\.com$/,
+    /^https:\/\/app\.corsfix\.com$/,
   ];
-
-  // Check for exact match
-  if (localDomains.includes(domain)) {
-    return true;
-  }
-
-  // Check for local IP ranges (192.168.x.x)
-  const ipv4Regex = /^192\.168\.\d{1,3}\.\d{1,3}$/;
-  return ipv4Regex.test(domain);
-};
+  return localOriginPatterns.some((pattern) => pattern.test(origin));
+}
 
 export const isValidUrl = (url: string) => {
   try {
