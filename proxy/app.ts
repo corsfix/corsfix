@@ -13,10 +13,9 @@ import {
   validateTargetUrl,
 } from "./middleware/validation";
 import { handlePreflight } from "./middleware/preflight";
-import { handleRateLimit } from "./middleware/ratelimit";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
-import { handleFreeTier } from "./middleware/free";
+import { handleProxyAccess } from "./middleware/access";
 
 const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
 
@@ -52,12 +51,11 @@ app.use("/", validateOriginHeader);
 
 app.use("/", handlePreflight);
 
-app.use("/", handleRateLimit);
-app.use("/", handleFreeTier);
+app.use("/", handleProxyAccess);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const { url: targetUrl, callback } = getProxyRequest(req);
-  const origin = req.ctx_origin || "";
+  const origin = req.ctx_origin!;
 
   const hasCacheHeader = "x-corsfix-cache" in req.headers;
   req.ctx_cache = hasCacheHeader;

@@ -4,10 +4,12 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { freeTierLimit, IS_SELFHOST } from "../config/constants";
+import { IS_SELFHOST, trialLimit } from "../config/constants";
+import { isTrialActive } from "../lib/services/userService";
+import { getMonthToDateMetrics } from "../lib/services/metricService";
 
-export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
-  const origin = req.ctx_origin || "";
+export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
+  const origin = req.ctx_origin!;
   const domain = new URL(origin).hostname;
   const { url } = getProxyRequest(req);
 
@@ -42,7 +44,6 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     }
 
     req.ctx_user_id = application.user_id;
-
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 180,
@@ -65,9 +66,25 @@ export const handleRateLimit = async (req: CorsfixRequest, res: Response) => {
     if (activeSubscription) {
       rpm = getRpmByProductId(activeSubscription.product_id);
     } else {
-      // free tier
-      rpm = freeTierLimit.rpm;
-      req.ctx_free = true;
+      const isTrial = await isTrialActive(application.user_id);
+      if (!isTrial) {
+        return res
+          .status(403)
+          .end(
+            `Corsfix: Trial period ended. Please upgrade to continue using the proxy. (https://app.corsfix.com/billing)`
+          );
+      }
+
+      const metricsMtd = await getMonthToDateMetrics(application.user_id);
+      if (metricsMtd.bytes >= trialLimit.bytes) {
+        return res
+          .status(403)
+          .end(
+            `Corsfix: Trial limits reached. Please upgrade to continue using the proxy. (https://app.corsfix.com/billing)`
+          );
+      }
+
+      rpm = trialLimit.rpm;
     }
 
     if (

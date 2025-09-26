@@ -1,0 +1,32 @@
+import { CacheableMemory } from "cacheable";
+import { UserV2Entity } from "../../models/UserV2Entity";
+
+const userCache = new CacheableMemory({
+  ttl: "1m",
+  lruSize: 1000,
+});
+
+export const isTrialActive = async (userId: string): Promise<boolean> => {
+  const cacheKey = `trial_${userId}`;
+  let isActive = userCache.get<boolean>(cacheKey);
+  if (isActive !== undefined) {
+    return isActive;
+  }
+  const user = await UserV2Entity.findOne({
+    $or: [{ _id: userId }, { legacy_id: userId }],
+  });
+
+  if (!user) {
+    return false;
+  }
+
+  const now = new Date();
+  const trialEndsAt =
+    user.trial_ends_at || new Date("2025-10-05T00:00:00.000Z");
+
+  isActive = now < trialEndsAt;
+
+  userCache.set(cacheKey, isActive);
+
+  return isActive;
+};
