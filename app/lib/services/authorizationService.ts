@@ -1,19 +1,19 @@
-import { freeTierLimit, IS_CLOUD } from "@/config/constants";
+import { IS_SELFHOST, trialLimit } from "@/config/constants";
 import { getActiveSubscription } from "./subscriptionService";
 import { countApplication } from "./applicationService";
 import { AuthorizationResult } from "@/types/api";
+import { getUserId, isTrialActive } from "../utils";
+import { Session } from "next-auth";
 
 export async function authorize(
-  user_id: string,
-  action: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context?: any
+  session: Session | null,
+  action: string
 ): Promise<AuthorizationResult> {
   switch (action) {
     case "add_applications":
-      return await canAddApplications(user_id);
+      return await canAddApplications(session);
     case "manage_secrets":
-      return await canManageSecrets(user_id, context);
+      return await canManageSecrets(session);
     default:
       return {
         allowed: false,
@@ -22,57 +22,57 @@ export async function authorize(
 }
 
 async function canAddApplications(
-  user_id: string
+  session: Session | null
 ): Promise<AuthorizationResult> {
-  if (!IS_CLOUD) {
+  if (IS_SELFHOST) {
     return {
       allowed: true,
     };
   }
 
-  const subscription = await getActiveSubscription(user_id);
+  const userId = getUserId(session);
+  const subscription = await getActiveSubscription(userId);
+  const isTrial = isTrialActive(session);
 
   if (subscription.active) {
     return {
       allowed: true,
     };
+  } else if (isTrial) {
+    const applicationCount = await countApplication(userId);
+    return {
+      allowed: applicationCount < trialLimit.app_count,
+      message: `Max ${trialLimit.app_count} applications during trial. Upgrade for higher limits.`,
+    };
+  } else {
+    return {
+      allowed: false,
+      message: "Please upgrade to continue using Corsfix.",
+    };
   }
-
-  // free tier
-  const applicationCount = await countApplication(user_id);
-  return {
-    allowed: applicationCount < freeTierLimit.app_count,
-    message: `Max ${freeTierLimit.app_count} applications on free tier. Upgrade for higher limits.`,
-  };
 }
 
 async function canManageSecrets(
-  user_id: string,
-  context: { newSecretsCount: number }
+  session: Session | null
 ): Promise<AuthorizationResult> {
-  if (!IS_CLOUD) {
+  if (IS_SELFHOST) {
     return {
       allowed: true,
     };
   }
 
-  const subscription = await getActiveSubscription(user_id);
+  const userId = getUserId(session);
+  const subscription = await getActiveSubscription(userId);
+  const isTrial = isTrialActive(session);
 
-  if (subscription.active) {
+  if (subscription.active || isTrial) {
     return {
       allowed: true,
     };
-  }
-
-  // Free tier validation: only allow 1 secret in the request
-  if (context.newSecretsCount > freeTierLimit.secret_count) {
+  } else {
     return {
       allowed: false,
-      message: `Max ${freeTierLimit.secret_count} secrets per app on free tier. You're trying to add ${context.newSecretsCount} secrets. Upgrade for higher limits.`,
+      message: "Please upgrade to continue using Corsfix.",
     };
   }
-
-  return {
-    allowed: true,
-  };
 }

@@ -1,11 +1,14 @@
 import { Request } from "hyper-express";
 
 export interface CorsfixRequest extends Request {
-  ctx_bytes?: number;
-  ctx_user_id?: string;
+  ctx_url?: URL;
   ctx_origin?: string;
-  ctx_cache?: boolean;
-  ctx_free?: boolean;
+  ctx_origin_domain?: string;
+  ctx_target_domain?: string;
+  ctx_callback?: string;
+  ctx_user_id?: string;
+  ctx_cached_request?: boolean;
+  ctx_bytes?: number;
 }
 
 export interface Application {

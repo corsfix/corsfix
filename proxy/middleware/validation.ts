@@ -12,6 +12,7 @@ export const validateOriginHeader = (
     next();
   } else if (isValidUrl(origin)) {
     req.ctx_origin = origin;
+    req.ctx_origin_domain = new URL(origin).hostname;
     next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
@@ -28,14 +29,15 @@ export const validateJsonpRequest = (
   res: Response,
   next: MiddlewareNext
 ) => {
+  const callback = req.ctx_callback!;
   const referer = req.header("Referer");
-  const secFetchDest = req.header("Sec-Fetch-Dest");
 
-  if (secFetchDest === "script") {
+  if (callback) {
     if (isValidUrl(referer)) {
-      req.ctx_origin = new URL(referer).origin;
+      const referrerUrl = new URL(referer);
+      req.ctx_origin = referrerUrl.origin;
+      req.ctx_origin_domain = referrerUrl.hostname;
     } else {
-      // invalid jsonp use
       return res
         .status(400)
         .end(
@@ -48,7 +50,7 @@ export const validateJsonpRequest = (
 };
 
 export const validateTargetUrl = (
-  req: Request,
+  req: CorsfixRequest,
   res: Response,
   next: MiddlewareNext
 ) => {
@@ -60,15 +62,19 @@ export const validateTargetUrl = (
   }
 
   try {
-    const proxyReq = getProxyRequest(req);
+    const { url, callback } = getProxyRequest(req);
 
-    if (!["http:", "https:"].includes(proxyReq.url.protocol)) {
+    if (!["http:", "https:"].includes(url.protocol)) {
       throw new Error("Invalid protocol. Only HTTP and HTTPS are allowed.");
     }
 
-    if (!proxyReq.url.hostname.includes(".")) {
+    if (!url.hostname.includes(".")) {
       throw new Error("Invalid hostname. TLD is required.");
     }
+
+    req.ctx_url = url;
+    req.ctx_target_domain = url.hostname;
+    req.ctx_callback = callback;
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");
     return res

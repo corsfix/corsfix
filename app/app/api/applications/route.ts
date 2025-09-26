@@ -15,9 +15,9 @@ import { getUserId } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  const idToken = getUserId(session);
+  const userId = getUserId(session);
 
-  const authz = await authorize(idToken, "add_applications");
+  const authz = await authorize(session, "add_applications");
   if (!authz.allowed) {
     return NextResponse.json<ApiResponse<null>>(
       {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json<ApiResponse<Application>>({
-    data: await createApplication(idToken, body),
+    data: await createApplication(userId, body),
     message: "success",
     success: true,
   });

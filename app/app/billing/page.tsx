@@ -12,8 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Nav from "@/components/nav";
 import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
-import { config, freeTierLimit, IS_CLOUD } from "@/config/constants";
-import { cn, formatBytes, getUserId } from "@/lib/utils";
+import { config, IS_CLOUD, trialLimit } from "@/config/constants";
+import {
+  cn,
+  formatBytes,
+  getTrialEnds,
+  getUserId,
+  isTrialActive,
+} from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getMonthToDateMetrics } from "@/lib/services/metricService";
@@ -31,12 +37,13 @@ function getCustomerCheckoutLink(
   return url.toString();
 }
 
-const freeBenefits = [
-  `${freeTierLimit.req_count} proxy requests`,
-  `Up to ${freeTierLimit.app_count} web applications`,
-  `${formatBytes(freeTierLimit.bytes)} data transfer`,
-  `${freeTierLimit.rpm} RPM (per IP)`,
-  `${freeTierLimit.secret_count} secret (per app)`,
+const trialBenefits = [
+  `Unlimited proxy requests`,
+  `Up to ${trialLimit.app_count} web applications`,
+  `${formatBytes(trialLimit.bytes)} data transfer`,
+  `${trialLimit.rpm} RPM (per IP)`,
+  "Cached response",
+  `Secrets variable`,
 ];
 
 const paidBenefits = [
@@ -56,27 +63,38 @@ export const metadata: Metadata = {
 export default async function CreditsPage() {
   const session = await auth();
 
-  let idToken, activeSubscription, bandwidthMtd, requestsMtd;
+  let subscription, isTrial, bandwidthMtd;
 
   try {
-    idToken = getUserId(session);
-    activeSubscription = await getActiveSubscription(idToken);
+    const idToken = getUserId(session);
+    isTrial = isTrialActive(session);
+
+    subscription = await getActiveSubscription(idToken);
+
+    if (subscription.active) {
+      isTrial = false;
+    } else if (isTrial) {
+      const trialEnds = getTrialEnds(session);
+      const formattedDate = trialEnds.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      subscription.name = `trial (until ${formattedDate})`;
+      subscription.bandwidth = trialLimit.bytes;
+    }
+
     const metricsMtd = await getMonthToDateMetrics(idToken);
     bandwidthMtd = metricsMtd.bytes;
-    requestsMtd = metricsMtd.req_count;
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
-    idToken = null;
-    activeSubscription = {
+    isTrial = false;
+    subscription = {
       active: false,
-      name: "trial",
-      bandwidth: freeTierLimit.bytes,
+      name: "-",
+      bandwidth: 0,
     };
     bandwidthMtd = 0;
-    requestsMtd = 0;
   }
-
-  const isOnFreePlan = !activeSubscription.active;
 
   return (
     <>
@@ -96,10 +114,10 @@ export default async function CreditsPage() {
               <PackageIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold mt-3">
+              <div className="text-2xl font-bold mt-3 text-primary">
                 {IS_CLOUD
-                  ? activeSubscription.name.charAt(0).toUpperCase() +
-                    activeSubscription.name.slice(1)
+                  ? subscription.name.charAt(0).toUpperCase() +
+                    subscription.name.slice(1)
                   : "-"}
               </div>
             </CardContent>
@@ -112,39 +130,18 @@ export default async function CreditsPage() {
             <CardContent>
               <div className="mt-3 space-y-1">
                 <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: isOnFreePlan
-                        ? `${Math.min(
-                            Math.ceil(
-                              (requestsMtd / freeTierLimit.req_count) * 100
-                            ),
-                            100
-                          )}%`
-                        : "100%",
-                    }}
-                  ></div>
+                  <div className="bg-primary h-2 rounded-full transition-all duration-300 w-full"></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  {isOnFreePlan ? (
-                    <>
-                      <div className="text-sm">
-                        {new Date().toLocaleDateString("en-US", {
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <span>
-                        {requestsMtd}&nbsp;/&nbsp;
-                        {freeTierLimit.req_count}
-                      </span>
-                    </>
-                  ) : (
+                  {isTrial || subscription.active ? (
                     <>
                       <div className="text-sm">You have unlimited requests</div>
                       <Infinity />
                     </>
+                  ) : (
+                    <div className="text-sm">
+                      Upgrade to use Corsfix on live web applications
+                    </div>
                   )}
                 </div>
               </div>
@@ -165,7 +162,7 @@ export default async function CreditsPage() {
                     style={{
                       width: `${Math.min(
                         Math.ceil(
-                          (bandwidthMtd / activeSubscription.bandwidth) * 100
+                          (bandwidthMtd / subscription.bandwidth) * 100
                         ),
                         100
                       )}%`,
@@ -181,7 +178,7 @@ export default async function CreditsPage() {
                   </div>
                   <span>
                     {formatBytes(bandwidthMtd)}&nbsp;/&nbsp;
-                    {formatBytes(activeSubscription.bandwidth)}
+                    {formatBytes(subscription.bandwidth)}
                   </span>
                 </div>
               </div>
@@ -200,28 +197,28 @@ export default async function CreditsPage() {
                 <Card
                   className={cn(
                     "w-full flex flex-col",
-                    isOnFreePlan && "border-primary"
+                    isTrial && "border-primary"
                   )}
                 >
                   <CardHeader className="flex-none">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl">Trial</CardTitle>
-                      {isOnFreePlan && (
+                      {isTrial && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                          Current Plan
+                          Active
                         </span>
                       )}
                     </div>
                     <div className="flex items-end gap-2 mt-4">
                       <span className="text-4xl font-bold">$0</span>
                       <span className="text-muted-foreground pb-1">
-                        per month
+                        during trial
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col">
                     <ul className="space-y-4 flex-1">
-                      {freeBenefits.map((benefit, index) => (
+                      {trialBenefits.map((benefit, index) => (
                         <li key={index} className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary flex-shrink-0" />
                           <span>{benefit}</span>
@@ -232,7 +229,7 @@ export default async function CreditsPage() {
                 </Card>
               </div>
               {config.products.map((product) => {
-                const isCurrentPlan = activeSubscription.name === product.name;
+                const isCurrentPlan = subscription.name === product.name;
                 return (
                   <div
                     key={product.id}
@@ -252,7 +249,7 @@ export default async function CreditsPage() {
                           </CardTitle>
                           {isCurrentPlan && (
                             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                              Current Plan
+                              Active
                             </span>
                           )}
                         </div>
@@ -281,7 +278,7 @@ export default async function CreditsPage() {
                             </li>
                           ))}
                         </ul>
-                        {isOnFreePlan && (
+                        {!subscription.active && (
                           <div className="mt-6 flex-none">
                             <Link
                               href={getCustomerCheckoutLink(
@@ -301,8 +298,8 @@ export default async function CreditsPage() {
                           </div>
                         )}
                         {IS_CLOUD &&
-                          activeSubscription.active &&
-                          activeSubscription.name == product.name && (
+                          subscription.active &&
+                          subscription.name == product.name && (
                             <div className="mt-6 flex-none">
                               <Link href="/api/portal" target="_blank">
                                 <Button

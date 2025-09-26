@@ -6,6 +6,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       legacy_id?: string;
+      trial_ends_at?: Date;
     } & DefaultSession["user"];
   }
 
@@ -13,6 +14,7 @@ declare module "next-auth" {
     legacy_id?: string;
     created_at?: Date;
     signin_at?: Date;
+    trial_ends_at?: Date;
   }
 }
 
@@ -26,5 +28,6 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id?: string;
     legacy_id?: string;
+    trial_ends_at?: Date;
   }
 }
