@@ -60,7 +60,7 @@ interface TrialLimit {
 }
 
 export const trialLimit: TrialLimit = {
-  bytes: 50_000_000,
+  bytes: 1_000_000_000,
   app_count: 3,
   rpm: 60,
 };
