@@ -8,10 +8,7 @@ import { IS_SELFHOST, trialLimit } from "../config/constants";
 import { isTrialActive } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 
-export const validateProxyAccess = async (
-  req: CorsfixRequest,
-  res: Response
-) => {
+export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin = req.ctx_origin!;
   const domain = req.ctx_domain!;
 
@@ -21,30 +18,6 @@ export const validateProxyAccess = async (
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 60,
-      local: true,
-    };
-  } else if (IS_SELFHOST) {
-    const application = await getApplication(domain);
-    if (!application) {
-      return res
-        .status(403)
-        .end(
-          `Corsfix: Please add your website domain (${domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
-        );
-    }
-    req.ctx_user_id = application.user_id;
-
-    if (isDomainAllowed(domain, application.target_domains)) {
-      return res
-        .status(403)
-        .end(
-          `Corsfix: Target domain (${domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
-        );
-    }
-
-    rateLimitConfig = {
-      key: req.header("x-real-ip") || req.ip,
-      rpm: 180,
       local: true,
     };
   } else {
@@ -58,19 +31,22 @@ export const validateProxyAccess = async (
     }
     req.ctx_user_id = application.user_id;
 
+    if (isDomainAllowed(domain, application.target_domains)) {
+      return res
+        .status(403)
+        .end(
+          `Corsfix: Target domain (${domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
+        );
+    }
+
     let rpm;
     const activeSubscription = await getActiveSubscription(application.user_id);
-    if (activeSubscription) {
+    if (IS_SELFHOST) {
+      rpm = 180;
+    } else if (activeSubscription) {
       rpm = getRpmByProductId(activeSubscription.product_id);
-    } else {
-      const isTrial = await isTrialActive(application.user_id);
-      if (!isTrial) {
-        return res
-          .status(403)
-          .end(
-            `Corsfix: Trial period ended. Please upgrade to continue using the proxy. (https://app.corsfix.com/billing)`
-          );
-      }
+    } else if (await isTrialActive(application.user_id)) {
+      rpm = trialLimit.rpm;
 
       const metricsMtd = await getMonthToDateMetrics(application.user_id);
       if (metricsMtd.bytes >= trialLimit.bytes) {
@@ -80,15 +56,11 @@ export const validateProxyAccess = async (
             `Corsfix: Trial limits reached. Please upgrade to continue using the proxy. (https://app.corsfix.com/billing)`
           );
       }
-
-      rpm = trialLimit.rpm;
-    }
-
-    if (isDomainAllowed(domain, application.target_domains)) {
+    } else {
       return res
         .status(403)
         .end(
-          `Corsfix: Target domain (${domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
+          `Corsfix: Trial period ended. Please upgrade to continue using the proxy. (https://app.corsfix.com/billing)`
         );
     }
 

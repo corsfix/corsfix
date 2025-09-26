@@ -11,11 +11,11 @@ export const handleMetrics = (
   next: MiddlewareNext
 ) => {
   res.on("close", () => {
-    const { ctx_user_id, ctx_bytes, ctx_cache } = req;
+    const { ctx_user_id, ctx_bytes, ctx_cached_request } = req;
     const origin = req.ctx_origin!;
 
     if (ctx_user_id && ctx_bytes) {
-      if (IS_CLOUD && ctx_cache) {
+      if (IS_CLOUD && ctx_cached_request) {
         const url = getProxyRequest(req).url.href;
         const key = `metrics|${url}|${origin}`;
 

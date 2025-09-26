@@ -10,7 +10,7 @@ import {
 import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
-import { validateProxyAccess } from "./middleware/access";
+import { handleProxyAccess } from "./middleware/access";
 
 const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
 
@@ -46,7 +46,7 @@ app.use("/", validateOriginHeader);
 
 app.use("/", handlePreflight);
 
-app.use("/", validateProxyAccess);
+app.use("/", handleProxyAccess);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const targetUrl = req.ctx_url!;
@@ -55,7 +55,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const origin = req.ctx_origin!;
   const domain = req.ctx_domain!;
 
-  req.ctx_cache = "x-corsfix-cache" in req.headers;
+  req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
@@ -122,7 +122,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     responseHeaders.delete("set-cookie");
     responseHeaders.delete("set-cookie2");
 
-    if (req.ctx_cache && !callback) {
+    if (req.ctx_cached_request && !callback) {
       responseHeaders.delete("expires");
       responseHeaders.set("Cache-Control", "public, max-age=3600");
     }
@@ -208,7 +208,6 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
         );
     } else if (message === "fetch failed") {
       if ((cause as any).code === "ENOTFOUND") {
-        console.error(error);
         res.status(404).end("Corsfix: Target URL not found.");
       } else {
         console.error("Fetch error occurred.", error);
