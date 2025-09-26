@@ -18,7 +18,6 @@ export const validateProxyAccess = async (
   let rateLimitConfig: RateLimitConfig;
 
   if (isLocalOrigin(origin)) {
-    console.log("here2");
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 60,
