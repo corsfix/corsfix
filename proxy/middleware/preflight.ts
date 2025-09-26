@@ -1,16 +1,17 @@
-import { MiddlewareNext, Request, Response } from "hyper-express";
+import { MiddlewareNext, Response } from "hyper-express";
 import { getProxyRequest } from "../lib/util";
 import { batchCountMetrics } from "../lib/services/metricService";
 import { getRedisClient } from "../lib/services/cacheService";
 import { IS_CLOUD } from "../config/constants";
+import { CorsfixRequest } from "../types/api";
 
 export const handlePreflight = (
-  req: Request,
+  req: CorsfixRequest,
   res: Response,
   next: MiddlewareNext
 ) => {
   if (req.method === "OPTIONS") {
-    const origin = req.header("Origin");
+    const origin = req.ctx_origin!;
     res.header("Access-Control-Allow-Origin", origin);
 
     const requestMethod = req.header("Access-Control-Request-Method");

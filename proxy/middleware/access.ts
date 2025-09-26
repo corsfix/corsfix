@@ -1,5 +1,5 @@
 import { Response } from "hyper-express";
-import { getProxyRequest, getRpmByProductId, isLocalOrigin } from "../lib/util";
+import { getRpmByProductId, isDomainAllowed, isLocalDomain } from "../lib/util";
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getActiveSubscription } from "../lib/services/subscriptionService";
@@ -8,14 +8,15 @@ import { IS_SELFHOST, trialLimit } from "../config/constants";
 import { isTrialActive } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 
-export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
-  const origin = req.ctx_origin!;
-  const domain = new URL(origin).hostname;
-  const { url } = getProxyRequest(req);
+export const validateProxyAccess = async (
+  req: CorsfixRequest,
+  res: Response
+) => {
+  const domain = req.ctx_domain!;
 
   let rateLimitConfig: RateLimitConfig;
 
-  if (isLocalOrigin(origin)) {
+  if (isLocalDomain(domain)) {
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 60,
@@ -23,7 +24,6 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     };
   } else if (IS_SELFHOST) {
     const application = await getApplication(domain);
-
     if (!application) {
       return res
         .status(403)
@@ -31,19 +31,16 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
           `Corsfix: Please add your website domain (${domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
         );
     }
+    req.ctx_user_id = application.user_id;
 
-    if (
-      !application.target_domains.includes(url.hostname) &&
-      !application.target_domains.includes("*")
-    ) {
+    if (isDomainAllowed(domain, application.target_domains)) {
       return res
         .status(403)
         .end(
-          `Corsfix: Target domain (${url.hostname}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
+          `Corsfix: Target domain (${domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
-    req.ctx_user_id = application.user_id;
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: 180,
@@ -51,7 +48,6 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     };
   } else {
     const application = await getApplication(domain);
-
     if (!application) {
       return res
         .status(403)
@@ -59,10 +55,10 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
           `Corsfix: Please add your website domain (${domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
         );
     }
+    req.ctx_user_id = application.user_id;
 
-    const activeSubscription = await getActiveSubscription(application.user_id);
     let rpm;
-
+    const activeSubscription = await getActiveSubscription(application.user_id);
     if (activeSubscription) {
       rpm = getRpmByProductId(activeSubscription.product_id);
     } else {
@@ -87,18 +83,14 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       rpm = trialLimit.rpm;
     }
 
-    if (
-      !application.target_domains.includes(url.hostname) &&
-      !application.target_domains.includes("*")
-    ) {
+    if (isDomainAllowed(domain, application.target_domains)) {
       return res
         .status(403)
         .end(
-          `Corsfix: Target domain (${url.hostname}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
+          `Corsfix: Target domain (${domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
         );
     }
 
-    req.ctx_user_id = application.user_id;
     rateLimitConfig = {
       key: req.header("x-real-ip") || req.ip,
       rpm: rpm,

@@ -29,26 +29,22 @@ export const validateJsonpRequest = (
   next: MiddlewareNext
 ) => {
   const referer = req.header("Referer");
-  const secFetchDest = req.header("Sec-Fetch-Dest");
 
-  if (secFetchDest === "script") {
-    if (isValidUrl(referer)) {
-      req.ctx_origin = new URL(referer).origin;
-    } else {
-      // invalid jsonp use
-      return res
-        .status(400)
-        .end(
-          "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
-        );
-    }
+  if (isValidUrl(referer)) {
+    req.ctx_origin = new URL(referer).origin;
+  } else {
+    return res
+      .status(400)
+      .end(
+        "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
+      );
   }
 
   next();
 };
 
 export const validateTargetUrl = (
-  req: Request,
+  req: CorsfixRequest,
   res: Response,
   next: MiddlewareNext
 ) => {
@@ -60,15 +56,19 @@ export const validateTargetUrl = (
   }
 
   try {
-    const proxyReq = getProxyRequest(req);
+    const { url, callback } = getProxyRequest(req);
 
-    if (!["http:", "https:"].includes(proxyReq.url.protocol)) {
+    if (!["http:", "https:"].includes(url.protocol)) {
       throw new Error("Invalid protocol. Only HTTP and HTTPS are allowed.");
     }
 
-    if (!proxyReq.url.hostname.includes(".")) {
+    if (!url.hostname.includes(".")) {
       throw new Error("Invalid hostname. TLD is required.");
     }
+
+    req.ctx_url = url;
+    req.ctx_domain = url.hostname;
+    req.ctx_callback = callback;
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");
     return res

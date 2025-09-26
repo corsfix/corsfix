@@ -1,10 +1,5 @@
 import { MiddlewareNext, Request, Response, Server } from "hyper-express";
-import {
-  proxyFetch,
-  getProxyRequest,
-  isLocalOrigin,
-  processRequest,
-} from "./lib/util";
+import { proxyFetch, processRequest, isLocalDomain } from "./lib/util";
 import { getApplication } from "./lib/services/applicationService";
 import {
   validateJsonpRequest,
@@ -15,7 +10,7 @@ import {
 import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
-import { handleProxyAccess } from "./middleware/access";
+import { validateProxyAccess } from "./middleware/access";
 
 const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
 
@@ -51,14 +46,16 @@ app.use("/", validateOriginHeader);
 
 app.use("/", handlePreflight);
 
-app.use("/", handleProxyAccess);
+app.use("/", validateProxyAccess);
 
 app.any("/*", async (req: CorsfixRequest, res: Response) => {
-  const { url: targetUrl, callback } = getProxyRequest(req);
-  const origin = req.ctx_origin!;
+  const targetUrl = req.ctx_url!;
+  const callback = req.ctx_callback;
 
-  const hasCacheHeader = "x-corsfix-cache" in req.headers;
-  req.ctx_cache = hasCacheHeader;
+  const origin = req.ctx_origin!;
+  const domain = req.ctx_domain!;
+
+  req.ctx_cache = "x-corsfix-cache" in req.headers;
 
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
@@ -90,8 +87,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       targetUrl,
       filteredHeaders,
     };
-    if (!isLocalOrigin(origin)) {
-      const domain = new URL(origin).hostname;
+    if (!isLocalDomain(domain)) {
       const application = await getApplication(domain);
       ({ url: processedUrl, headers: processedHeaders } = await processRequest(
         targetUrl,
@@ -126,14 +122,9 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     responseHeaders.delete("set-cookie");
     responseHeaders.delete("set-cookie2");
 
-    if (hasCacheHeader && !callback) {
+    if (req.ctx_cache && !callback) {
       responseHeaders.delete("expires");
       responseHeaders.set("Cache-Control", "public, max-age=3600");
-    }
-
-    if (req.ctx_free) {
-      req.ctx_cache = false;
-      responseHeaders.set("Cache-Control", "no-store");
     }
 
     if (!callback) {
@@ -171,27 +162,21 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
         }
 
         const buf = await response.arrayBuffer();
-
-        // Check actual buffer size in case content-length header was missing
         if (buf.byteLength > MAX_JSONP_RESPONSE_SIZE) {
           throw new Error("Response body too large for JSONP (max 3MB)");
         }
 
-        // Detect content type and set body value
         try {
           const text = decoder.decode(buf);
-          // Try to parse as JSON first
           try {
             const json = JSON.parse(text);
             type = "json";
             body = json;
           } catch {
-            // If not JSON, use as text
             type = "text";
             body = text;
           }
         } catch {
-          // If text decoding fails, treat as binary and base64 encode
           type = "base64";
           body = Buffer.from(buf).toString("base64");
         }
