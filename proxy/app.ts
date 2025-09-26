@@ -1,5 +1,5 @@
 import { MiddlewareNext, Request, Response, Server } from "hyper-express";
-import { proxyFetch, processRequest, isLocalOrigin } from "./lib/util";
+import { proxyFetch, processRequest, isLocalDomain } from "./lib/util";
 import { getApplication } from "./lib/services/applicationService";
 import {
   validateJsonpRequest,
@@ -53,7 +53,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const callback = req.ctx_callback;
 
   const origin = req.ctx_origin!;
-  const domain = req.ctx_domain!;
+  const origin_domain = req.ctx_origin_domain!;
 
   req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
@@ -87,8 +87,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       targetUrl,
       filteredHeaders,
     };
-    if (!isLocalOrigin(origin)) {
-      const application = await getApplication(domain);
+    if (!isLocalDomain(origin_domain)) {
+      const application = await getApplication(origin_domain);
       ({ url: processedUrl, headers: processedHeaders } = await processRequest(
         targetUrl,
         filteredHeaders,

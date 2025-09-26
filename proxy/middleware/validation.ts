@@ -12,6 +12,7 @@ export const validateOriginHeader = (
     next();
   } else if (isValidUrl(origin)) {
     req.ctx_origin = origin;
+    req.ctx_origin_domain = new URL(origin).hostname;
     next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
@@ -33,7 +34,9 @@ export const validateJsonpRequest = (
 
   if (callback) {
     if (isValidUrl(referer)) {
-      req.ctx_origin = new URL(referer).origin;
+      const referrerUrl = new URL(referer);
+      req.ctx_origin = referrerUrl.origin;
+      req.ctx_origin_domain = referrerUrl.hostname;
     } else {
       return res
         .status(400)
@@ -70,7 +73,7 @@ export const validateTargetUrl = (
     }
 
     req.ctx_url = url;
-    req.ctx_domain = url.hostname;
+    req.ctx_target_domain = url.hostname;
     req.ctx_callback = callback;
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");

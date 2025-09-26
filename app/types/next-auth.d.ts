@@ -6,6 +6,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       legacy_id?: string;
+      trial_ends_at?: Date;
     } & DefaultSession["user"];
   }
 

@@ -1,4 +1,5 @@
 import { CacheableMemory } from "cacheable";
+import mongoose from "mongoose";
 import { UserV2Entity } from "../../models/UserV2Entity";
 
 const userCache = new CacheableMemory({
@@ -12,9 +13,9 @@ export const isTrialActive = async (userId: string): Promise<boolean> => {
   if (isActive !== undefined) {
     return isActive;
   }
-  const user = await UserV2Entity.findOne({
-    $or: [{ _id: userId }, { legacy_id: userId }],
-  });
+  const user = mongoose.isValidObjectId(userId)
+    ? await UserV2Entity.findOne({ _id: userId })
+    : await UserV2Entity.findOne({ legacy_id: userId });
 
   if (!user) {
     return false;
