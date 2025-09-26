@@ -252,7 +252,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     return (
       <div className="w-full space-y-6">
         <div className="text-center space-y-4 p-8 border rounded-lg">
-          <div className="text-sm text-muted-foreground mb-2">
+          <div className="text-sm text-muted-foreground mb-4">
             Add your web application to start using secrets.
           </div>
           <Link href="/applications">

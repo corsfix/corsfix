@@ -65,7 +65,7 @@ export default async function GetStarted() {
                 Add your web application
               </CardTitle>
               <CardDescription>
-                Set up your website to use Corsfix.
+                Set up your website to start using Corsfix.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -87,7 +87,8 @@ export default async function GetStarted() {
                     Use Corsfix in your website
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Add Corsfix proxy in your code, no API keys required.
+                    Add the proxy in your request and integrate with your
+                    existing code.
                   </p>
                   <div className="flex flex-wrap my-6 md:mb-0 gap-2">
                     <Link

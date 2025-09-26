@@ -35,7 +35,7 @@ export default async function ApplicationsPage() {
           Applications
         </h1>
         <p className="text-muted-foreground mb-1">
-          Add your domain to start using Corsfix in your website.
+          Add your domain to start using Corsfix on your web applications.
         </p>
         <Link
           href="https://corsfix.com/docs/dashboard/application"
@@ -49,13 +49,15 @@ export default async function ApplicationsPage() {
         <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
           <CircleHelp size={16} className="text-violet-400 mr-2" />
           <span>
-            Need help? Let us know at{" "}
+            Done adding websites?{" "}
             <a
-              href="mailto:rey@corsfix.com"
+              href="https://corsfix.com/docs/cors-proxy/api"
+              target="_blank"
               className="text-violet-500 underline p-0.5 font-medium"
             >
-              rey@corsfix.com
+              Start making requests
             </a>
+            .
           </span>
         </div>
       </div>
