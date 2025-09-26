@@ -39,12 +39,13 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         );
     }
 
-    let rpm;
-    const activeSubscription = await getActiveSubscription(application.user_id);
+    let rpm, subscription;
     if (IS_SELFHOST) {
       rpm = 180;
-    } else if (activeSubscription) {
-      rpm = getRpmByProductId(activeSubscription.product_id);
+    } else if (
+      (subscription = await getActiveSubscription(application.user_id))
+    ) {
+      rpm = getRpmByProductId(subscription.product_id);
     } else if (await isTrialActive(application.user_id)) {
       rpm = trialLimit.rpm;
 
