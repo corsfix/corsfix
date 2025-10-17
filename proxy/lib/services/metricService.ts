@@ -22,23 +22,6 @@ const metricCache = new CacheableMemory({
   lruSize: 1000,
 });
 
-export const countMetrics = async (
-  userId: string,
-  origin: string,
-  bytes: number
-): Promise<void> => {
-  const date = new Date();
-  const dateKey = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-  );
-
-  await UserOriginDailyEntity.updateOne(
-    { user_id: userId, origin, date: dateKey },
-    { $inc: { req_count: 1, bytes } },
-    { upsert: true }
-  );
-};
-
 export const batchCountMetrics = (
   userId: string,
   origin: string,
