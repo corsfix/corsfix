@@ -6,7 +6,7 @@ import { CacheableMemory } from "cacheable";
 
 interface MetricEvent {
   userId: string;
-  origin: string;
+  origin_domain: string;
   date: Date;
   count: number;
   bytes: number;
@@ -24,14 +24,14 @@ const metricCache = new CacheableMemory({
 
 export const batchCountMetrics = (
   userId: string,
-  origin: string,
+  origin_domain: string,
   bytes: number
 ): void => {
   const date = new Date();
   const dateKey = new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
   );
-  metricEvents$.next({ userId, origin, date: dateKey, count: 1, bytes });
+  metricEvents$.next({ userId, origin_domain, date: dateKey, count: 1, bytes });
 };
 
 metricEvents$
@@ -48,11 +48,11 @@ metricEvents$
 
 const processBatchMetrics = async (events: MetricEvent[]): Promise<void> => {
   const aggregatedMetrics = events.reduce(
-    (map, { userId, origin, date, count, bytes }) => {
-      const key = `${userId}|${origin}|${date.getTime()}`;
+    (map, { userId, origin_domain, date, count, bytes }) => {
+      const key = `${userId}|${origin_domain}|${date.getTime()}`;
       const entry = map.get(key) ?? {
         userId,
-        origin,
+        origin_domain,
         date,
         count: 0,
         bytes: 0,
@@ -71,9 +71,9 @@ const processBatchMetrics = async (events: MetricEvent[]): Promise<void> => {
     const time = Date.now();
     console.log(`Start writing metrics at ${time}`);
     const bulkOps = aggregatedEntries.map(
-      ({ userId, origin, date, count, bytes }) => ({
+      ({ userId, origin_domain, date, count, bytes }) => ({
         updateOne: {
-          filter: { user_id: userId, origin, date },
+          filter: { user_id: userId, origin_domain, date },
           update: { $inc: { req_count: count, bytes } },
           upsert: true,
         },

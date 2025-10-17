@@ -12,12 +12,12 @@ export const handleMetrics = (
 ) => {
   res.on("close", () => {
     const { ctx_user_id, ctx_bytes, ctx_cached_request } = req;
-    const origin = req.ctx_origin!;
+    const origin_domain = req.ctx_origin_domain!;
 
     if (ctx_user_id && ctx_bytes) {
       if (IS_CLOUD && ctx_cached_request) {
         const url = getProxyRequest(req).url.href;
-        const key = `metrics|${url}|${origin}`;
+        const key = `metrics|${url}|${origin_domain}`;
 
         const redisClient = getRedisClient();
         redisClient
@@ -31,7 +31,7 @@ export const handleMetrics = (
             await redisClient.set(key, metricsData, "EX", 2 * 60 * 60); // expire in 2 hours
 
             if (!value) {
-              batchCountMetrics(ctx_user_id, origin, ctx_bytes);
+              batchCountMetrics(ctx_user_id, origin_domain, ctx_bytes);
             }
           })
           .catch((error) => {
@@ -43,7 +43,7 @@ export const handleMetrics = (
         return;
       }
 
-      batchCountMetrics(ctx_user_id, origin, ctx_bytes);
+      batchCountMetrics(ctx_user_id, origin_domain, ctx_bytes);
     }
   });
   next();

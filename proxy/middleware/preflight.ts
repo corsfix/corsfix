@@ -12,6 +12,8 @@ export const handlePreflight = (
 ) => {
   if (req.method === "OPTIONS") {
     const origin = req.ctx_origin!;
+    const origin_domain = req.ctx_origin_domain!;
+
     res.header("Access-Control-Allow-Origin", origin);
 
     const requestMethod = req.header("Access-Control-Request-Method");
@@ -31,7 +33,7 @@ export const handlePreflight = (
           .find((h) => h === "x-corsfix-cache")
       ) {
         const url = getProxyRequest(req).url.href;
-        const key = `metrics|${url}|${origin}`;
+        const key = `metrics|${url}|${origin_domain}`;
 
         const redisClient = getRedisClient();
         redisClient
@@ -39,7 +41,7 @@ export const handlePreflight = (
           .then(async (value) => {
             if (value) {
               const metricsData = JSON.parse(value);
-              batchCountMetrics(metricsData.user_id, origin, metricsData.bytes);
+              batchCountMetrics(metricsData.user_id, origin_domain, metricsData.bytes);
               return;
             }
           })
