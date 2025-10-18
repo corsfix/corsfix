@@ -3,12 +3,12 @@ import { WebhookSubscriptionActivePayload } from "@polar-sh/sdk/models/component
 import { WebhookSubscriptionRevokedPayload } from "@polar-sh/sdk/models/components/webhooksubscriptionrevokedpayload";
 import { WebhookOrderCreatedPayload } from "@polar-sh/sdk/models/components/webhookordercreatedpayload";
 import { type NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/services/userService";
 import dbConnect from "@/lib/dbConnect";
 import { WebhookEventEntity } from "@/models/WebhookEventEntity";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { SubscriptionEntity } from "@/models/SubscriptionEntity";
 import { Order } from "@polar-sh/sdk/models/components/order.js";
+import { UserV2Entity } from "@/models/UserV2Entity";
 
 const logEvent = async (
   event:
@@ -28,37 +28,48 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
   const { email } = customer;
 
   // 1. find user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. activate subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id, customer_id: customer.id },
+    { product_id: productId, user_id: userId, customer_id: customer.id },
     { active: true },
     { upsert: true }
   );
+
+  user.subscription_product_id = productId;
+  user.customer_id = customer.id;
+  user.subscription_active = true;
+  await user.save();
 };
 
 const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
   await dbConnect();
 
-  const { productId, user: customer } = subscriptionData;
+  const { productId, customer } = subscriptionData;
   const { email } = customer;
 
   // 1. get user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. revoke subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id },
+    { product_id: productId, user_id: userId },
     { active: false },
     { upsert: true }
   );
+  user.subscription_active = false;
+  await user.save();
 };
 
 const handleSubscriptionUpdated = async (order: Order) => {
@@ -68,24 +79,30 @@ const handleSubscriptionUpdated = async (order: Order) => {
   const { email } = customer;
 
   // 1. get user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. revoke old subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { user_id: user.id, active: true },
+    { user_id: userId, active: true },
     { active: false },
     { upsert: true }
   );
 
   // 3. activate new subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id, customer_id: customer.id },
+    { product_id: productId, user_id: userId, customer_id: customer.id },
     { active: true },
     { upsert: true }
   );
+
+  user.subscription_product_id = productId;
+  user.subscription_active = true;
+  await user.save();
 };
 
 export async function POST(request: NextRequest) {
