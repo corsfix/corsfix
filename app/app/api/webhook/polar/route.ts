@@ -3,12 +3,12 @@ import { WebhookSubscriptionActivePayload } from "@polar-sh/sdk/models/component
 import { WebhookSubscriptionRevokedPayload } from "@polar-sh/sdk/models/components/webhooksubscriptionrevokedpayload";
 import { WebhookOrderCreatedPayload } from "@polar-sh/sdk/models/components/webhookordercreatedpayload";
 import { type NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/services/userService";
 import dbConnect from "@/lib/dbConnect";
 import { WebhookEventEntity } from "@/models/WebhookEventEntity";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
 import { SubscriptionEntity } from "@/models/SubscriptionEntity";
 import { Order } from "@polar-sh/sdk/models/components/order.js";
+import { UserV2Entity } from "@/models/UserV2Entity";
 
 const logEvent = async (
   event:
@@ -28,7 +28,7 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
   const { email } = customer;
 
   // 1. find user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
@@ -39,6 +39,11 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
     { active: true },
     { upsert: true }
   );
+
+  user.subscription_product_id = productId;
+  user.customer_id = customer.id;
+  user.subscription_active = true;
+  await user.save();
 };
 
 const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
@@ -48,7 +53,7 @@ const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
   const { email } = customer;
 
   // 1. get user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
@@ -59,6 +64,8 @@ const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
     { active: false },
     { upsert: true }
   );
+  user.subscription_active = false;
+  await user.save();
 };
 
 const handleSubscriptionUpdated = async (order: Order) => {
@@ -68,7 +75,7 @@ const handleSubscriptionUpdated = async (order: Order) => {
   const { email } = customer;
 
   // 1. get user
-  const user = await getUser(email);
+  const user = await UserV2Entity.findOne({ email: email });
   if (!user) {
     return;
   }
@@ -86,6 +93,8 @@ const handleSubscriptionUpdated = async (order: Order) => {
     { active: true },
     { upsert: true }
   );
+
+  user.subscription_product_id = productId;
 };
 
 export async function POST(request: NextRequest) {
