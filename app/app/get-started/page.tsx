@@ -12,7 +12,7 @@ import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { ExternalLink, NotepadText } from "lucide-react";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { getTrialEnds, getUserId, isTrialActive } from "@/lib/utils";
+import { getTrialEnds, isTrialActive } from "@/lib/utils";
 import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
@@ -24,10 +24,12 @@ export default async function GetStarted() {
   let subscription, planDescription;
 
   try {
-    const idToken = getUserId(session);
     const isTrial = isTrialActive(session);
 
-    subscription = await getActiveSubscription(idToken);
+    if (!session?.user.id) {
+      throw Error("Unauthenticated.");
+    }
+    subscription = await getActiveSubscription(session.user.id);
 
     if (subscription.active) {
       planDescription =

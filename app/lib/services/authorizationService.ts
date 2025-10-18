@@ -30,8 +30,13 @@ async function canAddApplications(
     };
   }
 
-  const userId = getUserId(session);
-  const subscription = await getActiveSubscription(userId);
+  if (!session?.user.id) {
+    return {
+      allowed: false,
+    };
+  }
+
+  const subscription = await getActiveSubscription(session.user.id);
   const isTrial = isTrialActive(session);
 
   if (subscription.active) {
@@ -39,7 +44,7 @@ async function canAddApplications(
       allowed: true,
     };
   } else if (isTrial) {
-    const applicationCount = await countApplication(userId);
+    const applicationCount = await countApplication(session.user.id);
     return {
       allowed: applicationCount < trialLimit.app_count,
       message: `Max ${trialLimit.app_count} applications during trial. Upgrade for higher limits.`,

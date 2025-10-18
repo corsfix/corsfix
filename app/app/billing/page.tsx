@@ -66,10 +66,12 @@ export default async function CreditsPage() {
   let subscription, isTrial, bandwidthMtd;
 
   try {
-    const idToken = getUserId(session);
     isTrial = isTrialActive(session);
 
-    subscription = await getActiveSubscription(idToken);
+    if (!session?.user.id) {
+      throw Error("Unauthenticated.");
+    }
+    subscription = await getActiveSubscription(session.user.id);
 
     if (subscription.active) {
       isTrial = false;
@@ -83,6 +85,7 @@ export default async function CreditsPage() {
       subscription.bandwidth = trialLimit.bytes;
     }
 
+    const idToken = getUserId(session);
     const metricsMtd = await getMonthToDateMetrics(idToken);
     bandwidthMtd = metricsMtd.bytes;
   } catch (error: unknown) {

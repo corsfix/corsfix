@@ -1,36 +1,34 @@
 import { Subscription } from "@/types/api";
 import dbConnect from "../dbConnect";
-import { SubscriptionEntity } from "@/models/SubscriptionEntity";
 import { config } from "@/config/constants";
+import { UserV2Entity } from "@/models/UserV2Entity";
 
 export async function getActiveSubscription(
   user_id: string
 ): Promise<Subscription> {
   await dbConnect();
 
-  const subscription = await SubscriptionEntity.findOne({
-    user_id: user_id,
-    active: true,
+  const user = await UserV2Entity.findOne({
+    _id: user_id,
   }).lean();
 
-  if (!subscription) {
+  if (!user?.subscription_active) {
     return {
       name: "-",
-      customer_id: user_id,
       bandwidth: 0,
       active: false,
     };
   }
 
   const product = config.products.find(
-    (product) => product.id === subscription.product_id
+    (product) => product.id === user.subscription_product_id
   );
 
   return {
     name: product?.name || "-",
-    product_id: subscription.product_id,
-    customer_id: subscription.customer_id,
+    product_id: user.subscription_product_id,
+    customer_id: user.customer_id,
     bandwidth: product?.bandwidth || 0,
-    active: subscription.active,
+    active: user.subscription_active,
   };
 }
