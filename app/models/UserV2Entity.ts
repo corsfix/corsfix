@@ -6,6 +6,9 @@ export interface UserV2Entity extends Document {
   legacy_id?: string;
   hash?: string;
   trial_ends_at?: Date;
+  customer_id?: string;
+  subscription_product_id?: string;
+  subscription_active?: boolean;
 }
 
 const UserV2Schema = new Schema<UserV2Entity>(
@@ -15,6 +18,9 @@ const UserV2Schema = new Schema<UserV2Entity>(
     legacy_id: String,
     hash: String,
     trial_ends_at: Date,
+    customer_id: String,
+    subscription_product_id: String,
+    subscription_active: Boolean,
   },
   { collection: "usersv2" }
 );
