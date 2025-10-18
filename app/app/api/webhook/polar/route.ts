@@ -101,6 +101,7 @@ const handleSubscriptionUpdated = async (order: Order) => {
   );
 
   user.subscription_product_id = productId;
+  user.subscription_active = true;
   await user.save();
 };
 
