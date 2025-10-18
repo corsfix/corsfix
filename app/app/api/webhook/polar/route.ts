@@ -33,9 +33,11 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. activate subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id, customer_id: customer.id },
+    { product_id: productId, user_id: userId, customer_id: customer.id },
     { active: true },
     { upsert: true }
   );
@@ -49,7 +51,7 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
 const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
   await dbConnect();
 
-  const { productId, user: customer } = subscriptionData;
+  const { productId, customer } = subscriptionData;
   const { email } = customer;
 
   // 1. get user
@@ -58,9 +60,11 @@ const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. revoke subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id },
+    { product_id: productId, user_id: userId },
     { active: false },
     { upsert: true }
   );
@@ -80,16 +84,18 @@ const handleSubscriptionUpdated = async (order: Order) => {
     return;
   }
 
+  const userId = user.legacy_id? user.legacy_id : user.id;
+
   // 2. revoke old subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { user_id: user.id, active: true },
+    { user_id: userId, active: true },
     { active: false },
     { upsert: true }
   );
 
   // 3. activate new subscription
   await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: user.id, customer_id: customer.id },
+    { product_id: productId, user_id: userId, customer_id: customer.id },
     { active: true },
     { upsert: true }
   );
