@@ -95,6 +95,7 @@ const handleSubscriptionUpdated = async (order: Order) => {
   );
 
   user.subscription_product_id = productId;
+  await user.save();
 };
 
 export async function POST(request: NextRequest) {
