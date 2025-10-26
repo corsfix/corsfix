@@ -31,3 +31,22 @@ export const isTrialActive = async (userId: string): Promise<boolean> => {
 
   return isActive;
 };
+
+export const getUser = async (userId: string): Promise<UserV2Entity | null> => {
+  const cacheKey = userId;
+  let cachedUser = userCache.get<UserV2Entity>(cacheKey);
+  if (cachedUser !== undefined) {
+    return cachedUser;
+  }
+  const user = mongoose.isValidObjectId(userId)
+    ? await UserV2Entity.findOne({ _id: userId })
+    : await UserV2Entity.findOne({ legacy_id: userId });
+
+  if (!user) {
+    return null;
+  }
+
+  userCache.set(cacheKey, user.toJSON());
+
+  return user;
+};
