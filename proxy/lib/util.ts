@@ -11,6 +11,7 @@ import {
 import { getSecretsMap } from "./services/secretService";
 import ipaddr from "ipaddr.js";
 import { config } from "../config/constants";
+import { UserV2Entity } from "../models/UserV2Entity";
 
 interface ProxyRequest {
   url: URL;
@@ -199,4 +200,16 @@ export const getRpmByProductId = (product_id: string): number => {
   }
 
   return product.rpm;
+};
+
+export const isTrialActive = (user: UserV2Entity | null): boolean => {
+  if (!user) {
+    return false;
+  }
+
+  const now = new Date();
+  const trialEndsAt =
+    user.trial_ends_at || new Date("2025-10-05T00:00:00.000Z");
+
+  return now < trialEndsAt;
 };

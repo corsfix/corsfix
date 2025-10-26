@@ -1,11 +1,15 @@
 import { Response } from "hyper-express";
-import { getRpmByProductId, isDomainAllowed, isLocalDomain } from "../lib/util";
+import {
+  getRpmByProductId,
+  isDomainAllowed,
+  isLocalDomain,
+  isTrialActive,
+} from "../lib/util";
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
-import { getActiveSubscription } from "../lib/services/subscriptionService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
 import { IS_SELFHOST, trialLimit } from "../config/constants";
-import { isTrialActive } from "../lib/services/userService";
+import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
@@ -29,8 +33,6 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
           `Corsfix: Please add your website domain (${origin_domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
         );
     }
-    req.ctx_user_id = application.user_id;
-
     if (!isDomainAllowed(target_domain, application.target_domains)) {
       return res
         .status(403)
@@ -39,14 +41,18 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         );
     }
 
-    let rpm, subscription;
+    const user = await getUser(application.user_id);
+    if (!user) {
+      return res.status(403).end(`Corsfix: User not found!`);
+    }
+    req.ctx_user_id = application.user_id;
+
+    let rpm;
     if (IS_SELFHOST) {
       rpm = 180;
-    } else if (
-      (subscription = await getActiveSubscription(application.user_id))
-    ) {
-      rpm = getRpmByProductId(subscription.product_id);
-    } else if (await isTrialActive(application.user_id)) {
+    } else if (user.subscription_active && user.subscription_product_id) {
+      rpm = getRpmByProductId(user.subscription_product_id);
+    } else if (isTrialActive(user)) {
       rpm = trialLimit.rpm;
 
       const metricsMtd = await getMonthToDateMetrics(application.user_id);

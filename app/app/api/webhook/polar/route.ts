@@ -6,7 +6,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import { WebhookEventEntity } from "@/models/WebhookEventEntity";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
-import { SubscriptionEntity } from "@/models/SubscriptionEntity";
 import { Order } from "@polar-sh/sdk/models/components/order.js";
 import { UserV2Entity } from "@/models/UserV2Entity";
 
@@ -33,15 +32,7 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
     return;
   }
 
-  const userId = user.legacy_id? user.legacy_id : user.id;
-
   // 2. activate subscription
-  await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: userId, customer_id: customer.id },
-    { active: true },
-    { upsert: true }
-  );
-
   user.subscription_product_id = productId;
   user.customer_id = customer.id;
   user.subscription_active = true;
@@ -51,7 +42,7 @@ const handleSubscriptionActive = async (subscriptionData: Subscription) => {
 const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
   await dbConnect();
 
-  const { productId, customer } = subscriptionData;
+  const { customer } = subscriptionData;
   const { email } = customer;
 
   // 1. get user
@@ -60,14 +51,7 @@ const handleSubscriptionRevoked = async (subscriptionData: Subscription) => {
     return;
   }
 
-  const userId = user.legacy_id? user.legacy_id : user.id;
-
   // 2. revoke subscription
-  await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: userId },
-    { active: false },
-    { upsert: true }
-  );
   user.subscription_active = false;
   await user.save();
 };
@@ -84,22 +68,7 @@ const handleSubscriptionUpdated = async (order: Order) => {
     return;
   }
 
-  const userId = user.legacy_id? user.legacy_id : user.id;
-
-  // 2. revoke old subscription
-  await SubscriptionEntity.findOneAndUpdate(
-    { user_id: userId, active: true },
-    { active: false },
-    { upsert: true }
-  );
-
-  // 3. activate new subscription
-  await SubscriptionEntity.findOneAndUpdate(
-    { product_id: productId, user_id: userId, customer_id: customer.id },
-    { active: true },
-    { upsert: true }
-  );
-
+  // 2. update subscription
   user.subscription_product_id = productId;
   user.subscription_active = true;
   await user.save();
