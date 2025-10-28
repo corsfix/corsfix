@@ -11,6 +11,7 @@ import { checkRateLimit } from "../lib/services/ratelimitService";
 import { IS_SELFHOST, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
+import { getConfig } from "../lib/config";
 
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
@@ -51,6 +52,14 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     if (IS_SELFHOST) {
       rpm = 180;
     } else if (user.subscription_active && user.subscription_product_id) {
+      const config = getConfig();
+      if (
+        !config.products.some(
+          (product) => product.id === user.subscription_product_id
+        )
+      ) {
+        return res.status(400).end(`Corsfix: Subscription product ID '${user.subscription_product_id}' not found in configuration.`);
+      }
       rpm = getRpmByProductId(user.subscription_product_id);
     } else if (isTrialActive(user)) {
       rpm = trialLimit.rpm;
