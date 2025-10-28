@@ -1,4 +1,5 @@
 import { app } from "./app";
+import { initConfig } from "./lib/config";
 import dbConnect from "./lib/dbConnect";
 import { registerAppInvalidateCacheHandlers } from "./lib/services/applicationService";
 import { initRedis } from "./lib/services/cacheService";
@@ -20,6 +21,8 @@ const PORT = 80;
   registerAppInvalidateCacheHandlers();
 
   registerMetricShutdownHandlers();
+
+  initConfig(process.env.CONFIG_PATH);
 
   app
     .listen(PORT)

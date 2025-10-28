@@ -10,8 +10,8 @@ import {
 } from "undici";
 import { getSecretsMap } from "./services/secretService";
 import ipaddr from "ipaddr.js";
-import { config } from "../config/constants";
 import { UserV2Entity } from "../models/UserV2Entity";
+import { getConfig } from "./config";
 
 interface ProxyRequest {
   url: URL;
@@ -194,6 +194,7 @@ export const proxyFetch = async (
 };
 
 export const getRpmByProductId = (product_id: string): number => {
+  const config = getConfig();
   const product = config.products.find((p) => p.id === product_id);
   if (!product) {
     return 60;
