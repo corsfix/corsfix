@@ -58,7 +58,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
           (product) => product.id === user.subscription_product_id
         )
       ) {
-        return res.status(400).end(`Corsfix: Invalid subscription.`);
+        return res.status(400).end(`Corsfix: Subscription product ID '${user.subscription_product_id}' not found in configuration.`);
       }
       rpm = getRpmByProductId(user.subscription_product_id);
     } else if (isTrialActive(user)) {
