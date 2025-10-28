@@ -55,7 +55,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       const config = getConfig();
       if (
         !config.products.some(
-          (product) => product.id == user.subscription_product_id
+          (product) => product.id === user.subscription_product_id
         )
       ) {
         return res.status(400).end(`Corsfix: Invalid subscription.`);
