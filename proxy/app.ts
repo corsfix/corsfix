@@ -11,6 +11,7 @@ import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
+import { Response as APIResponse } from "undici";
 
 const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
 
@@ -96,7 +97,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       ));
     }
 
-    const response = await proxyFetch(processedUrl, {
+    const apiResponse = await proxyFetch(processedUrl, {
       method: req.method,
       headers: processedHeaders,
       redirect: "follow",
@@ -107,7 +108,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     });
 
     const responseHeaders = new Headers();
-    for (const [key, value] of response.headers.entries()) {
+    for (const [key, value] of apiResponse.headers.entries()) {
       responseHeaders.set(key, value);
     }
 
@@ -128,75 +129,9 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
 
     if (!callback) {
-      // CORS request
-      res.status(response.status);
-
-      for (const [key, value] of responseHeaders.entries()) {
-        res.header(key, value);
-      }
-
-      if (response.body) {
-        const reader = response.body.getReader();
-        let bytes = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
-          bytes += value.length;
-        }
-        req.ctx_bytes = bytes;
-      }
-
-      return res.end();
+      corsHandler(req, res, apiResponse, responseHeaders);
     } else {
-      // JSONP request
-      let body;
-      let type: "json" | "text" | "base64" | "empty" = "empty";
-      if (response.body) {
-        const contentLength = response.headers.get("content-length");
-        if (
-          contentLength &&
-          parseInt(contentLength) > MAX_JSONP_RESPONSE_SIZE
-        ) {
-          throw new Error("Response body too large for JSONP (max 3MB)");
-        }
-
-        const buf = await response.arrayBuffer();
-        if (buf.byteLength > MAX_JSONP_RESPONSE_SIZE) {
-          throw new Error("Response body too large for JSONP (max 3MB)");
-        }
-
-        try {
-          const text = decoder.decode(buf);
-          try {
-            const json = JSON.parse(text);
-            type = "json";
-            body = json;
-          } catch {
-            type = "text";
-            body = text;
-          }
-        } catch {
-          type = "base64";
-          body = Buffer.from(buf).toString("base64");
-        }
-      } else {
-        body = "";
-      }
-
-      const headersObject: Record<string, string> = {};
-      for (const [key, value] of responseHeaders.entries()) {
-        headersObject[key] = value;
-      }
-
-      const json = JSON.stringify({
-        status: response.status,
-        headers: headersObject,
-        type: type,
-        body: body,
-      });
-      res.header("content-type", "application/javascript");
-      return res.send(`${callback}(${json})`);
+      jsonpHandler(res, callback, apiResponse, responseHeaders);
     }
   } catch (error: unknown) {
     const { name, message, cause } = error as Error;
@@ -219,3 +154,84 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
   }
 });
+
+const corsHandler = async (
+  req: CorsfixRequest,
+  res: Response,
+  apiResponse: APIResponse,
+  responseHeaders: Headers
+) => {
+  // CORS request
+  res.status(apiResponse.status);
+
+  for (const [key, value] of responseHeaders.entries()) {
+    res.header(key, value);
+  }
+
+  if (apiResponse.body) {
+    const reader = apiResponse.body.getReader();
+    let bytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(value);
+      bytes += value.length;
+    }
+    req.ctx_bytes = bytes;
+  }
+
+  return res.end();
+};
+
+const jsonpHandler = async (
+  res: Response,
+  callback: string,
+  apiResponse: APIResponse,
+  responseHeaders: Headers
+) => {
+  // JSONP request
+  let body;
+  let type: "json" | "text" | "base64" | "empty" = "empty";
+  if (apiResponse.body) {
+    const contentLength = responseHeaders.get("content-length");
+    if (contentLength && parseInt(contentLength) > MAX_JSONP_RESPONSE_SIZE) {
+      throw new Error("Response body too large for JSONP (max 3MB)");
+    }
+
+    const buf = await apiResponse.arrayBuffer();
+    if (buf.byteLength > MAX_JSONP_RESPONSE_SIZE) {
+      throw new Error("Response body too large for JSONP (max 3MB)");
+    }
+
+    try {
+      const text = decoder.decode(buf);
+      try {
+        const json = JSON.parse(text);
+        type = "json";
+        body = json;
+      } catch {
+        type = "text";
+        body = text;
+      }
+    } catch {
+      type = "base64";
+      body = Buffer.from(buf).toString("base64");
+    }
+  } else {
+    body = "";
+  }
+
+  const headersObject: Record<string, string> = {};
+  for (const [key, value] of responseHeaders.entries()) {
+    headersObject[key] = value;
+  }
+
+  const json = JSON.stringify({
+    status: apiResponse.status,
+    headers: headersObject,
+    type: type,
+    body: body,
+  });
+  res.header("content-type", "application/javascript");
+  return res.send(`${callback}(${json})`);
+};
