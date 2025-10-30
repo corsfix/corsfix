@@ -16,7 +16,7 @@ import { Response as APIResponse } from "undici";
 import "dotenv/config";
 
 const TEXT_ONLY = process.env.TEXT_ONLY === "true";
-const MAX_JSONP_RESPONSE_SIZE = 3 * 1024 * 1024;
+const ONE_MEGABYTE = 1024 * 1024;
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
@@ -61,6 +61,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
   req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
+  const disableAcceptEncoding = callback || TEXT_ONLY;
+
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const lowerKey = key.toLowerCase();
@@ -70,7 +72,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
       !lowerKey.startsWith("x-forwarded-") &&
-      !(callback && lowerKey === "accept-encoding")
+      !(disableAcceptEncoding && lowerKey === "accept-encoding")
     ) {
       filteredHeaders[key] = value;
     }
@@ -196,12 +198,17 @@ const textOnlyHandler = async (
 ) => {
   // check Content-Length
   const contentLengthHeader = apiResponse.headers.get("content-length");
-  const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
-  if (contentLength !== null && !isNaN(contentLength) && contentLength > 1024 * 1024) {
+  const contentLength = contentLengthHeader
+    ? parseInt(contentLengthHeader, 10)
+    : null;
+  if (
+    contentLength !== null &&
+    !isNaN(contentLength) &&
+    contentLength > ONE_MEGABYTE
+  ) {
     return res.status(400).end("Corsfix: Text response size too large.");
   }
 
-  // CORS request
   res.status(apiResponse.status);
 
   for (const [key, value] of responseHeaders.entries()) {
@@ -221,7 +228,7 @@ const textOnlyHandler = async (
       bytes += value.length;
 
       // Check if we exceeded size limit
-      if (bytes > 1024 * 1024) {
+      if (bytes > ONE_MEGABYTE) {
         return res.status(400).end("Corsfix: Response size too large.");
       }
     }
@@ -248,19 +255,43 @@ const jsonpHandler = async (
   apiResponse: APIResponse,
   responseHeaders: Headers
 ) => {
-  // JSONP request
   let body;
   let type: "json" | "text" | "base64" | "empty" = "empty";
   if (apiResponse.body) {
-    const contentLength = responseHeaders.get("content-length");
-    if (contentLength && parseInt(contentLength) > MAX_JSONP_RESPONSE_SIZE) {
-      throw new Error("Response body too large for JSONP (max 3MB)");
+    const contentLengthHeader = apiResponse.headers.get("content-length");
+    const contentLength = contentLengthHeader
+      ? parseInt(contentLengthHeader, 10)
+      : null;
+    if (
+      contentLength !== null &&
+      !isNaN(contentLength) &&
+      contentLength > ONE_MEGABYTE
+    ) {
+      return res
+        .status(400)
+        .end("Corsfix: Response size too large for JSONP (max 1MB).");
     }
 
-    const buf = await apiResponse.arrayBuffer();
-    if (buf.byteLength > MAX_JSONP_RESPONSE_SIZE) {
-      throw new Error("Response body too large for JSONP (max 3MB)");
+    const reader = apiResponse.body.getReader();
+    let bytes = 0;
+    const chunks: Uint8Array[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      chunks.push(value);
+      bytes += value.length;
+
+      // Check if we exceeded size limit
+      if (bytes > ONE_MEGABYTE) {
+        return res
+          .status(400)
+          .end("Corsfix: Response size too large for JSONP (max 1MB).");
+      }
     }
+
+    const buf = Buffer.concat(chunks);
 
     try {
       const text = decoder.decode(buf);
@@ -274,7 +305,7 @@ const jsonpHandler = async (
       }
     } catch {
       type = "base64";
-      body = Buffer.from(buf).toString("base64");
+      body = buf.toString("base64");
     }
   } else {
     body = "";
