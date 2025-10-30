@@ -30,4 +30,4 @@ jobs:
           path-to-signatures: "v2025-07-30/signatures.json"
           path-to-document: "https://github.com/corsfix/cla/blob/main/README.md"
           branch: "main"
-          allowlist: github-copilot[bot]
+          allowlist: copilot,copilot[bot]
