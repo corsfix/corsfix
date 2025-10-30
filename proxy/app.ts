@@ -195,10 +195,9 @@ const textOnlyHandler = async (
   responseHeaders: Headers
 ) => {
   // check Content-Length
-  const contentLength = apiResponse.headers.get(
-    "content-length"
-  ) as unknown as number;
-  if (contentLength > 1024 * 1024) {
+  const contentLengthHeader = apiResponse.headers.get("content-length");
+  const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
+  if (contentLength !== null && !isNaN(contentLength) && contentLength > 1024 * 1024) {
     return res.status(400).end("Corsfix: Text response size too large.");
   }
 
