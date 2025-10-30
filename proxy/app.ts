@@ -221,7 +221,7 @@ const textOnlyHandler = async (
       bytes += value.length;
 
       // Check if we exceeded size limit
-      if (bytes >= 1024 * 1024) {
+      if (bytes > 1024 * 1024) {
         return res.status(400).end("Corsfix: Response size too large.");
       }
     }
