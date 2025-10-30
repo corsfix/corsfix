@@ -98,7 +98,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-app:${{ github.sha }}-arm64
           
           # Get the digest of the manifest
-          DIGEST=$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-app:latest --raw | sha256sum | awk '{print "sha256:" $1}')
+          DIGEST=$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-app:latest --format '{{.Manifest.Digest}}')
           echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Sign the published app Docker image
@@ -199,7 +199,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-proxy:${{ github.sha }}-arm64
           
           # Get the digest of the manifest
-          DIGEST=$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-proxy:latest --raw | sha256sum | awk '{print "sha256:" $1}')
+          DIGEST=$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-proxy:latest --format '{{.Manifest.Digest}}')
           echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Sign the published proxy Docker image
