@@ -85,7 +85,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     }
 
     let rateLimitKey = req.header("x-real-ip") || req.ip;
-    if (product && "user_id" == product.rateLimitKey) {
+    if (product && product.rateLimitKey === "user_id") {
       rateLimitKey = user.id;
     }
 
