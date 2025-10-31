@@ -25,10 +25,15 @@ const rpm180 = new RateLimiterMemory({
   points: 180,
   duration: 60,
 });
+const rpm600 = new RateLimiterMemory({
+  points: 600,
+  duration: 60,
+});
 
 let rpm60Redis: RateLimiterRedis;
 let rpm120Redis: RateLimiterRedis;
 let rpm180Redis: RateLimiterRedis;
+let rpm600Redis: RateLimiterRedis;
 
 const consumeSyncRedis = async (
   rateLimiterMemory: RateLimiterMemory,
@@ -86,6 +91,9 @@ export const checkRateLimit = async (
         case 180:
           rateLimiterRes = await rpm180.consume(key);
           break;
+        case 600:
+          rateLimiterRes = await rpm600.consume(key);
+          break;
         default:
           rateLimiterRes = await rpm60.consume(key);
       }
@@ -99,6 +107,9 @@ export const checkRateLimit = async (
           break;
         case 180:
           rateLimiterRes = await consumeSyncRedis(rpm180, rpm180Redis, key);
+          break;
+        case 600:
+          rateLimiterRes = await consumeSyncRedis(rpm600, rpm600Redis, key);
           break;
         default:
           rateLimiterRes = await rpm60.consume(key);
@@ -151,5 +162,12 @@ export const registerGlobalRateLimiter = () => {
     duration: 60,
     storeClient: redisClient,
     keyPrefix: "rpm180",
+  });
+
+  rpm600Redis = new RateLimiterRedis({
+    points: 600,
+    duration: 60,
+    storeClient: redisClient,
+    keyPrefix: "rpm600",
   });
 };
