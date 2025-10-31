@@ -10,9 +10,14 @@ import { DialogTitle } from "@radix-ui/react-dialog";
 interface AuthModalProps {
   isOpen: boolean;
   isCloud: boolean;
+  disableSignup: boolean;
 }
 
-export function AuthModal({ isOpen, isCloud }: AuthModalProps) {
+export function AuthModal({
+  isOpen,
+  isCloud,
+  disableSignup,
+}: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleAuthMode = () => {
@@ -33,18 +38,20 @@ export function AuthModal({ isOpen, isCloud }: AuthModalProps) {
                 : "Enter your email below to create your account"}
             </p>
           </div>
-          <div className="flex justify-center mb-2">
-            <Button
-              variant="ghost"
-              onClick={toggleAuthMode}
-              data-umami-event="auth-toggle"
-              className="text-sm"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Login"}
-            </Button>
-          </div>
+          {!disableSignup && (
+            <div className="flex justify-center mb-2">
+              <Button
+                variant="ghost"
+                onClick={toggleAuthMode}
+                data-umami-event="auth-toggle"
+                className="text-sm"
+              >
+                {isLogin
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Login"}
+              </Button>
+            </div>
+          )}
           <UserAuthForm isLogin={isLogin} isCloud={isCloud} />
           <p className="px-2 text-center text-xs text-muted-foreground">
             By continuing, you agree to our{" "}

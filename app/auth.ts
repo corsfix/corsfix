@@ -5,7 +5,7 @@ import GitHub from "next-auth/providers/github";
 import Email from "next-auth/providers/email";
 import Credentials from "next-auth/providers/credentials";
 import dbConnect from "./lib/dbConnect";
-import { IS_CLOUD } from "./config/constants";
+import { IS_CLOUD, DISABLE_SIGNUP } from "./config/constants";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -54,6 +54,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             );
 
             if (!user) {
+              // Check if signup is disabled for self-hosted instances
+              if (DISABLE_SIGNUP) {
+                throw new Error("Signups are disabled");
+              }
+
               const salt = await bcrypt.genSalt(10);
               const hash = await bcrypt.hash(
                 credentials.password as string,
