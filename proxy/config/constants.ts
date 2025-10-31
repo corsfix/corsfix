@@ -14,3 +14,4 @@ export const trialLimit: TrialLimit = {
 
 export const IS_CLOUD = process.env.CLOUD === "true";
 export const IS_SELFHOST = !IS_CLOUD;
+export const SELFHOST_RPM = process.env.RPM ? parseInt(process.env.RPM, 10) : 180;

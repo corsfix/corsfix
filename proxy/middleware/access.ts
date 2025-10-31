@@ -8,7 +8,7 @@ import {
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST, trialLimit } from "../config/constants";
+import { IS_SELFHOST, SELFHOST_RPM, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
@@ -52,7 +52,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     let product = null;
     let rpm;
     if (IS_SELFHOST) {
-      rpm = 180;
+      rpm = SELFHOST_RPM;
     } else if (user.subscription_active && user.subscription_product_id) {
       product = config.products.find(
         (p) => p.id === user.subscription_product_id
