@@ -55,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             if (!user) {
               // Check if signup is disabled for self-hosted instances
-              if (!IS_CLOUD && DISABLE_SIGNUP) {
+              if (DISABLE_SIGNUP) {
                 throw new Error("Signups are disabled");
               }
 
