@@ -14,4 +14,11 @@ export const trialLimit: TrialLimit = {
 
 export const IS_CLOUD = process.env.CLOUD === "true";
 export const IS_SELFHOST = !IS_CLOUD;
-export const SELFHOST_RPM = process.env.RPM ? parseInt(process.env.RPM, 10) : 180;
+
+const parseRPM = (value: string | undefined): number => {
+  if (!value) return 180;
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) || parsed <= 0 ? 180 : parsed;
+};
+
+export const SELFHOST_RPM = parseRPM(process.env.RPM);
