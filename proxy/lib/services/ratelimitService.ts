@@ -168,6 +168,6 @@ export const registerGlobalRateLimiter = () => {
     points: 600,
     duration: 60,
     storeClient: redisClient,
-    keyPrefix: "rpm180",
+    keyPrefix: "rpm600",
   });
 };
