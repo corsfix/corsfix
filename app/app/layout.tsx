@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 import dynamic from "next/dynamic";
 import { SessionProvider } from "next-auth/react";
-import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
+import { IS_CLOUD } from "@/config/constants";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const CrispWithNoSSR = dynamic(() => import("../components/crisp"));
@@ -56,9 +56,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>
-            <AuthGuard isCloud={IS_CLOUD} disableSignup={DISABLE_SIGNUP}>
-              {children}
-            </AuthGuard>
+            <AuthGuard isCloud={IS_CLOUD}>{children}</AuthGuard>
           </SessionProvider>
           <Toaster />
         </ThemeProvider>
