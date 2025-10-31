@@ -18,10 +18,13 @@ export function AuthModal({
   isCloud,
   disableSignup,
 }: AuthModalProps) {
+  // Force login mode when signup is disabled
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
+    if (!disableSignup) {
+      setIsLogin(!isLogin);
+    }
   };
 
   return (
@@ -30,10 +33,12 @@ export function AuthModal({
         <div className="mx-auto flex w-full flex-col justify-center space-y-6">
           <div className="flex flex-col space-y-2 text-center">
             <DialogTitle className="text-2xl font-semibold tracking-tight">
-              {isLogin ? "Log in to your account" : "Create an account"}
+              {disableSignup || isLogin
+                ? "Log in to your account"
+                : "Create an account"}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {isLogin
+              {disableSignup || isLogin
                 ? "Enter your email below to log in to your account"
                 : "Enter your email below to create your account"}
             </p>
@@ -52,7 +57,10 @@ export function AuthModal({
               </Button>
             </div>
           )}
-          <UserAuthForm isLogin={isLogin} isCloud={isCloud} />
+          <UserAuthForm
+            isLogin={disableSignup || isLogin}
+            isCloud={isCloud}
+          />
           <p className="px-2 text-center text-xs text-muted-foreground">
             By continuing, you agree to our{" "}
             <Link

@@ -13,10 +13,13 @@ export function AuthForm({
   isCloud: boolean;
   disableSignup: boolean;
 }) {
+  // Force login mode when signup is disabled
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
+    if (!disableSignup) {
+      setIsLogin(!isLogin);
+    }
   };
 
   return (
@@ -36,15 +39,17 @@ export function AuthForm({
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {isLogin ? "Log in to your account" : "Create an account"}
+            {disableSignup || isLogin
+              ? "Log in to your account"
+              : "Create an account"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isLogin
+            {disableSignup || isLogin
               ? "Enter your email below to log in to your account"
               : "Enter your email below to create your account"}
           </p>
         </div>
-        <UserAuthForm isLogin={isLogin} isCloud={isCloud} />
+        <UserAuthForm isLogin={disableSignup || isLogin} isCloud={isCloud} />
         <p className="px-8 text-center text-sm text-muted-foreground">
           By continuing, you agree to our{" "}
           <Link
