@@ -52,6 +52,7 @@ const trialBenefits = [
   `${trialLimit.rpm} RPM (per IP)`,
   "Cached response",
   `Secrets variable`,
+  "Global servers",
 ];
 
 const paidBenefits = [
@@ -61,6 +62,7 @@ const paidBenefits = [
   "{{rpm}} RPM (per IP)",
   "Cached response",
   "Secrets variable",
+  "Global servers",
   "Priority support",
 ];
 
