@@ -84,7 +84,7 @@ const configList: Record<string, Config> = {
         type: "standard",
       },
       {
-        id: "46b89204-f1cf-4e12-a84f-bc00efc0fc70",
+        id: "d6ce3bb4-bd1b-4d71-b020-88f1dc481c1d",
         name: "lite",
         price: "5",
         rpm: 600,
