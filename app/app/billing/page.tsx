@@ -342,8 +342,7 @@ export default async function CreditsPage() {
                                   </Link>
                                 </div>
                               )}
-                              {IS_CLOUD &&
-                                subscription.active &&
+                              {subscription.active &&
                                 subscription.name == product.name && (
                                   <div className="mt-6 flex-none">
                                     <Link href="/api/portal" target="_blank">
@@ -455,20 +454,18 @@ export default async function CreditsPage() {
                         </Link>
                       </div>
                     )}
-                    {IS_CLOUD &&
-                      subscription.active &&
-                      subscription.name == "lite" && (
-                        <div className="mt-6 flex-none">
-                          <Link href="/api/portal" target="_blank">
-                            <Button
-                              data-umami-event="billing-manage"
-                              className="w-full flex items-center gap-2"
-                            >
-                              Manage <SquareArrowOutUpRight />
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
+                    {subscription.active && subscription.name == "lite" && (
+                      <div className="mt-6 flex-none">
+                        <Link href="/api/portal" target="_blank">
+                          <Button
+                            data-umami-event="billing-manage"
+                            className="w-full flex items-center gap-2"
+                          >
+                            Manage <SquareArrowOutUpRight />
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
