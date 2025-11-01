@@ -164,26 +164,39 @@ export default async function CreditsPage() {
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{
-                      width: `${Math.min(
-                        Math.ceil(
-                          (bandwidthMtd / subscription.bandwidth) * 100
-                        ),
-                        100
-                      )}%`,
+                      width: subscription.isLite
+                        ? "100%"
+                        : `${Math.min(
+                            Math.ceil(
+                              (bandwidthMtd / subscription.bandwidth) * 100
+                            ),
+                            100
+                          )}%`,
                     }}
                   ></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    {new Date().toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <span>
-                    {formatBytes(bandwidthMtd)}&nbsp;/&nbsp;
-                    {formatBytes(subscription.bandwidth)}
-                  </span>
+                  {subscription.isLite ? (
+                    <>
+                      <div className="text-sm">
+                        You have unlimited data transfer
+                      </div>
+                      <Infinity />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm">
+                        {new Date().toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <span>
+                        {formatBytes(bandwidthMtd)}&nbsp;/&nbsp;
+                        {formatBytes(subscription.bandwidth)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
