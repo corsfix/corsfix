@@ -364,10 +364,20 @@ export default async function CreditsPage() {
                 </div>
               </TabsContent>
               <TabsContent value="lite" className="mt-4">
-                <Card className="w-full">
+                <Card
+                  className={cn(
+                    "w-full",
+                    subscription.isLite && "border-primary"
+                  )}
+                >
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl">Lite</CardTitle>
+                      {subscription.isLite && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                          Active
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-end gap-2 mt-4">
                       <span className="text-3xl font-bold">$5</span>
@@ -380,19 +390,18 @@ export default async function CreditsPage() {
                     <ul className="space-y-4">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited proxy requests</span>
+                        <span>Unlimited proxy requests (lite.corsfix.com)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>
+                          Unlimited data transfer (text only, max 1 MB per
+                          request)
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>Unlimited web applications</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited data transfer</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Text only, max size 1 MB</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
@@ -421,6 +430,10 @@ export default async function CreditsPage() {
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>EU region servers</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Priority support</span>
                       </li>
                     </ul>
                     {!subscription.active && (
