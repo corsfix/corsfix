@@ -192,10 +192,13 @@ export default async function CreditsPage() {
 
         {IS_CLOUD && (
           <div className="mt-6">
-            <Tabs defaultValue="standard" className="w-full">
+            <Tabs
+              defaultValue={subscription.isLite ? "lite" : "standard"}
+              className="w-full"
+            >
               <div className="flex items-center mb-6 space-x-4">
                 <h2 className="text-2xl font-semibold">Plans</h2>
-                <TabsList>
+                <TabsList className="">
                   <TabsTrigger value="standard">Standard</TabsTrigger>
                   <TabsTrigger value="lite">Lite</TabsTrigger>
                 </TabsList>

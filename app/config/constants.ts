@@ -45,7 +45,7 @@ const configList: Record<string, Config> = {
         type: "standard",
       },
       {
-        id: "temp-lite-id",
+        id: "16e7090c-cb67-4545-ae98-6fdda46df7bf",
         name: "lite",
         price: "5",
         rpm: 600,
