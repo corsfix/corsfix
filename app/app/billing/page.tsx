@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Nav from "@/components/nav";
 import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
@@ -108,7 +109,7 @@ export default async function CreditsPage() {
           Billing
         </h1>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -191,135 +192,233 @@ export default async function CreditsPage() {
 
         {IS_CLOUD && (
           <div className="mt-6">
-            <h2 className="text-2xl font-bold mb-6">Plans</h2>
-            <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
-              <div
-                key={"trial"}
-                className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
-              >
-                <Card
-                  className={cn(
-                    "w-full flex flex-col",
-                    isTrial && "border-primary"
-                  )}
-                >
-                  <CardHeader className="flex-none">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">Trial</CardTitle>
-                      {isTrial && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-end gap-2 mt-4">
-                      <span className="text-4xl font-bold">$0</span>
-                      <span className="text-muted-foreground pb-1">
-                        during trial
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-4 flex-1">
-                      {trialBenefits.map((benefit, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span>{benefit}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
+            <Tabs defaultValue="standard" className="w-full">
+              <div className="flex items-center mb-6 space-x-4">
+                <h2 className="text-2xl font-semibold">Plans</h2>
+                <TabsList>
+                  <TabsTrigger value="standard">Standard</TabsTrigger>
+                  <TabsTrigger value="lite">Lite</TabsTrigger>
+                </TabsList>
               </div>
-              {config.products.map((product) => {
-                const isCurrentPlan = subscription.name === product.name;
-                return (
+              <TabsContent value="standard" className="mt-4">
+                <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
                   <div
-                    key={product.id}
+                    key={"trial"}
                     className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
                   >
                     <Card
                       className={cn(
                         "w-full flex flex-col",
-                        isCurrentPlan && "border-primary"
+                        isTrial && "border-primary"
                       )}
                     >
                       <CardHeader className="flex-none">
                         <div className="flex justify-between items-center">
-                          <CardTitle className="text-xl">
-                            {product.name.charAt(0).toUpperCase() +
-                              product.name.slice(1)}
-                          </CardTitle>
-                          {isCurrentPlan && (
+                          <CardTitle className="text-xl">Trial</CardTitle>
+                          {isTrial && (
                             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                               Active
                             </span>
                           )}
                         </div>
                         <div className="flex items-end gap-2 mt-4">
-                          <span className="text-4xl font-bold">
-                            ${product.price}
-                          </span>
+                          <span className="text-3xl font-bold">$0</span>
                           <span className="text-muted-foreground pb-1">
-                            per month
+                            during trial
                           </span>
                         </div>
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col">
                         <ul className="space-y-4 flex-1">
-                          {paidBenefits.map((benefit, index) => (
+                          {trialBenefits.map((benefit, index) => (
                             <li key={index} className="flex items-center gap-2">
                               <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span>
-                                {benefit
-                                  .replace("{{rpm}}", product.rpm.toString())
-                                  .replace(
-                                    "{{bandwidth}}",
-                                    formatBytes(product.bandwidth)
-                                  )}
-                              </span>
+                              <span>{benefit}</span>
                             </li>
                           ))}
                         </ul>
-                        {!subscription.active && (
-                          <div className="mt-6 flex-none">
-                            <Link
-                              href={getCustomerCheckoutLink(
-                                product.link,
-                                session?.user?.email
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button
-                                className="w-full"
-                                data-umami-event={`pricing-${product.name.toLowerCase()}`}
-                              >
-                                Upgrade
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
-                        {IS_CLOUD &&
-                          subscription.active &&
-                          subscription.name == product.name && (
-                            <div className="mt-6 flex-none">
-                              <Link href="/api/portal" target="_blank">
-                                <Button
-                                  data-umami-event="billing-manage"
-                                  className="w-full flex items-center gap-2"
-                                >
-                                  Manage <SquareArrowOutUpRight />
-                                </Button>
-                              </Link>
-                            </div>
-                          )}
                       </CardContent>
                     </Card>
                   </div>
-                );
-              })}
-            </div>
+                  {config.products
+                    .filter((p) => p.type === "standard")
+                    .map((product) => {
+                      const isCurrentPlan = subscription.name === product.name;
+                      return (
+                        <div
+                          key={product.id}
+                          className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
+                        >
+                          <Card
+                            className={cn(
+                              "w-full flex flex-col",
+                              isCurrentPlan && "border-primary"
+                            )}
+                          >
+                            <CardHeader className="flex-none">
+                              <div className="flex justify-between items-center">
+                                <CardTitle className="text-xl">
+                                  {product.name.charAt(0).toUpperCase() +
+                                    product.name.slice(1)}
+                                </CardTitle>
+                                {isCurrentPlan && (
+                                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-end gap-2 mt-4">
+                                <span className="text-3xl font-bold">
+                                  ${product.price}
+                                </span>
+                                <span className="text-muted-foreground pb-1">
+                                  / month
+                                </span>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="flex-1 flex flex-col">
+                              <ul className="space-y-4 flex-1">
+                                {paidBenefits.map((benefit, index) => (
+                                  <li
+                                    key={index}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                                    <span>
+                                      {benefit
+                                        .replace(
+                                          "{{rpm}}",
+                                          product.rpm.toString()
+                                        )
+                                        .replace(
+                                          "{{bandwidth}}",
+                                          formatBytes(product.bandwidth)
+                                        )}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                              {!subscription.active && (
+                                <div className="mt-6 flex-none">
+                                  <Link
+                                    href={getCustomerCheckoutLink(
+                                      product.link,
+                                      session?.user?.email
+                                    )}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Button
+                                      className="w-full"
+                                      data-umami-event={`pricing-${product.name.toLowerCase()}`}
+                                    >
+                                      Upgrade
+                                    </Button>
+                                  </Link>
+                                </div>
+                              )}
+                              {IS_CLOUD &&
+                                subscription.active &&
+                                subscription.name == product.name && (
+                                  <div className="mt-6 flex-none">
+                                    <Link href="/api/portal" target="_blank">
+                                      <Button
+                                        data-umami-event="billing-manage"
+                                        className="w-full flex items-center gap-2"
+                                      >
+                                        Manage <SquareArrowOutUpRight />
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    })}
+                </div>
+              </TabsContent>
+              <TabsContent value="lite" className="mt-4">
+                <Card className="w-full">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-xl">Lite</CardTitle>
+                    </div>
+                    <div className="flex items-end gap-2 mt-4">
+                      <span className="text-3xl font-bold">$5</span>
+                      <span className="text-muted-foreground pb-1">
+                        / month
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-4">
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Unlimited proxy requests</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Unlimited web applications</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Unlimited data transfer*</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Text only, max size 1 MB</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>600 RPM (shared)*</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Secrets variable</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>EU region servers</span>
+                      </li>
+                    </ul>
+                    {!subscription.active && (
+                      <div className="mt-6 flex-none">
+                        <Link
+                          href={getCustomerCheckoutLink(
+                            "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
+                            session?.user?.email
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            className="w-full"
+                            data-umami-event={`pricing-lite`}
+                          >
+                            Upgrade
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                    {IS_CLOUD &&
+                      subscription.active &&
+                      subscription.name == "lite" && (
+                        <div className="mt-6 flex-none">
+                          <Link href="/api/portal" target="_blank">
+                            <Button
+                              data-umami-event="billing-manage"
+                              className="w-full flex items-center gap-2"
+                            >
+                              Manage <SquareArrowOutUpRight />
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>
