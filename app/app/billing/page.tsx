@@ -3,6 +3,7 @@ import {
   BarChart3,
   Check,
   CreditCard,
+  Info,
   Infinity,
   PackageIcon,
   SquareArrowOutUpRight,
@@ -10,6 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Nav from "@/components/nav";
 import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
@@ -379,7 +386,7 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited data transfer*</span>
+                        <span>Unlimited data transfer</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
@@ -387,7 +394,23 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>600 RPM (shared)*</span>
+                        <span className="flex items-center gap-1">
+                          600 RPM (shared)
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  The RPM pool is shared for all visitors of
+                                  your websites, different from Standard plans
+                                  where the RPM is per individual IP address
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
