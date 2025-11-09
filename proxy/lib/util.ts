@@ -1,17 +1,10 @@
 import { Request } from "hyper-express";
-import {
-  EnvHttpProxyAgent,
-  fetch,
-  RequestInfo,
-  RequestInit,
-  Response,
-  Dispatcher,
-  interceptors,
-} from "undici";
+import { EnvHttpProxyAgent, Dispatcher, interceptors, request } from "undici";
 import { getSecretsMap } from "./services/secretService";
 import ipaddr from "ipaddr.js";
 import { UserV2Entity } from "../models/UserV2Entity";
 import { getConfig } from "./config";
+import { Readable } from "stream";
 
 interface ProxyRequest {
   url: URL;
@@ -150,13 +143,24 @@ export const processRequest = async (
   return { url: url, headers: processedHeaders };
 };
 
-export const proxyFetch = async (
-  input: RequestInfo,
-  init?: RequestInit
-): Promise<Response> => {
-  let dispatcher = new EnvHttpProxyAgent().compose([
+export interface ProxyRequestOptions {
+  method: string;
+  body?: string | Buffer | Uint8Array | Readable | null | FormData;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+  decompress?: boolean;
+}
+
+export const proxyRequest = async (
+  url: URL,
+  options: ProxyRequestOptions
+): Promise<Dispatcher.ResponseData<any>> => {
+  const interceptorList = [
     (dispatch: Dispatcher.Dispatch) => {
-      return (opts, handler) => {
+      return (
+        opts: Dispatcher.DispatchOptions,
+        handler: Dispatcher.DispatchHandler
+      ) => {
         const { origin } = opts;
         const url = new URL(origin || "");
 
@@ -184,13 +188,19 @@ export const proxyFetch = async (
       };
     },
     interceptors.dns(),
-  ]);
+  ];
+  if (options.decompress) {
+    interceptorList.unshift(interceptors.decompress());
+  }
 
-  const response = await fetch(input, {
-    ...init,
-    dispatcher,
+  const dispatcher = new EnvHttpProxyAgent().compose(interceptorList);
+  return await request(url, {
+    method: options.method,
+    body: options.body,
+    headers: options.headers,
+    signal: options.signal,
+    dispatcher: dispatcher,
   });
-  return response;
 };
 
 export const getRpmByProductId = (product_id: string): number => {

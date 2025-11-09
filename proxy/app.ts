@@ -1,5 +1,5 @@
 import { MiddlewareNext, Request, Response, Server } from "hyper-express";
-import { proxyFetch, processRequest, isLocalDomain } from "./lib/util";
+import { processRequest, isLocalDomain, proxyRequest } from "./lib/util";
 import { getApplication } from "./lib/services/applicationService";
 import {
   validateJsonpRequest,
@@ -11,7 +11,8 @@ import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
-import { Response as APIResponse } from "undici";
+import { Dispatcher } from "undici";
+import { compressTextResponse } from "./lib/compression";
 
 import "dotenv/config";
 
@@ -61,18 +62,16 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
   req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
-  const disableAcceptEncoding = callback || TEXT_ONLY;
-
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const lowerKey = key.toLowerCase();
     if (
       lowerKey != "referer" &&
       lowerKey != "origin" &&
+      lowerKey != "host" &&
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
-      !lowerKey.startsWith("x-forwarded-") &&
-      !(disableAcceptEncoding && lowerKey === "accept-encoding")
+      !lowerKey.startsWith("x-forwarded-")
     ) {
       filteredHeaders[key] = value;
     }
@@ -102,19 +101,20 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       ));
     }
 
-    const apiResponse = await proxyFetch(processedUrl, {
+    const enableDecompression = !!(callback || TEXT_ONLY);
+    let apiResponse = await proxyRequest(processedUrl, {
       method: req.method,
       headers: processedHeaders,
-      redirect: "follow",
       body: ["GET", "HEAD"].includes(req.method)
         ? undefined
         : await req.buffer(),
       signal: AbortSignal.timeout(20000),
+      decompress: enableDecompression,
     });
 
     const responseHeaders = new Headers();
-    for (const [key, value] of apiResponse.headers.entries()) {
-      responseHeaders.set(key, value);
+    for (const [key, value] of Object.entries(apiResponse.headers)) {
+      if (value != null) responseHeaders.set(key, value.toString());
     }
 
     if (!callback) {
@@ -122,7 +122,6 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       responseHeaders.set("Access-Control-Expose-Headers", "*");
     }
 
-    responseHeaders.delete("content-encoding");
     responseHeaders.delete("transfer-encoding");
 
     responseHeaders.delete("set-cookie");
@@ -134,7 +133,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
 
     if (callback) {
-      jsonpHandler(res, callback, apiResponse, responseHeaders);
+      jsonpHandler(req, res, callback, apiResponse, responseHeaders);
     } else if (TEXT_ONLY) {
       textOnlyHandler(req, res, apiResponse, responseHeaders);
     } else {
@@ -165,22 +164,19 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 const corsHandler = async (
   req: CorsfixRequest,
   res: Response,
-  apiResponse: APIResponse,
+  apiResponse: Dispatcher.ResponseData<any>,
   responseHeaders: Headers
 ) => {
   // CORS request
-  res.status(apiResponse.status);
+  res.status(apiResponse.statusCode);
 
   for (const [key, value] of responseHeaders.entries()) {
     res.header(key, value);
   }
 
   if (apiResponse.body) {
-    const reader = apiResponse.body.getReader();
     let bytes = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    for await (const value of apiResponse.body) {
       res.write(value);
       bytes += value.length;
     }
@@ -193,11 +189,11 @@ const corsHandler = async (
 const textOnlyHandler = async (
   req: CorsfixRequest,
   res: Response,
-  apiResponse: APIResponse,
+  apiResponse: Dispatcher.ResponseData<any>,
   responseHeaders: Headers
 ) => {
   // check Content-Length
-  const contentLengthHeader = apiResponse.headers.get("content-length");
+  const contentLengthHeader = apiResponse.headers["content-length"]?.toString();
   const contentLength = contentLengthHeader
     ? parseInt(contentLengthHeader, 10)
     : null;
@@ -209,27 +205,21 @@ const textOnlyHandler = async (
     return res.status(400).end("Corsfix: Text response size too large.");
   }
 
-  res.status(apiResponse.status);
-
-  for (const [key, value] of responseHeaders.entries()) {
-    res.header(key, value);
-  }
+  res.status(apiResponse.statusCode);
 
   if (apiResponse.body) {
-    const reader = apiResponse.body.getReader();
     let bytes = 0;
     const chunks: Uint8Array[] = [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
+    for await (const value of apiResponse.body) {
       chunks.push(value);
       bytes += value.length;
 
       // Check if we exceeded size limit
       if (bytes > ONE_MEGABYTE) {
-        return res.status(400).end("Corsfix: Response size too large.");
+        return res
+          .status(400)
+          .end("Corsfix: Response size too large (max 1MB).");
       }
     }
 
@@ -240,7 +230,26 @@ const textOnlyHandler = async (
     // Try to decode as text
     try {
       const text = decoder.decode(fullResponse);
-      return res.send(text);
+      const compression = compressTextResponse(
+        req.header("accept-encoding"),
+        text,
+        responseHeaders.get("content-type")
+      );
+
+      responseHeaders.set("Content-Type", compression.contentType);
+      responseHeaders.delete("content-length");
+
+      if (compression.contentEncoding) {
+        responseHeaders.set("Content-Encoding", compression.contentEncoding);
+      } else {
+        responseHeaders.delete("content-encoding");
+      }
+
+      for (const [key, value] of responseHeaders.entries()) {
+        res.header(key, value);
+      }
+
+      return res.send(compression.compressed);
     } catch (error) {
       return res.status(400).end("Corsfix: Response is not valid text.");
     }
@@ -250,15 +259,17 @@ const textOnlyHandler = async (
 };
 
 const jsonpHandler = async (
+  req: CorsfixRequest,
   res: Response,
   callback: string,
-  apiResponse: APIResponse,
+  apiResponse: Dispatcher.ResponseData<any>,
   responseHeaders: Headers
 ) => {
   let body;
   let type: "json" | "text" | "base64" | "empty" = "empty";
   if (apiResponse.body) {
-    const contentLengthHeader = apiResponse.headers.get("content-length");
+    const contentLengthHeader =
+      apiResponse.headers["content-length"]?.toString();
     const contentLength = contentLengthHeader
       ? parseInt(contentLengthHeader, 10)
       : null;
@@ -272,14 +283,10 @@ const jsonpHandler = async (
         .end("Corsfix: Response size too large for JSONP (max 1MB).");
     }
 
-    const reader = apiResponse.body.getReader();
     let bytes = 0;
     const chunks: Uint8Array[] = [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
+    for await (const value of apiResponse.body) {
       chunks.push(value);
       bytes += value.length;
 
@@ -317,11 +324,24 @@ const jsonpHandler = async (
   }
 
   const json = JSON.stringify({
-    status: apiResponse.status,
+    status: apiResponse.statusCode,
     headers: headersObject,
     type: type,
     body: body,
   });
-  res.header("content-type", "application/javascript");
-  return res.send(`${callback}(${json})`);
+  const text = `${callback}(${json})`;
+  const compression = compressTextResponse(
+    req.header("accept-encoding"),
+    text,
+    "application/javascript; charset=utf-8"
+  );
+
+  res.header("content-type", compression.contentType);
+  if (compression.contentEncoding) {
+    res.header("content-encoding", compression.contentEncoding);
+  } else {
+    res.removeHeader("content-encoding");
+  }
+
+  return res.send(compression.compressed);
 };
