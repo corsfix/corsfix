@@ -219,7 +219,7 @@ const textOnlyHandler = async (
       if (bytes > ONE_MEGABYTE) {
         return res
           .status(400)
-          .end("Corsfix: Response size too large for JSONP (max 1MB).");
+          .end("Corsfix: Response size too large (max 1MB).");
       }
     }
 
