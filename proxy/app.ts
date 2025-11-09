@@ -11,7 +11,7 @@ import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
-import { Response as APIResponse, Dispatcher } from "undici";
+import { Dispatcher } from "undici";
 import { compressTextResponse } from "./lib/compression";
 
 import "dotenv/config";

@@ -1,14 +1,5 @@
 import { Request } from "hyper-express";
-import {
-  EnvHttpProxyAgent,
-  fetch,
-  RequestInfo,
-  RequestInit,
-  Response,
-  Dispatcher,
-  interceptors,
-  request,
-} from "undici";
+import { EnvHttpProxyAgent, Dispatcher, interceptors, request } from "undici";
 import { getSecretsMap } from "./services/secretService";
 import ipaddr from "ipaddr.js";
 import { UserV2Entity } from "../models/UserV2Entity";
