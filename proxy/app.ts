@@ -114,7 +114,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
     const responseHeaders = new Headers();
     for (const [key, value] of Object.entries(apiResponse.headers)) {
-      if (value) responseHeaders.set(key, value?.toString());
+      if (value != null) responseHeaders.set(key, value.toString());
     }
 
     if (!callback) {
