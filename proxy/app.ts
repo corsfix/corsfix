@@ -61,8 +61,6 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
   req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
-  const disableAcceptEncoding = callback || TEXT_ONLY;
-
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const lowerKey = key.toLowerCase();
@@ -71,8 +69,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       lowerKey != "origin" &&
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
-      !lowerKey.startsWith("x-forwarded-") &&
-      !(disableAcceptEncoding && lowerKey === "accept-encoding")
+      !lowerKey.startsWith("x-forwarded-")
     ) {
       filteredHeaders[key] = value;
     }
