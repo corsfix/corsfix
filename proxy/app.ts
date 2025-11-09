@@ -12,6 +12,7 @@ import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
 import { Response as APIResponse } from "undici";
+import { compressTextResponse } from "./lib/compression";
 
 import "dotenv/config";
 
@@ -131,7 +132,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
 
     if (callback) {
-      jsonpHandler(res, callback, apiResponse, responseHeaders);
+      jsonpHandler(req, res, callback, apiResponse, responseHeaders);
     } else if (TEXT_ONLY) {
       textOnlyHandler(req, res, apiResponse, responseHeaders);
     } else {
@@ -208,10 +209,6 @@ const textOnlyHandler = async (
 
   res.status(apiResponse.status);
 
-  for (const [key, value] of responseHeaders.entries()) {
-    res.header(key, value);
-  }
-
   if (apiResponse.body) {
     const reader = apiResponse.body.getReader();
     let bytes = 0;
@@ -237,7 +234,26 @@ const textOnlyHandler = async (
     // Try to decode as text
     try {
       const text = decoder.decode(fullResponse);
-      return res.send(text);
+      const compression = compressTextResponse(
+        req.header("accept-encoding"),
+        text,
+        responseHeaders.get("content-type")
+      );
+
+      responseHeaders.set("Content-Type", compression.contentType);
+      responseHeaders.delete("content-length");
+
+      if (compression.contentEncoding) {
+        responseHeaders.set("Content-Encoding", compression.contentEncoding);
+      } else {
+        responseHeaders.delete("content-encoding");
+      }
+
+      for (const [key, value] of responseHeaders.entries()) {
+        res.header(key, value);
+      }
+
+      return res.send(compression.compressed);
     } catch (error) {
       return res.status(400).end("Corsfix: Response is not valid text.");
     }
@@ -247,6 +263,7 @@ const textOnlyHandler = async (
 };
 
 const jsonpHandler = async (
+  req: CorsfixRequest,
   res: Response,
   callback: string,
   apiResponse: APIResponse,
@@ -319,6 +336,19 @@ const jsonpHandler = async (
     type: type,
     body: body,
   });
-  res.header("content-type", "application/javascript");
-  return res.send(`${callback}(${json})`);
+  const text = `${callback}(${json})`;
+  const compression = compressTextResponse(
+    req.header("accept-encoding"),
+    text,
+    "application/javascript; charset=utf-8"
+  );
+
+  res.header("content-type", compression.contentType);
+  if (compression.contentEncoding) {
+    res.header("content-encoding", compression.contentEncoding);
+  } else {
+    res.removeHeader("content-encoding");
+  }
+
+  return res.send(compression.compressed);
 };
