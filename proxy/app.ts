@@ -68,6 +68,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     if (
       lowerKey != "referer" &&
       lowerKey != "origin" &&
+      lowerKey != "host" &&
       !lowerKey.startsWith("sec-") &&
       !lowerKey.startsWith("x-corsfix-") &&
       !lowerKey.startsWith("x-forwarded-")
