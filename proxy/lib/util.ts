@@ -188,7 +188,9 @@ export const proxyRequest = async (
         return dispatch(opts, handler);
       };
     },
-    interceptors.dns(),
+    interceptors.dns({
+      dualStack: false,
+    }),
   ];
   if (options.decompress) {
     interceptorList.unshift(interceptors.decompress());
