@@ -122,8 +122,6 @@ test("proxy request with redirect if 3xx (relative)", async () => {
       Origin: origin,
     },
   });
-  const body = await result.text();
-  console.log(">>>>>>>> debug: ", body, result.url);
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
 });
