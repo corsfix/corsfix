@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { app } from "./app";
-import { text } from "node:stream/consumers";
 
 const PORT = 8090;
 
