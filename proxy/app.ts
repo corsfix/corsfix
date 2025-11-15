@@ -110,6 +110,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
         : await req.buffer(),
       signal: AbortSignal.timeout(20000),
       decompress: enableDecompression,
+      maxRedirects: 5,
     });
 
     const responseHeaders = new Headers();

@@ -99,6 +99,32 @@ test("proxy request (path)", async () => {
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
 });
 
+test("proxy request with redirect if 3xx", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/absolute-redirect/3`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
+    headers: {
+      Origin: origin,
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+});
+
+test("proxy request with redirect if 3xx (relative)", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/redirect/3`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
+    headers: {
+      Origin: origin,
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+});
+
 test("jsonp request", async () => {
   const origin = "http://127.0.0.1:3000";
   const targetUrl = `https://httpbin.agrd.workers.dev/get`;

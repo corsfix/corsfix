@@ -149,6 +149,7 @@ export interface ProxyRequestOptions {
   headers?: Record<string, string>;
   signal?: AbortSignal;
   decompress?: boolean;
+  maxRedirects?: number;
 }
 
 export const proxyRequest = async (
@@ -169,7 +170,7 @@ export const proxyRequest = async (
           opts.path = "/error";
         }
 
-        const address = url.hostname;
+        const address = url.hostname.replace(/^\[|\]$/g, "");
         const range = ipaddr.parse(address).range();
         if (
           [
@@ -187,20 +188,46 @@ export const proxyRequest = async (
         return dispatch(opts, handler);
       };
     },
-    interceptors.dns(),
+    interceptors.dns({
+      dualStack: false,
+    }),
   ];
   if (options.decompress) {
     interceptorList.unshift(interceptors.decompress());
   }
 
   const dispatcher = new EnvHttpProxyAgent().compose(interceptorList);
-  return await request(url, {
-    method: options.method,
-    body: options.body,
-    headers: options.headers,
-    signal: options.signal,
-    dispatcher: dispatcher,
-  });
+  const maxRedirections = options.maxRedirects ?? 0;
+  let currentUrl = url;
+  let redirectCount = 0;
+
+  while (redirectCount <= maxRedirections) {
+    const result = await request(currentUrl, {
+      method: options.method,
+      body: options.body,
+      headers: options.headers,
+      signal: options.signal,
+      dispatcher: dispatcher,
+    });
+
+    if (300 <= result.statusCode && result.statusCode <= 399) {
+      const location = result.headers.location;
+      if (!location) {
+        return result;
+      }
+
+      redirectCount++;
+      if (redirectCount > maxRedirections) {
+        return result;
+      }
+
+      currentUrl = new URL(location, currentUrl);
+    } else {
+      return result;
+    }
+  }
+
+  throw new Error("Maximum redirects exceeded");
 };
 
 export const getRpmByProductId = (product_id: string): number => {
