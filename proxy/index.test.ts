@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { app } from "./app";
+import { text } from "node:stream/consumers";
 
 const PORT = 8090;
 
@@ -121,6 +122,8 @@ test("proxy request with redirect if 3xx (relative)", async () => {
       Origin: origin,
     },
   });
+  const body = await result.text();
+  console.log(">>>>>>>> debug: ", body, result.url);
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
 });
