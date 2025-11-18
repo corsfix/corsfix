@@ -45,13 +45,11 @@ function getCustomerCheckoutLink(
 }
 
 const trialBenefits = [
-  `Unlimited proxy requests`,
   `Up to ${trialLimit.app_count} web applications`,
   `${formatBytes(trialLimit.bytes)} data transfer`,
   `${trialLimit.rpm} RPM (per IP)`,
   "Cached response",
   `Secrets variable`,
-  "Global servers",
 ];
 
 const paidBenefits = [
@@ -61,7 +59,7 @@ const paidBenefits = [
   "{{rpm}} RPM (per IP)",
   "Cached response",
   "Secrets variable",
-  "Global servers",
+  "Global infrastructure",
   "Priority support",
 ];
 
@@ -112,7 +110,7 @@ export default async function CreditsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-1 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-2 inline-flex items-center">
           <CreditCard size={28} className="mr-2" />
           Billing
         </h1>
@@ -231,17 +229,17 @@ export default async function CreditsPage() {
         </div>
 
         {IS_CLOUD && (
-          <div className="mt-4">
-            <h2 className="text-2xl font-semibold mb-1">Plans</h2>
-            <div className="flex flex-col lg:flex-row gap-3">
+          <div className="mt-2">
+            <h2 className="text-2xl font-semibold mb-2">Plans</h2>
+            <div className="flex flex-row gap-3 overflow-x-auto">
               <div
-                className="flex-1 border-2 rounded-lg px-3 pb-2"
+                className="flex-1 border-2 rounded-xl px-1.5 pb-1.5 flex flex-col"
                 style={{ borderColor: "#595BE7" }}
               >
                 <h3 className="text-sm font-bold text-[#595BE7] text-center py-0.5">
                   Standard
                 </h3>
-                <div className="flex flex-row space-x-3">
+                <div className="flex flex-row space-x-3 flex-1">
                   {config.products
                     .filter((p) => p.type === "standard")
                     .map((product) => {
@@ -249,11 +247,11 @@ export default async function CreditsPage() {
                       return (
                         <div
                           key={product.id}
-                          className="w-1/3 min-w-[350px] mb-8 lg:mb-0 snap-center flex"
+                          className="w-1/3 min-w-[350px] mb-8 lg:mb-0 snap-center flex h-full"
                         >
                           <Card
                             className={cn(
-                              "w-full flex flex-col",
+                              "w-full flex flex-col h-full",
                               isCurrentPlan && "border-primary"
                             )}
                           >
@@ -340,7 +338,7 @@ export default async function CreditsPage() {
                 </div>
               </div>
               <div
-                className="flex-1 border-2 rounded-lg px-3 pb-2"
+                className="flex-1 border-2 rounded-xl px-1.5 pb-1.5 flex flex-col"
                 style={{ borderColor: "#59A2E7" }}
               >
                 <h3 className="text-sm font-bold text-[#59A2E7] text-center py-0.5">
@@ -348,7 +346,7 @@ export default async function CreditsPage() {
                 </h3>
                 <Card
                   className={cn(
-                    "w-full flex flex-col",
+                    "w-full min-w-[350px] flex flex-col flex-1",
                     subscription.isLite && "border-primary"
                   )}
                 >
@@ -390,6 +388,10 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Unlimited web applications</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="flex items-center gap-1">
                           Unlimited data transfer
                           <TooltipProvider delayDuration={0}>
@@ -408,12 +410,8 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited web applications</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="flex items-center gap-1">
-                          600 RPM
+                          600 RPM (shared)
                           <TooltipProvider delayDuration={0}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -436,7 +434,7 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>EU region servers</span>
+                        <span>EU region infrastructure</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
