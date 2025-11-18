@@ -21,7 +21,6 @@ import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { config, IS_CLOUD, trialLimit } from "@/config/constants";
 import {
-  cn,
   formatBytes,
   getTrialEnds,
   getUserId,
@@ -56,10 +55,11 @@ const paidBenefits = [
   "Unlimited proxy requests",
   "Unlimited web applications",
   "{{bandwidth}} data transfer",
+  "No content or size limits",
   "{{rpm}} RPM (per IP)",
+  "Global infrastructure",
   "Cached response",
   "Secrets variable",
-  "Global infrastructure",
   "Priority support",
 ];
 
@@ -233,7 +233,7 @@ export default async function CreditsPage() {
             <h2 className="text-2xl font-semibold mb-2">Plans</h2>
             <div className="flex flex-row gap-3 overflow-x-auto">
               <div
-                className="flex-1 border-2 rounded-xl px-1.5 pb-1.5 flex flex-col"
+                className="flex-1 border-2 rounded-xl px-2 pb-2 flex flex-col"
                 style={{ borderColor: "#595BE7" }}
               >
                 <h3 className="text-sm font-bold text-[#595BE7] text-center py-0.5">
@@ -249,13 +249,8 @@ export default async function CreditsPage() {
                           key={product.id}
                           className="w-1/3 min-w-[350px] mb-8 lg:mb-0 snap-center flex h-full"
                         >
-                          <Card
-                            className={cn(
-                              "w-full flex flex-col h-full",
-                              isCurrentPlan && "border-primary"
-                            )}
-                          >
-                            <CardHeader className="flex-none">
+                          <Card className="w-full flex flex-col h-full">
+                            <CardHeader className="flex-none pb-3">
                               <div className="flex justify-between items-center">
                                 <CardTitle className="text-xl">
                                   {product.name.charAt(0).toUpperCase() +
@@ -277,6 +272,48 @@ export default async function CreditsPage() {
                               </div>
                             </CardHeader>
                             <CardContent className="flex-1 flex flex-col">
+                              {!subscription.active && (
+                                <div className="mb-6 flex-none">
+                                  <Link
+                                    href={getCustomerCheckoutLink(
+                                      product.link,
+                                      session?.user?.email
+                                    )}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Button
+                                      className="w-full"
+                                      data-umami-event={`pricing-${product.name.toLowerCase()}`}
+                                    >
+                                      Upgrade
+                                    </Button>
+                                  </Link>
+                                </div>
+                              )}
+                              {subscription.active && (
+                                <div className="mb-6 flex-none">
+                                  <Link href="/api/portal" target="_blank">
+                                    <Button
+                                      data-umami-event="billing-manage"
+                                      className="w-full flex items-center gap-2"
+                                      variant={
+                                        subscription.name == product.name
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                    >
+                                      {subscription.name == product.name ? (
+                                        <>
+                                          Manage <SquareArrowOutUpRight />
+                                        </>
+                                      ) : (
+                                        "Change Plan"
+                                      )}
+                                    </Button>
+                                  </Link>
+                                </div>
+                              )}
                               <ul className="space-y-4 flex-1">
                                 {paidBenefits.map((benefit, index) => (
                                   <li
@@ -298,38 +335,6 @@ export default async function CreditsPage() {
                                   </li>
                                 ))}
                               </ul>
-                              {!subscription.active && (
-                                <div className="mt-6 flex-none">
-                                  <Link
-                                    href={getCustomerCheckoutLink(
-                                      product.link,
-                                      session?.user?.email
-                                    )}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <Button
-                                      className="w-full"
-                                      data-umami-event={`pricing-${product.name.toLowerCase()}`}
-                                    >
-                                      Upgrade
-                                    </Button>
-                                  </Link>
-                                </div>
-                              )}
-                              {subscription.active &&
-                                subscription.name == product.name && (
-                                  <div className="mt-6 flex-none">
-                                    <Link href="/api/portal" target="_blank">
-                                      <Button
-                                        data-umami-event="billing-manage"
-                                        className="w-full flex items-center gap-2"
-                                      >
-                                        Manage <SquareArrowOutUpRight />
-                                      </Button>
-                                    </Link>
-                                  </div>
-                                )}
                             </CardContent>
                           </Card>
                         </div>
@@ -338,19 +343,14 @@ export default async function CreditsPage() {
                 </div>
               </div>
               <div
-                className="flex-1 border-2 rounded-xl px-1.5 pb-1.5 flex flex-col"
+                className="w-full min-w-[350px] flex-1 border-2 rounded-xl px-2 pb-2 flex flex-col"
                 style={{ borderColor: "#59A2E7" }}
               >
                 <h3 className="text-sm font-bold text-[#59A2E7] text-center py-0.5">
                   Lite
                 </h3>
-                <Card
-                  className={cn(
-                    "w-full min-w-[350px] flex flex-col flex-1",
-                    subscription.isLite && "border-primary"
-                  )}
-                >
-                  <CardHeader className="flex-none">
+                <Card className="flex flex-col flex-1">
+                  <CardHeader className="flex-none pb-3">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl">Lite</CardTitle>
                       {subscription.isLite && (
@@ -367,6 +367,48 @@ export default async function CreditsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col">
+                    {!subscription.active && (
+                      <div className="mb-6 flex-none">
+                        <Link
+                          href={getCustomerCheckoutLink(
+                            "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
+                            session?.user?.email
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            className="w-full"
+                            data-umami-event={`pricing-lite`}
+                          >
+                            Upgrade
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                    {subscription.active && (
+                      <div className="mb-6 flex-none">
+                        <Link href="/api/portal" target="_blank">
+                          <Button
+                            data-umami-event="billing-manage"
+                            className="w-full flex items-center gap-2"
+                            variant={
+                              subscription.name == "lite"
+                                ? "default"
+                                : "outline"
+                            }
+                          >
+                            {subscription.name == "lite" ? (
+                              <>
+                                Manage <SquareArrowOutUpRight />
+                              </>
+                            ) : (
+                              "Change Plan"
+                            )}
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
                     <ul className="space-y-4 flex-1">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
@@ -410,6 +452,10 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>Text contents (max. 1MB size)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="flex items-center gap-1">
                           600 RPM (shared)
                           <TooltipProvider delayDuration={0}>
@@ -430,48 +476,17 @@ export default async function CreditsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Secrets variable</span>
+                        <span>EU region infrastructure</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>EU region infrastructure</span>
+                        <span>Secrets variable</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>Priority support</span>
                       </li>
                     </ul>
-                    {!subscription.active && (
-                      <div className="mt-6 flex-none">
-                        <Link
-                          href={getCustomerCheckoutLink(
-                            "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
-                            session?.user?.email
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button
-                            className="w-full"
-                            data-umami-event={`pricing-lite`}
-                          >
-                            Upgrade
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                    {subscription.active && subscription.name == "lite" && (
-                      <div className="mt-6 flex-none">
-                        <Link href="/api/portal" target="_blank">
-                          <Button
-                            data-umami-event="billing-manage"
-                            className="w-full flex items-center gap-2"
-                          >
-                            Manage <SquareArrowOutUpRight />
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
