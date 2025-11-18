@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -113,7 +112,7 @@ export default async function CreditsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-1 inline-flex items-center">
           <CreditCard size={28} className="mr-2" />
           Billing
         </h1>
@@ -232,20 +231,17 @@ export default async function CreditsPage() {
         </div>
 
         {IS_CLOUD && (
-          <div className="mt-6">
-            <Tabs
-              defaultValue={subscription.isLite ? "lite" : "standard"}
-              className="w-full"
-            >
-              <div className="flex items-center mb-6 space-x-4">
-                <h2 className="text-2xl font-semibold">Plans</h2>
-                <TabsList className="">
-                  <TabsTrigger value="standard">Standard</TabsTrigger>
-                  <TabsTrigger value="lite">Lite</TabsTrigger>
-                </TabsList>
-              </div>
-              <TabsContent value="standard" className="mt-4">
-                <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
+          <div className="mt-4">
+            <h2 className="text-2xl font-semibold mb-1">Plans</h2>
+            <div className="flex flex-col lg:flex-row gap-3">
+              <div
+                className="flex-1 border-2 rounded-lg px-3 pb-2"
+                style={{ borderColor: "#595BE7" }}
+              >
+                <h3 className="text-sm font-bold text-[#595BE7] text-center py-0.5">
+                  Standard
+                </h3>
+                <div className="flex flex-row space-x-3">
                   {config.products
                     .filter((p) => p.type === "standard")
                     .map((product) => {
@@ -253,7 +249,7 @@ export default async function CreditsPage() {
                       return (
                         <div
                           key={product.id}
-                          className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
+                          className="w-1/3 min-w-[350px] mb-8 lg:mb-0 snap-center flex"
                         >
                           <Card
                             className={cn(
@@ -342,15 +338,21 @@ export default async function CreditsPage() {
                       );
                     })}
                 </div>
-              </TabsContent>
-              <TabsContent value="lite" className="mt-4">
+              </div>
+              <div
+                className="flex-1 border-2 rounded-lg px-3 pb-2"
+                style={{ borderColor: "#59A2E7" }}
+              >
+                <h3 className="text-sm font-bold text-[#59A2E7] text-center py-0.5">
+                  Lite
+                </h3>
                 <Card
                   className={cn(
-                    "w-full",
+                    "w-full flex flex-col",
                     subscription.isLite && "border-primary"
                   )}
                 >
-                  <CardHeader>
+                  <CardHeader className="flex-none">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl">Lite</CardTitle>
                       {subscription.isLite && (
@@ -366,17 +368,42 @@ export default async function CreditsPage() {
                       </span>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-4">
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-4 flex-1">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited proxy requests (lite.corsfix.com)</span>
+                        <span className="flex items-center gap-1">
+                          Unlimited proxy requests
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  Proxy URL: lite.corsfix.com
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          Unlimited data transfer (text only, max 1 MB per
-                          request)
+                        <span className="flex items-center gap-1">
+                          Unlimited data transfer
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  Text only, max 1 MB per request
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </span>
                       </li>
                       <li className="flex items-center gap-2">
@@ -386,7 +413,7 @@ export default async function CreditsPage() {
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="flex items-center gap-1">
-                          600 RPM (shared)
+                          600 RPM
                           <TooltipProvider delayDuration={0}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -449,8 +476,8 @@ export default async function CreditsPage() {
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </div>
         )}
       </div>
