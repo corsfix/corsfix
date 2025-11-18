@@ -127,11 +127,30 @@ export default async function CreditsPage() {
               <PackageIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold mt-3 text-primary">
+              <div className="text-2xl font-bold mt-3 text-primary flex items-center gap-2">
                 {IS_CLOUD
                   ? subscription.name.charAt(0).toUpperCase() +
                     subscription.name.slice(1)
                   : "-"}
+                {isTrial && IS_CLOUD && (
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <ul className="space-y-2">
+                          {trialBenefits.map((benefit, index) => (
+                            <li key={index} className="flex items-center gap-2">
+                              <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="text-sm">{benefit}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -227,44 +246,6 @@ export default async function CreditsPage() {
               </div>
               <TabsContent value="standard" className="mt-4">
                 <div className="flex flex-row -mx-4 items-stretch overflow-x-auto snap-x snap-mandatory">
-                  <div
-                    key={"trial"}
-                    className="w-1/4 min-w-[350px] px-4 mb-8 lg:mb-0 snap-center flex"
-                  >
-                    <Card
-                      className={cn(
-                        "w-full flex flex-col",
-                        isTrial && "border-primary"
-                      )}
-                    >
-                      <CardHeader className="flex-none">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-xl">Trial</CardTitle>
-                          {isTrial && (
-                            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-end gap-2 mt-4">
-                          <span className="text-3xl font-bold">$0</span>
-                          <span className="text-muted-foreground pb-1">
-                            during trial
-                          </span>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-1 flex flex-col">
-                        <ul className="space-y-4 flex-1">
-                          {trialBenefits.map((benefit, index) => (
-                            <li key={index} className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span>{benefit}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </div>
                   {config.products
                     .filter((p) => p.type === "standard")
                     .map((product) => {
