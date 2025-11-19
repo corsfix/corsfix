@@ -28,6 +28,7 @@ import { IS_CLOUD } from "@/config/constants";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const CrispWithNoSSR = dynamic(() => import("../components/crisp"));
+const ClarityWithNoSSR = dynamic(() => import("../components/clarity"));
 
 export default function RootLayout({
   children,
@@ -44,6 +45,7 @@ export default function RootLayout({
             data-website-id="35d32708-fd12-4ae8-a732-5702e13fe819"
           ></Script>
           <CrispWithNoSSR />
+          <ClarityWithNoSSR />
         </>
       )}
       <body
