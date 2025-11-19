@@ -110,7 +110,7 @@ export default async function CreditsPage() {
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-2 inline-flex items-center">
+        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
           <CreditCard size={28} className="mr-2" />
           Billing
         </h1>
@@ -229,14 +229,14 @@ export default async function CreditsPage() {
         </div>
 
         {IS_CLOUD && (
-          <div className="mt-2">
-            <h2 className="text-2xl font-semibold mb-2">Plans</h2>
-            <div className="flex flex-row gap-3 overflow-x-auto">
+          <div className="mt-6">
+            <h2 className="text-2xl font-semibold">Plans</h2>
+            <div className="flex flex-row gap-3 overflow-x-auto pt-4">
               <div
-                className="flex-1 border-2 rounded-xl px-2 pb-2 flex flex-col"
+                className="flex-1 border-2 rounded-2xl p-2 flex flex-col relative"
                 style={{ borderColor: "#595BE7" }}
               >
-                <h3 className="text-sm font-bold text-[#595BE7] text-center py-0.5">
+                <h3 className="text-sm font-bold bg-background px-2 text-[#595BE7] absolute left-1/2 -translate-x-1/2 -top-3">
                   Standard
                 </h3>
                 <div className="flex flex-row space-x-3 flex-1">
@@ -343,10 +343,10 @@ export default async function CreditsPage() {
                 </div>
               </div>
               <div
-                className="w-full min-w-[350px] flex-1 border-2 rounded-xl px-2 pb-2 flex flex-col"
+                className="w-full min-w-[350px] flex-1 border-2 rounded-2xl p-2 flex flex-col relative"
                 style={{ borderColor: "#59A2E7" }}
               >
-                <h3 className="text-sm font-bold text-[#59A2E7] text-center py-0.5">
+                <h3 className="text-sm font-bold bg-background px-2 text-[#59A2E7] absolute left-1/2 -translate-x-1/2 -top-3">
                   Lite
                 </h3>
                 <Card className="flex flex-col flex-1">
