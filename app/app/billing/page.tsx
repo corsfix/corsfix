@@ -231,264 +231,270 @@ export default async function CreditsPage() {
         {IS_CLOUD && (
           <div className="mt-6">
             <h2 className="text-2xl font-semibold">Plans</h2>
-            <div className="flex flex-row gap-3 overflow-x-auto pt-4">
-              <div
-                className="flex-1 border-2 rounded-2xl p-2 flex flex-col relative"
-                style={{ borderColor: "#595BE7" }}
-              >
-                <h3 className="text-sm font-bold bg-background px-2 text-[#595BE7] absolute left-1/2 -translate-x-1/2 -top-3">
-                  Standard
-                </h3>
-                <div className="flex flex-row space-x-3 flex-1">
-                  {config.products
-                    .filter((p) => p.type === "standard")
-                    .map((product) => {
-                      const isCurrentPlan = subscription.name === product.name;
-                      return (
-                        <div
-                          key={product.id}
-                          className="w-1/3 min-w-[350px] mb-8 lg:mb-0 snap-center flex h-full"
-                        >
-                          <Card className="w-full flex flex-col h-full">
-                            <CardHeader className="flex-none pb-3">
-                              <div className="flex justify-between items-center">
-                                <CardTitle className="text-xl">
-                                  {product.name.charAt(0).toUpperCase() +
-                                    product.name.slice(1)}
-                                </CardTitle>
-                                {isCurrentPlan && (
-                                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                                    Active
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-end gap-2 mt-4">
-                                <span className="text-3xl font-bold">
-                                  ${product.price}
-                                </span>
-                                <span className="text-muted-foreground pb-1">
-                                  / month
-                                </span>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex flex-col">
-                              {!subscription.active && (
-                                <div className="mb-6 flex-none">
-                                  <Link
-                                    href={getCustomerCheckoutLink(
-                                      product.link,
-                                      session?.user?.email
-                                    )}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <Button
-                                      className="w-full"
-                                      data-umami-event={`pricing-${product.name.toLowerCase()}`}
-                                    >
-                                      Upgrade
-                                    </Button>
-                                  </Link>
-                                </div>
-                              )}
-                              {subscription.active && (
-                                <div className="mb-6 flex-none">
-                                  <Link href="/api/portal" target="_blank">
-                                    <Button
-                                      data-umami-event="billing-manage"
-                                      className="w-full flex items-center gap-2"
-                                      variant={
-                                        subscription.name == product.name
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                    >
-                                      {subscription.name == product.name ? (
-                                        <>
-                                          Manage <SquareArrowOutUpRight />
-                                        </>
-                                      ) : (
-                                        "Change Plan"
-                                      )}
-                                    </Button>
-                                  </Link>
-                                </div>
-                              )}
-                              <ul className="space-y-4 flex-1">
-                                {paidBenefits.map((benefit, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                                    <span>
-                                      {benefit
-                                        .replace(
-                                          "{{rpm}}",
-                                          product.rpm.toString()
-                                        )
-                                        .replace(
-                                          "{{bandwidth}}",
-                                          formatBytes(product.bandwidth)
-                                        )}
+            <div className="overflow-x-auto snap-x snap-mandatory pt-4">
+              <div className="flex flex-1 min-w-full flex-row w-fit gap-3">
+                <div
+                  className="w-3/4 border-2 rounded-2xl p-2 flex flex-col relative"
+                  style={{ borderColor: "#595BE7" }}
+                >
+                  <h3 className="text-sm font-bold bg-background px-2 text-[#595BE7] absolute left-1/2 -translate-x-1/2 -top-3">
+                    Standard
+                  </h3>
+                  <div className="flex flex-row space-x-3 flex-1">
+                    {config.products
+                      .filter((p) => p.type === "standard")
+                      .map((product) => {
+                        const isCurrentPlan =
+                          subscription.name === product.name;
+                        return (
+                          <div
+                            className="w-1/3 min-w-80 h-full"
+                            key={product.id}
+                          >
+                            <Card className="w-full flex flex-col h-full snap-center">
+                              <CardHeader className="flex-none pb-3">
+                                <div className="flex justify-between items-center">
+                                  <CardTitle className="text-xl">
+                                    {product.name.charAt(0).toUpperCase() +
+                                      product.name.slice(1)}
+                                  </CardTitle>
+                                  {isCurrentPlan && (
+                                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                                      Active
                                     </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                                  )}
+                                </div>
+                                <div className="flex items-end gap-2 mt-4">
+                                  <span className="text-3xl font-bold">
+                                    ${product.price}
+                                  </span>
+                                  <span className="text-muted-foreground pb-1">
+                                    / month
+                                  </span>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="flex-1 flex flex-col">
+                                {!subscription.active && (
+                                  <div className="mb-6 flex-none">
+                                    <Link
+                                      href={getCustomerCheckoutLink(
+                                        product.link,
+                                        session?.user?.email
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <Button
+                                        className="w-full"
+                                        data-umami-event={`pricing-${product.name.toLowerCase()}`}
+                                      >
+                                        Upgrade
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                )}
+                                {subscription.active && (
+                                  <div className="mb-6 flex-none">
+                                    <Link href="/api/portal" target="_blank">
+                                      <Button
+                                        data-umami-event="billing-manage"
+                                        className="w-full flex items-center gap-2"
+                                        variant={
+                                          subscription.name == product.name
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                      >
+                                        {subscription.name == product.name ? (
+                                          <>
+                                            Manage <SquareArrowOutUpRight />
+                                          </>
+                                        ) : (
+                                          "Change Plan"
+                                        )}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                )}
+                                <ul className="space-y-4 flex-1">
+                                  {paidBenefits.map((benefit, index) => (
+                                    <li
+                                      key={index}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                                      <span>
+                                        {benefit
+                                          .replace(
+                                            "{{rpm}}",
+                                            product.rpm.toString()
+                                          )
+                                          .replace(
+                                            "{{bandwidth}}",
+                                            formatBytes(product.bandwidth)
+                                          )}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
-              <div
-                className="w-full min-w-[350px] flex-1 border-2 rounded-2xl p-2 flex flex-col relative"
-                style={{ borderColor: "#59A2E7" }}
-              >
-                <h3 className="text-sm font-bold bg-background px-2 text-[#59A2E7] absolute left-1/2 -translate-x-1/2 -top-3">
-                  Lite
-                </h3>
-                <Card className="flex flex-col flex-1">
-                  <CardHeader className="flex-none pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">Lite</CardTitle>
-                      {subscription.isLite && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-end gap-2 mt-4">
-                      <span className="text-3xl font-bold">$5</span>
-                      <span className="text-muted-foreground pb-1">
-                        / month
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    {!subscription.active && (
-                      <div className="mb-6 flex-none">
-                        <Link
-                          href={getCustomerCheckoutLink(
-                            "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
-                            session?.user?.email
+                <div
+                  className="w-1/4 border-2 rounded-2xl p-2 flex flex-col relative"
+                  style={{ borderColor: "#59A2E7" }}
+                >
+                  <div className="w-full min-w-80 h-full">
+                    <h3 className="text-sm font-bold bg-background px-2 text-[#59A2E7] absolute left-1/2 -translate-x-1/2 -top-3">
+                      Lite
+                    </h3>
+                    <Card className="flex flex-col h-full snap-center">
+                      <CardHeader className="flex-none pb-3">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-xl">Lite</CardTitle>
+                          {subscription.isLite && (
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                              Active
+                            </span>
                           )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button
-                            className="w-full"
-                            data-umami-event={`pricing-lite`}
-                          >
-                            Upgrade
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                    {subscription.active && (
-                      <div className="mb-6 flex-none">
-                        <Link href="/api/portal" target="_blank">
-                          <Button
-                            data-umami-event="billing-manage"
-                            className="w-full flex items-center gap-2"
-                            variant={
-                              subscription.name == "lite"
-                                ? "default"
-                                : "outline"
-                            }
-                          >
-                            {subscription.name == "lite" ? (
-                              <>
-                                Manage <SquareArrowOutUpRight />
-                              </>
-                            ) : (
-                              "Change Plan"
-                            )}
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                    <ul className="space-y-4 flex-1">
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="flex items-center gap-1">
-                          Unlimited proxy requests
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">
-                                  Proxy URL: lite.corsfix.com
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Unlimited web applications</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="flex items-center gap-1">
-                          Unlimited data transfer
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">
-                                  Text only, max 1 MB per request
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Text contents (max. 1MB size)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="flex items-center gap-1">
-                          600 RPM (shared)
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">
-                                  The RPM pool is shared for all visitors of
-                                  your websites, different from Standard plans
-                                  where the RPM is per individual IP address
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>EU region infrastructure</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Secrets variable</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>Priority support</span>
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
+                        </div>
+                        <div className="flex items-end gap-2 mt-4">
+                          <span className="text-3xl font-bold">$5</span>
+                          <span className="text-muted-foreground pb-1">
+                            / month
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 flex flex-col">
+                        {!subscription.active && (
+                          <div className="mb-6 flex-none">
+                            <Link
+                              href={getCustomerCheckoutLink(
+                                "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
+                                session?.user?.email
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                className="w-full"
+                                data-umami-event={`pricing-lite`}
+                              >
+                                Upgrade
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
+                        {subscription.active && (
+                          <div className="mb-6 flex-none">
+                            <Link href="/api/portal" target="_blank">
+                              <Button
+                                data-umami-event="billing-manage"
+                                className="w-full flex items-center gap-2"
+                                variant={
+                                  subscription.name == "lite"
+                                    ? "default"
+                                    : "outline"
+                                }
+                              >
+                                {subscription.name == "lite" ? (
+                                  <>
+                                    Manage <SquareArrowOutUpRight />
+                                  </>
+                                ) : (
+                                  "Change Plan"
+                                )}
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
+                        <ul className="space-y-4 flex-1">
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="flex items-center gap-1">
+                              Unlimited proxy requests
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">
+                                      Proxy URL: lite.corsfix.com
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>Unlimited web applications</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="flex items-center gap-1">
+                              Unlimited data transfer
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">
+                                      Text only, max 1 MB per request
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>Text contents (max. 1MB size)</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="flex items-center gap-1">
+                              600 RPM (shared)
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">
+                                      The RPM pool is shared for all visitors of
+                                      your websites, different from Standard
+                                      plans where the RPM is per individual IP
+                                      address
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>EU region infrastructure</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>Secrets variable</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>Priority support</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
