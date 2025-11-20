@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   isLogin: boolean;
@@ -28,7 +29,22 @@ export function UserAuthForm({
 
   function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
-    handleSignIn("email", { email: inputRef.current?.value });
+    const email = inputRef.current?.value?.trim() || "";
+
+    if (!email) {
+      toast.error("Please enter your email");
+      inputRef.current?.focus();
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      toast.error("Please enter a valid email address");
+      inputRef.current?.focus();
+      return;
+    }
+
+    handleSignIn("email", { email });
   }
 
   async function handleSignIn(
@@ -40,6 +56,7 @@ export function UserAuthForm({
       await signIn(provider, options);
     } catch (error) {
       console.error("Error signing in:", error);
+      toast.error("Unable to sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }
