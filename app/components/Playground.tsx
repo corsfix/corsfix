@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Plus, Trash2, Code } from "lucide-react";
+import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ImportCurlModal } from "@/components/ImportCurlModal";
 import {
   Select,
   SelectContent,
@@ -220,6 +221,8 @@ export default function Playground({
     null
   );
   const [showExampleDialog, setShowExampleDialog] = useState(false);
+  const [isImportCurlModalOpen, setIsImportCurlModalOpen] = useState(false);
+  const [initialCurlText, setInitialCurlText] = useState("");
   const sendButtonRef = useRef<HTMLButtonElement>(null);
 
   const isHtmlResponse =
@@ -580,6 +583,29 @@ export default function Playground({
     }));
   };
 
+  const handleImportCurl = (data: {
+    url: string;
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+    headerItems: HeaderItem[];
+    overrideHeaderItems: HeaderItem[];
+    body: string;
+  }) => {
+    setConfig((prev) => ({
+      ...prev,
+      url: data.url,
+      method: data.method,
+      headerItems: data.headerItems,
+      overrideHeaderItems: data.overrideHeaderItems,
+      body: data.body,
+    }));
+    toast.success("cURL command imported successfully");
+  };
+
+  const handleOpenImportCurlModal = (curlText?: string) => {
+    setInitialCurlText(curlText || "");
+    setIsImportCurlModalOpen(true);
+  };
+
   return (
     <>
       <Nav />
@@ -648,6 +674,13 @@ export default function Playground({
                       sendButtonRef.current?.click();
                     }
                   }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData("text");
+                    if (pastedText.trim().startsWith("curl ")) {
+                      e.preventDefault();
+                      handleOpenImportCurlModal(pastedText);
+                    }
+                  }}
                   className="flex-1 rounded-l-none"
                 />
               </div>
@@ -666,10 +699,15 @@ export default function Playground({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="default" className="rounded-l-none px-2">
-                      <Code className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => handleOpenImportCurlModal()}
+                    >
+                      Import cURL
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         copyToClipboard(generateFetch(config), "fetch")
@@ -1156,6 +1194,15 @@ export default function Playground({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import cURL Modal */}
+      <ImportCurlModal
+        isOpen={isImportCurlModalOpen}
+        onClose={() => setIsImportCurlModalOpen(false)}
+        onImport={handleImportCurl}
+        initialCurl={initialCurlText}
+      />
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

@@ -32,6 +32,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "crisp-sdk-web": "^1.0.25",
+    "curl-parser-ts": "^0.3.0",
     "date-fns": "^3.6.0",
     "ioredis": "^5.6.0",
     "lucide-react": "^0.453.0",
