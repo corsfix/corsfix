@@ -54,7 +54,7 @@ export const ImportCurlModal = ({
     }
   }, [initialCurl]);
 
-  const handleImport = async () => {
+  const handleImport = () => {
     if (!curlCommand.trim()) {
       setError("Please enter a curl command");
       return;
