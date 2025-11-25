@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Plus, Trash2, Code } from "lucide-react";
+import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ImportCurlModal } from "@/components/ImportCurlModal";
 import {
   Select,
   SelectContent,
@@ -36,28 +37,28 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { generateId } from "@/lib/utils";
+import { HeaderItem } from "@/types/api";
 
 // Types
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type ContentType =
-  | "none"
-  | "application/json"
-  | "application/x-www-form-urlencoded"
-  | "application/ld+json"
-  | "application/hal+json"
-  | "application/vnd.api+json"
-  | "application/xml"
-  | "text/plain"
-  | "text/html"
-  | "text/xml";
+
+const CONTENT_TYPES = [
+  "none",
+  "application/json",
+  "application/x-www-form-urlencoded",
+  "application/ld+json",
+  "application/hal+json",
+  "application/vnd.api+json",
+  "application/xml",
+  "text/plain",
+  "text/html",
+  "text/xml",
+];
+
+type ContentType = (typeof CONTENT_TYPES)[number];
 
 type ProxyRegion = "auto" | "ap" | "us" | "eu";
-
-interface HeaderItem {
-  id: string;
-  name: string;
-  value: string;
-}
 
 interface RequestConfig {
   url: string;
@@ -170,11 +171,6 @@ function ensureValidUrl(url: string): string {
   return url;
 }
 
-// Generate a unique ID
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
 // Create a default empty config
 function getDefaultConfig(): RequestConfig {
   return {
@@ -220,6 +216,8 @@ export default function Playground({
     null
   );
   const [showExampleDialog, setShowExampleDialog] = useState(false);
+  const [isImportCurlModalOpen, setIsImportCurlModalOpen] = useState(false);
+  const [initialCurlText, setInitialCurlText] = useState("");
   const sendButtonRef = useRef<HTMLButtonElement>(null);
 
   const isHtmlResponse =
@@ -580,6 +578,37 @@ export default function Playground({
     }));
   };
 
+  const handleImportCurl = (data: {
+    url: string;
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+    headerItems: HeaderItem[];
+    overrideHeaderItems: HeaderItem[];
+    body: string;
+    contentType?: string;
+  }) => {
+    const mappedContentType: ContentType =
+      data.contentType &&
+      CONTENT_TYPES.includes(data.contentType as ContentType)
+        ? (data.contentType as ContentType)
+        : "none";
+
+    setConfig((prev) => ({
+      ...prev,
+      url: data.url,
+      method: data.method,
+      headerItems: data.headerItems,
+      overrideHeaderItems: data.overrideHeaderItems,
+      body: data.body,
+      contentType: mappedContentType,
+    }));
+    toast.success("cURL command imported successfully");
+  };
+
+  const handleOpenImportCurlModal = (curlText?: string) => {
+    setInitialCurlText(curlText || "");
+    setIsImportCurlModalOpen(true);
+  };
+
   return (
     <>
       <Nav />
@@ -648,6 +677,13 @@ export default function Playground({
                       sendButtonRef.current?.click();
                     }
                   }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData("text");
+                    if (pastedText.trim().startsWith("curl ")) {
+                      e.preventDefault();
+                      handleOpenImportCurlModal(pastedText);
+                    }
+                  }}
                   className="flex-1 rounded-l-none"
                 />
               </div>
@@ -666,10 +702,15 @@ export default function Playground({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="default" className="rounded-l-none px-2">
-                      <Code className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => handleOpenImportCurlModal()}
+                    >
+                      Import cURL
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         copyToClipboard(generateFetch(config), "fetch")
@@ -1156,6 +1197,15 @@ export default function Playground({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import cURL Modal */}
+      <ImportCurlModal
+        isOpen={isImportCurlModalOpen}
+        onClose={() => setIsImportCurlModalOpen(false)}
+        onImport={handleImportCurl}
+        initialCurl={initialCurlText}
+      />
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
