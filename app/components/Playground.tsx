@@ -37,6 +37,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { generateId } from "@/lib/utils";
+import { HeaderItem } from "@/types/api";
 
 // Types
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -53,12 +55,6 @@ type ContentType =
   | "text/xml";
 
 type ProxyRegion = "auto" | "ap" | "us" | "eu";
-
-interface HeaderItem {
-  id: string;
-  name: string;
-  value: string;
-}
 
 interface RequestConfig {
   url: string;
@@ -169,11 +165,6 @@ function ensureValidUrl(url: string): string {
     return `http://${url}`;
   }
   return url;
-}
-
-// Generate a unique ID
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 // Create a default empty config
@@ -589,7 +580,25 @@ export default function Playground({
     headerItems: HeaderItem[];
     overrideHeaderItems: HeaderItem[];
     body: string;
+    contentType?: string;
   }) => {
+    // Map imported content type to valid ContentType value
+    const validContentTypes: ContentType[] = [
+      "application/json",
+      "application/x-www-form-urlencoded",
+      "application/ld+json",
+      "application/hal+json",
+      "application/vnd.api+json",
+      "application/xml",
+      "text/plain",
+      "text/html",
+      "text/xml",
+    ];
+    const mappedContentType: ContentType = data.contentType &&
+      validContentTypes.includes(data.contentType as ContentType)
+        ? (data.contentType as ContentType)
+        : "none";
+
     setConfig((prev) => ({
       ...prev,
       url: data.url,
@@ -597,6 +606,7 @@ export default function Playground({
       headerItems: data.headerItems,
       overrideHeaderItems: data.overrideHeaderItems,
       body: data.body,
+      contentType: mappedContentType,
     }));
     toast.success("cURL command imported successfully");
   };

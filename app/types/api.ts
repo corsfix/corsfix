@@ -81,3 +81,9 @@ export interface MetricPoint {
   req_count: number;
   bytes: number;
 }
+
+export interface HeaderItem {
+  id: string;
+  name: string;
+  value: string;
+}

@@ -11,12 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-
-interface HeaderItem {
-  id: string;
-  name: string;
-  value: string;
-}
+import { generateId } from "@/lib/utils";
+import { HeaderItem } from "@/types/api";
 
 interface ImportCurlData {
   url: string;
@@ -24,6 +20,7 @@ interface ImportCurlData {
   headerItems: HeaderItem[];
   overrideHeaderItems: HeaderItem[];
   body: string;
+  contentType?: string;
 }
 
 interface ImportCurlModalProps {
@@ -31,10 +28,6 @@ interface ImportCurlModalProps {
   onClose: () => void;
   onImport: (data: ImportCurlData) => void;
   initialCurl?: string;
-}
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
 export const ImportCurlModal = ({
@@ -77,13 +70,22 @@ export const ImportCurlModal = ({
 
       // Convert headers object to array format
       if (parsed.headers) {
-        importData.headerItems = Object.entries(parsed.headers).map(
-          ([key, value]) => ({
+        // Extract Content-Type separately
+        const contentTypeHeader = Object.entries(parsed.headers).find(
+          ([key]) => key.toLowerCase() === "content-type"
+        );
+        if (contentTypeHeader) {
+          importData.contentType = contentTypeHeader[1] as string;
+        }
+
+        // Add other headers to headerItems (excluding Content-Type since it's handled separately)
+        importData.headerItems = Object.entries(parsed.headers)
+          .filter(([key]) => key.toLowerCase() !== "content-type")
+          .map(([key, value]) => ({
             id: generateId(),
             name: key,
             value: value as string,
-          })
-        );
+          }));
       }
 
       // Handle body data
