@@ -42,17 +42,21 @@ import { HeaderItem } from "@/types/api";
 
 // Types
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type ContentType =
-  | "none"
-  | "application/json"
-  | "application/x-www-form-urlencoded"
-  | "application/ld+json"
-  | "application/hal+json"
-  | "application/vnd.api+json"
-  | "application/xml"
-  | "text/plain"
-  | "text/html"
-  | "text/xml";
+
+const CONTENT_TYPES = [
+  "none",
+  "application/json",
+  "application/x-www-form-urlencoded",
+  "application/ld+json",
+  "application/hal+json",
+  "application/vnd.api+json",
+  "application/xml",
+  "text/plain",
+  "text/html",
+  "text/xml",
+];
+
+type ContentType = (typeof CONTENT_TYPES)[number];
 
 type ProxyRegion = "auto" | "ap" | "us" | "eu";
 
@@ -582,20 +586,9 @@ export default function Playground({
     body: string;
     contentType?: string;
   }) => {
-    // Map imported content type to valid ContentType value
-    const validContentTypes: ContentType[] = [
-      "application/json",
-      "application/x-www-form-urlencoded",
-      "application/ld+json",
-      "application/hal+json",
-      "application/vnd.api+json",
-      "application/xml",
-      "text/plain",
-      "text/html",
-      "text/xml",
-    ];
-    const mappedContentType: ContentType = data.contentType &&
-      validContentTypes.includes(data.contentType as ContentType)
+    const mappedContentType: ContentType =
+      data.contentType &&
+      CONTENT_TYPES.includes(data.contentType as ContentType)
         ? (data.contentType as ContentType)
         : "none";
 
