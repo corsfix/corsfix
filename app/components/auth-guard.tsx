@@ -25,11 +25,10 @@ export function AuthGuard({
       setIsAuthModalOpen(true);
     } else if (status === "authenticated" && pathname === "/auth") {
       // trying to access the auth page while authenticated, redirect to home
-      router.push("/");
+      router.push("/get-started");
     } else if (status === "authenticated") {
       // Close modal if user is authenticated
       setIsAuthModalOpen(false);
-      router.refresh();
     }
   }, [status]);
 

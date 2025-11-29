@@ -11,7 +11,7 @@ import {
 } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getUserId } from "@/lib/utils";
+import { getUserId, isLocalDomain } from "@/lib/utils";
 import * as z from "zod";
 
 export async function PUT(
@@ -26,6 +26,20 @@ export async function PUT(
 
   const paramId = (await params).id;
   const id = z.string().max(32).parse(paramId);
+
+  const localDomains = body.originDomains.filter((domain) =>
+    isLocalDomain(domain)
+  );
+  if (localDomains.length > 0) {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        data: null,
+        message: "Localhost domains are not allowed as origin domains.",
+        success: false,
+      },
+      { status: 400 }
+    );
+  }
 
   const existingOrigins = await hasApplicationWithOrigins(
     id,

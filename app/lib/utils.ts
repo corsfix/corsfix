@@ -154,3 +154,22 @@ export function formatNumber(num: number): string {
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
+
+export const isLocalDomain = (domain: string): boolean => {
+  const localDomains = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "corsfix.com",
+    "app.corsfix.com",
+  ];
+
+  // Check for exact match
+  if (localDomains.includes(domain)) {
+    return true;
+  }
+
+  // Check for local IP ranges (192.168.x.x)
+  const ipv4Regex = /^192\.168\.\d{1,3}\.\d{1,3}$/;
+  return ipv4Regex.test(domain);
+};

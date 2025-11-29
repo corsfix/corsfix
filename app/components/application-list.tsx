@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Application } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
+import { isLocalDomain } from "@/lib/utils";
 
 interface ApplicationListProps {
   initialApplications: Application[];
@@ -57,10 +59,35 @@ interface ApplicationListProps {
 export default function ApplicationList({
   initialApplications,
 }: ApplicationListProps) {
+  const { data: session } = useSession();
   const [applications, setApplications] =
     useState<Application[]>(initialApplications);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Generate example domain based on user's name or email
+  const getExampleDomain = () => {
+    const name = session?.user?.name;
+    const email = session?.user?.email;
+
+    if (name) {
+      const firstName = name
+        .split(" ")[0]
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      if (firstName) return `${firstName}.com`;
+    }
+
+    if (email) {
+      const emailPrefix = email
+        .split("@")[0]
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      if (emailPrefix) return `${emailPrefix}.com`;
+    }
+
+    return "acme.com";
+  };
   const [newApp, setNewApp] = useState<Application>({
     id: "",
     name: "",
@@ -181,6 +208,19 @@ export default function ApplicationList({
     const cleanedOriginDomains = (newApp.originDomains || [])
       .map((origin) => extractDomainFromInput(origin))
       .filter((origin) => origin.trim());
+
+    // Check for local domains
+    const localOriginDomains = cleanedOriginDomains.filter((origin) =>
+      isLocalDomain(origin)
+    );
+
+    if (localOriginDomains.length > 0) {
+      toast("Localhost domain detected", {
+        description:
+          "Requests from localhost work automatically, no need to add it.",
+      });
+      return;
+    }
 
     const invalidOriginDomains = cleanedOriginDomains.filter(
       (origin) => !isValidDomain(origin)
@@ -408,13 +448,14 @@ export default function ApplicationList({
             <div className="grid w-full max-w-sm items-center gap-1.5">
               <Label htmlFor="originDomains">Origin Domains</Label>
               <p className="text-sm text-muted-foreground">
-                Your website domain (e.g., acme.com, www.acme.com)
+                Your own domain (e.g., {getExampleDomain()} or www.
+                {getExampleDomain()})
               </p>
               <div className="space-y-2 mt-1">
                 {(newApp.originDomains || []).map((origin, index) => (
                   <div key={index} className="flex gap-2 items-center">
                     <Input
-                      placeholder="acme.com"
+                      placeholder={getExampleDomain()}
                       value={origin}
                       onChange={(e) => updateOrigin(index, e.target.value)}
                       onBlur={(e) => handleOriginBlur(index, e.target.value)}
@@ -460,7 +501,7 @@ export default function ApplicationList({
             <div className="grid w-full max-w-sm items-center gap-1.5">
               <Label htmlFor="domainMode">Target Domains</Label>
               <p className="text-sm text-muted-foreground">
-                Domains you want to fetch (e.g., api.external.com)
+                Domains you are fetching (e.g., api.openai.com)
               </p>
               <Select
                 value={domainMode}
@@ -483,7 +524,7 @@ export default function ApplicationList({
                     {(newApp.targetDomains || []).map((domain, index) => (
                       <div key={index} className="flex gap-2 items-center">
                         <Input
-                          placeholder="api.external.com"
+                          placeholder="api.openai.com"
                           value={domain}
                           onChange={(e) => updateDomain(index, e.target.value)}
                           onBlur={(e) =>
@@ -591,13 +632,17 @@ export default function ApplicationList({
                         <TooltipProvider>
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline">+{app.originDomains.length - 1}</Badge>
+                              <Badge variant="outline">
+                                +{app.originDomains.length - 1}
+                              </Badge>
                             </TooltipTrigger>
                             <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
                               <div className="max-w-xs">
-                                {app.originDomains.slice(1).map((domain, index) => (
-                                  <div key={index}>{domain}</div>
-                                ))}
+                                {app.originDomains
+                                  .slice(1)
+                                  .map((domain, index) => (
+                                    <div key={index}>{domain}</div>
+                                  ))}
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -612,24 +657,31 @@ export default function ApplicationList({
                       ) : (
                         <>
                           {app.targetDomains?.[0] && (
-                            <Badge variant="secondary">{app.targetDomains[0]}</Badge>
+                            <Badge variant="secondary">
+                              {app.targetDomains[0]}
+                            </Badge>
                           )}
-                          {app.targetDomains && app.targetDomains.length > 1 && (
-                            <TooltipProvider>
-                              <Tooltip delayDuration={100}>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline">+{app.targetDomains.length - 1}</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
-                                  <div className="max-w-xs">
-                                    {app.targetDomains.slice(1).map((domain, index) => (
-                                      <div key={index}>{domain}</div>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
+                          {app.targetDomains &&
+                            app.targetDomains.length > 1 && (
+                              <TooltipProvider>
+                                <Tooltip delayDuration={100}>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline">
+                                      +{app.targetDomains.length - 1}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
+                                    <div className="max-w-xs">
+                                      {app.targetDomains
+                                        .slice(1)
+                                        .map((domain, index) => (
+                                          <div key={index}>{domain}</div>
+                                        ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                         </>
                       )}
                     </div>
