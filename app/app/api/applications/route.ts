@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/applicationService";
 import { authorize } from "@/lib/services/authorizationService";
 import { auth } from "@/auth";
-import { getUserId } from "@/lib/utils";
+import { getUserId, isLocalDomain } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -31,6 +31,20 @@ export async function POST(request: NextRequest) {
 
   const json = await request.json();
   const body: UpsertApplication = UpsertApplicationSchema.parse(json);
+
+  const localDomains = body.originDomains.filter((domain) =>
+    isLocalDomain(domain)
+  );
+  if (localDomains.length > 0) {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        data: null,
+        message: "Localhost domains are not allowed as origin domains.",
+        success: false,
+      },
+      { status: 400 }
+    );
+  }
 
   const existingOrigins = await hasApplicationWithOrigins(
     null,

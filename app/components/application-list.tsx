@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
+import { isLocalDomain } from "@/lib/utils";
 
 interface ApplicationListProps {
   initialApplications: Application[];
@@ -181,6 +182,19 @@ export default function ApplicationList({
     const cleanedOriginDomains = (newApp.originDomains || [])
       .map((origin) => extractDomainFromInput(origin))
       .filter((origin) => origin.trim());
+
+    // Check for local domains
+    const localOriginDomains = cleanedOriginDomains.filter((origin) =>
+      isLocalDomain(origin)
+    );
+
+    if (localOriginDomains.length > 0) {
+      toast("Localhost domain detected", {
+        description:
+          "Requests from localhost work automatically, no need to add it.",
+      });
+      return;
+    }
 
     const invalidOriginDomains = cleanedOriginDomains.filter(
       (origin) => !isValidDomain(origin)
@@ -591,13 +605,17 @@ export default function ApplicationList({
                         <TooltipProvider>
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline">+{app.originDomains.length - 1}</Badge>
+                              <Badge variant="outline">
+                                +{app.originDomains.length - 1}
+                              </Badge>
                             </TooltipTrigger>
                             <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
                               <div className="max-w-xs">
-                                {app.originDomains.slice(1).map((domain, index) => (
-                                  <div key={index}>{domain}</div>
-                                ))}
+                                {app.originDomains
+                                  .slice(1)
+                                  .map((domain, index) => (
+                                    <div key={index}>{domain}</div>
+                                  ))}
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -612,24 +630,31 @@ export default function ApplicationList({
                       ) : (
                         <>
                           {app.targetDomains?.[0] && (
-                            <Badge variant="secondary">{app.targetDomains[0]}</Badge>
+                            <Badge variant="secondary">
+                              {app.targetDomains[0]}
+                            </Badge>
                           )}
-                          {app.targetDomains && app.targetDomains.length > 1 && (
-                            <TooltipProvider>
-                              <Tooltip delayDuration={100}>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline">+{app.targetDomains.length - 1}</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
-                                  <div className="max-w-xs">
-                                    {app.targetDomains.slice(1).map((domain, index) => (
-                                      <div key={index}>{domain}</div>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
+                          {app.targetDomains &&
+                            app.targetDomains.length > 1 && (
+                              <TooltipProvider>
+                                <Tooltip delayDuration={100}>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline">
+                                      +{app.targetDomains.length - 1}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-muted text-muted-foreground border shadow-sm font-semibold">
+                                    <div className="max-w-xs">
+                                      {app.targetDomains
+                                        .slice(1)
+                                        .map((domain, index) => (
+                                          <div key={index}>{domain}</div>
+                                        ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                         </>
                       )}
                     </div>
