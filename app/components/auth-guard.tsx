@@ -29,7 +29,6 @@ export function AuthGuard({
     } else if (status === "authenticated") {
       // Close modal if user is authenticated
       setIsAuthModalOpen(false);
-      router.refresh();
     }
   }, [status]);
 
