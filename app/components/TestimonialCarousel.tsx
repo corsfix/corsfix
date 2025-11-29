@@ -34,15 +34,19 @@ export function TestimonialCarousel() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const interval = setInterval(() => {
       setIsTransitioning(true);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % testimonials.length);
         setIsTransitioning(false);
       }, 300);
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const testimonial = testimonials[currentIndex];
