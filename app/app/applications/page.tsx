@@ -35,7 +35,7 @@ export default async function ApplicationsPage() {
           Applications
         </h1>
         <p className="text-muted-foreground mb-1">
-          Add your domain to start using Corsfix on your web applications.
+          Add your website domain to start using Corsfix on your applications.
         </p>
         <Link
           href="https://corsfix.com/docs/dashboard/application"
@@ -55,7 +55,7 @@ export default async function ApplicationsPage() {
               target="_blank"
               className="text-violet-500 underline p-0.5 font-medium"
             >
-              Start making requests
+              Start sending requests
             </a>
             .
           </span>

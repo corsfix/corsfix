@@ -67,7 +67,7 @@ export default async function GetStarted() {
                 Add your web application
               </CardTitle>
               <CardDescription>
-                Set up your website to start using Corsfix.
+                Set up your website domain to start using Corsfix.
               </CardDescription>
             </CardHeader>
             <CardContent>
