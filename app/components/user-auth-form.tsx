@@ -103,7 +103,7 @@ export function UserAuthForm({
           </div>
           <Button
             data-umami-event="auth-google"
-            variant="outline"
+            variant="secondary"
             type="button"
             disabled={isLoading}
             onClick={() => handleSignIn("google")}
@@ -117,7 +117,7 @@ export function UserAuthForm({
           </Button>
           <Button
             data-umami-event="auth-github"
-            variant="outline"
+            variant="secondary"
             type="button"
             disabled={isLoading}
             onClick={() => handleSignIn("github")}

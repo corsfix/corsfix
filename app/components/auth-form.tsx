@@ -19,7 +19,7 @@ export function AuthForm({ isCloud }: { isCloud: boolean }) {
         onClick={toggleAuthMode}
         data-umami-event="auth-toggle"
         className={cn(
-          buttonVariants({ variant: "ghost" }),
+          buttonVariants({ variant: "outline" }),
           "absolute right-4 top-4 md:right-8 md:top-8"
         )}
       >
