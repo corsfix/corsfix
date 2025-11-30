@@ -28,6 +28,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   } else {
     const application = await getApplication(origin_domain);
     if (!application) {
+      res.header("X-Corsfix-Status", "domain_not_registered", true);
       return res
         .status(403)
         .end(
@@ -35,6 +36,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         );
     }
     if (!isDomainAllowed(target_domain, application.target_domains)) {
+      res.header("X-Corsfix-Status", "target_not_allowed", true);
       return res
         .status(403)
         .end(
@@ -44,6 +46,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
     const user = await getUser(application.user_id);
     if (!user) {
+      res.header("X-Corsfix-Status", "user_not_found", true);
       return res.status(403).end(`Corsfix: User not found!`);
     }
     req.ctx_user_id = application.user_id;
@@ -58,6 +61,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         (p) => p.id === user.subscription_product_id
       );
       if (!product) {
+        res.header("X-Corsfix-Status", "invalid_subscription", true);
         return res
           .status(400)
           .end(
@@ -70,6 +74,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
       const metricsMtd = await getMonthToDateMetrics(application.user_id);
       if (metricsMtd.bytes >= trialLimit.bytes) {
+        res.header("X-Corsfix-Status", "trial_limit_reached", true);
         return res
           .status(403)
           .end(
@@ -77,6 +82,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
           );
       }
     } else {
+      res.header("X-Corsfix-Status", "trial_expired", true);
       return res
         .status(403)
         .end(
@@ -101,6 +107,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   });
 
   if (!isAllowed) {
+    res.header("X-Corsfix-Status", "rate_limited", true);
     return res.status(429).end("Corsfix: Too Many Requests.");
   }
 };

@@ -16,6 +16,7 @@ export const validateOriginHeader = (
     next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
+    res.header("X-Corsfix-Status", "invalid_origin", true);
     return res
       .status(400)
       .end(
@@ -38,6 +39,7 @@ export const validateJsonpRequest = (
       req.ctx_origin = referrerUrl.origin;
       req.ctx_origin_domain = referrerUrl.hostname;
     } else {
+      res.header("X-Corsfix-Status", "invalid_referer", true);
       return res
         .status(400)
         .end(
@@ -77,6 +79,7 @@ export const validateTargetUrl = (
     req.ctx_callback = callback;
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");
+    res.header("X-Corsfix-Status", "invalid_url", true);
     return res
       .status(400)
       .end(
@@ -95,6 +98,7 @@ export const validatePayloadSize = (
   if (contentLengthHeader) {
     const contentLength = parseInt(contentLengthHeader, 10);
     if (!isNaN(contentLength) && contentLength > 5 * 1024 * 1024) {
+      res.header("X-Corsfix-Status", "payload_too_large", true);
       return res
         .status(413)
         .end(
