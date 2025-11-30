@@ -41,7 +41,11 @@ export const handlePreflight = (
           .then(async (value) => {
             if (value) {
               const metricsData = JSON.parse(value);
-              batchCountMetrics(metricsData.user_id, origin_domain, metricsData.bytes);
+              batchCountMetrics(
+                metricsData.user_id,
+                origin_domain,
+                metricsData.bytes
+              );
               return;
             }
           })
@@ -51,6 +55,7 @@ export const handlePreflight = (
       }
     }
 
+    res.header("X-Corsfix-Status", "preflight", true);
     return res.status(204).end();
   }
   next();

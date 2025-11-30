@@ -21,11 +21,13 @@ test("redirect if root path", async () => {
 test("invalid url if protocol other than http/https", async () => {
   const result = await fetch(`http://127.0.0.1:${PORT}/?file://myfile`);
   expect(result.status).toBe(400);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_url");
 });
 
 test("invalid url if no tld", async () => {
   const result = await fetch(`http://127.0.0.1:${PORT}/?http://tldless`);
   expect(result.status).toBe(400);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_url");
 });
 
 test("invalid if no origin header", async () => {
@@ -34,6 +36,7 @@ test("invalid if no origin header", async () => {
   const text = await result.text();
   expect(text).toContain("invalid Origin header");
   expect(result.status).toBe(400);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_origin");
 });
 
 test("return preflight headers if options request", async () => {
@@ -58,6 +61,7 @@ test("return preflight headers if options request", async () => {
     requestHeaders
   );
   expect(result.status).toBe(204);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("preflight");
 });
 
 test("proxy request (query string)", async () => {
@@ -71,6 +75,7 @@ test("proxy request (query string)", async () => {
   });
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("proxy request (query param)", async () => {
@@ -84,6 +89,7 @@ test("proxy request (query param)", async () => {
   });
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("proxy request (path)", async () => {
@@ -97,6 +103,7 @@ test("proxy request (path)", async () => {
   });
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("proxy request with redirect if 3xx", async () => {
@@ -110,6 +117,7 @@ test("proxy request with redirect if 3xx", async () => {
   });
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("proxy request with redirect if 3xx (relative)", async () => {
@@ -123,6 +131,7 @@ test("proxy request with redirect if 3xx (relative)", async () => {
   });
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("jsonp request", async () => {
@@ -148,6 +157,7 @@ test("jsonp request", async () => {
 
   // Check if the JSON object has status 200
   expect(data).toContain('"status":200');
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
 test("invalid jsonp request without referer", async () => {
@@ -167,4 +177,5 @@ test("invalid jsonp request without referer", async () => {
 
   expect(text).toContain("invalid Referer header");
   expect(result.status).toBe(400);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_referer");
 });
