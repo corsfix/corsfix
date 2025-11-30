@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/resizable";
 import { generateId } from "@/lib/utils";
 import { HeaderItem } from "@/types/api";
+import status from "statuses";
 
 // Types
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -1050,16 +1051,41 @@ export default function Playground({
                   ) : response ? (
                     <>
                       <div className="p-4 space-y-4 flex-shrink-0">
-                        <div className="flex items-center gap-4">
-                          <Badge
-                            variant={
-                              response.status >= 200 && response.status < 300
-                                ? "default"
-                                : "destructive"
-                            }
-                          >
-                            {response.status} {response.statusText}
-                          </Badge>
+                        <div className="flex flex-wrap items-center justify-between gap-y-2">
+                          <div className="flex items-center gap-x-5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm text-muted-foreground">
+                                Proxy
+                              </span>
+                              <Badge
+                                variant={
+                                  response.headers["x-corsfix-status"] ===
+                                  "success"
+                                    ? "default"
+                                    : "destructive"
+                                }
+                              >
+                                {response.headers[
+                                  "x-corsfix-status"
+                                ].toUpperCase() || "UNKNOWN"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm text-muted-foreground">
+                                Target
+                              </span>
+                              <Badge
+                                variant={
+                                  response.status >= 200 &&
+                                  response.status < 300
+                                    ? "default"
+                                    : "destructive"
+                                }
+                              >
+                                {response.status} {status(response.status)}
+                              </Badge>
+                            </div>
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             {response.time}ms •{" "}
                             {(response.size / 1024).toFixed(1)} KB
