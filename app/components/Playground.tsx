@@ -102,7 +102,7 @@ const EXAMPLE_PRESETS: ExamplePreset[] = [
       "● This example demonstrates how Corsfix bypasses CORS errors by proxying a request to the Bing Image of The Day API.\n" +
       "● The request would normally be blocked by CORS if called directly from a browser.",
     config: {
-      url: "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1",
+      url: "https://www.bing.com/HPImageArchive.aspx?format=js&n=1",
       method: "GET",
       contentType: "none",
       enableCache: false,
@@ -117,10 +117,10 @@ const EXAMPLE_PRESETS: ExamplePreset[] = [
     description: "Set custom request headers",
     explanation:
       "● This example shows how to override request headers using Corsfix.\n" +
-      "● The request will be sent to httpbin.org which reflects all headers back to you.\n" +
+      "● The request will be sent to postman-echo.com which reflects all headers back to you.\n" +
       "● We've set a custom Origin and User-Agent that would not normally be possible to modify in a browser environment.",
     config: {
-      url: "https://httpbin.org/get",
+      url: "https://postman-echo.com/headers",
       method: "GET",
       contentType: "none",
       enableCache: false,
@@ -146,11 +146,11 @@ const EXAMPLE_PRESETS: ExamplePreset[] = [
     description: "Enabled cached response using Corsfix",
     explanation:
       "● This example demonstrates Corsfix's cached response feature.\n" +
-      "● The request is made to random.org to get a random number with caching enabled.\n" +
+      "● The request is to get a random number with caching enabled.\n" +
       "● Subsequent requests will return the same number without calling the API again, until the cache expires.\n" +
       "● Try clicking Send multiple times and notice how the response time is much faster and the response stays the same.",
     config: {
-      url: "https://www.random.org/integers/?num=1&min=1&max=100&col=1&base=10&format=plain",
+      url: "https://rand.sh/numbers",
       method: "GET",
       contentType: "none",
       enableCache: true,
@@ -225,7 +225,21 @@ export default function Playground({
     response?.headers["content-type"]?.includes("text/html");
   const isImageResponse = response?.headers["content-type"]?.includes("image/");
   const isVideoResponse = response?.headers["content-type"]?.includes("video/");
-  const hasPreview = isHtmlResponse || isImageResponse || isVideoResponse;
+  const isJsonResponse =
+    response?.headers["content-type"]?.includes("application/json") ||
+    response?.headers["content-type"]?.includes("+json");
+  const hasPreview =
+    isHtmlResponse || isImageResponse || isVideoResponse || isJsonResponse;
+
+  // Try to parse JSON response for preview
+  const parsedJson = (() => {
+    if (!isJsonResponse || !response?.body) return null;
+    try {
+      return JSON.parse(response.body);
+    } catch {
+      return null;
+    }
+  })();
 
   function getProxiedUrl(url: string, region: ProxyRegion = "auto"): string {
     const proxyBaseUrl = `https://${PROXY_REGIONS[region]}/?`;
@@ -1050,7 +1064,7 @@ export default function Playground({
                     </div>
                   ) : response ? (
                     <>
-                      <div className="p-4 space-y-4 flex-shrink-0">
+                      <div className="p-4 pb-0 space-y-4 flex-shrink-0">
                         <div className="flex flex-wrap items-center justify-between gap-y-2">
                           <div className="flex items-center gap-x-5">
                             <div className="flex items-center gap-1.5">
@@ -1067,24 +1081,26 @@ export default function Playground({
                               >
                                 {response.headers[
                                   "x-corsfix-status"
-                                ].toUpperCase() || "UNKNOWN"}
+                                ]?.toUpperCase() || "UNKNOWN"}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm text-muted-foreground">
-                                Target
-                              </span>
-                              <Badge
-                                variant={
-                                  response.status >= 200 &&
-                                  response.status < 300
-                                    ? "default"
-                                    : "destructive"
-                                }
-                              >
-                                {response.status} {status(response.status)}
-                              </Badge>
-                            </div>
+                            {response.status ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm text-muted-foreground">
+                                  Target
+                                </span>
+                                <Badge
+                                  variant={
+                                    response.status >= 200 &&
+                                    response.status < 300
+                                      ? "default"
+                                      : "destructive"
+                                  }
+                                >
+                                  {response.status} {status(response.status)}
+                                </Badge>
+                              </div>
+                            ) : null}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {response.time}ms •{" "}
@@ -1159,6 +1175,11 @@ export default function Playground({
                               >
                                 Your browser does not support the video tag.
                               </video>
+                            )}
+                            {isJsonResponse && parsedJson && (
+                              <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded overflow-auto h-full">
+                                {JSON.stringify(parsedJson, null, 2)}
+                              </pre>
                             )}
                           </div>
                         )}
