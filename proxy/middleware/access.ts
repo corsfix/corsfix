@@ -46,7 +46,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
     const user = await getUser(application.user_id);
     if (!user) {
-      res.header("X-Corsfix-Status", "invalid_target_url", true);
+      res.header("X-Corsfix-Status", "user_not_found", true);
       return res.status(403).end(`Corsfix: User not found!`);
     }
     req.ctx_user_id = application.user_id;
