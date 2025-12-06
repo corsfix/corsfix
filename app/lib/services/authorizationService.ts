@@ -2,7 +2,7 @@ import { IS_SELFHOST, trialLimit } from "@/config/constants";
 import { getActiveSubscription } from "./subscriptionService";
 import { countApplication } from "./applicationService";
 import { AuthorizationResult } from "@/types/api";
-import { getUserId, isTrialActive } from "../utils";
+import { isTrialActive } from "../utils";
 import { Session } from "next-auth";
 
 export async function authorize(
@@ -66,8 +66,13 @@ async function canManageSecrets(
     };
   }
 
-  const userId = getUserId(session);
-  const subscription = await getActiveSubscription(userId);
+  if (!session?.user.id) {
+    return {
+      allowed: false,
+    };
+  }
+
+  const subscription = await getActiveSubscription(session.user.id);
   const isTrial = isTrialActive(session);
 
   if (subscription.active || isTrial) {
