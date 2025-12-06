@@ -37,11 +37,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log into Docker Hub
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Extract Docker metadata for app
         id: meta
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-app
+          images: |
+            ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-app
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/corsfix-app
           tags: |
             type=raw,value=latest
             type=raw,value=${{ github.sha }}
@@ -93,11 +101,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log into Docker Hub
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Extract Docker metadata for proxy
         id: meta
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-proxy
+          images: |
+            ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-proxy
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/corsfix-proxy
           tags: |
             type=raw,value=latest
             type=raw,value=${{ github.sha }}
