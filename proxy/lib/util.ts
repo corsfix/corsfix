@@ -23,8 +23,6 @@ export const isDomainAllowed = (
 export const isLocalDomain = (domain: string): boolean => {
   const localDomains = [
     "localhost",
-    "127.0.0.1",
-    "0.0.0.0",
     "corsfix.com",
     "app.corsfix.com",
   ];
@@ -34,9 +32,30 @@ export const isLocalDomain = (domain: string): boolean => {
     return true;
   }
 
-  // Check for local IP ranges (192.168.x.x)
-  const ipv4Regex = /^192\.168\.\d{1,3}\.\d{1,3}$/;
-  return ipv4Regex.test(domain);
+  // Check for .localhost subdomains (e.g., api.localhost)
+  if (domain.toLowerCase().endsWith(".localhost")) {
+    return true;
+  }
+
+  // Check for IPv6 loopback
+  if (domain.includes(":")) {
+    // Remove brackets (e.g., [::1]) for comparison
+    const ipv6Address = domain.toLowerCase().replace(/^\[|\]$/g, "");
+    if (ipv6Address === "::1") {
+      return true;
+    }
+  }
+
+  // Check for IPv4 private/local ranges
+  const ipv4Patterns = [
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/, // Loopback (127.x.x.x)
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/, // Class A private (10.x.x.x)
+    /^192\.168\.\d{1,3}\.\d{1,3}$/, // Class C private (192.168.x.x)
+    /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/, // Class B private (172.16-31.x.x)
+    /^0\.0\.0\.0$/, // Unspecified
+  ];
+
+  return ipv4Patterns.some((pattern) => pattern.test(domain));
 };
 
 export const isValidUrl = (url: string) => {
