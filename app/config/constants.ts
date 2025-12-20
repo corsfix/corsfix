@@ -47,7 +47,7 @@ const configList: Record<string, Config> = {
       {
         id: "16e7090c-cb67-4545-ae98-6fdda46df7bf",
         name: "lite",
-        price: "5",
+        price: "3.99",
         rpm: 600,
         bandwidth: 0,
         type: "lite",
@@ -86,7 +86,7 @@ const configList: Record<string, Config> = {
       {
         id: "d6ce3bb4-bd1b-4d71-b020-88f1dc481c1d",
         name: "lite",
-        price: "5",
+        price: "3.99",
         rpm: 600,
         bandwidth: 0,
         type: "lite",
