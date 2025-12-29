@@ -126,8 +126,13 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
     responseHeaders.delete("transfer-encoding");
 
-    responseHeaders.delete("set-cookie");
-    responseHeaders.delete("set-cookie2");
+    const setCookies = responseHeaders.getSetCookie();
+    if (setCookies.length > 0) {
+      responseHeaders.delete("set-cookie");
+      for (const cookie of setCookies) {
+        responseHeaders.append("x-corsfix-set-cookie", cookie);
+      }
+    }
 
     if (req.ctx_cached_request && !callback) {
       responseHeaders.delete("expires");
