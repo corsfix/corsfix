@@ -1,7 +1,36 @@
-import { afterAll, beforeAll, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { app } from "./app";
+import * as apiKeyService from "./lib/services/apiKeyService";
+import * as configService from "./lib/config";
 
 const PORT = 8090;
+
+// Mock getUserByApiKey
+vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
+  async (apiKey: string) => {
+    if (apiKey === "cfx_valid_test_key") {
+      return {
+        id: "test-user-id",
+        subscription_active: true,
+        subscription_product_id: "prod_123",
+        trial_ends_at: new Date("2099-01-01"),
+      };
+    }
+    return null;
+  }
+);
+
+// Mock getConfig
+vi.spyOn(configService, "getConfig").mockReturnValue({
+  products: [
+    {
+      id: "prod_123",
+      name: "Test Product",
+      rpm: 1000,
+      rateLimitKey: "user_id",
+    },
+  ],
+});
 
 beforeAll(async () => {
   await app.listen(PORT);
@@ -178,4 +207,35 @@ test("invalid jsonp request without referer", async () => {
   expect(text).toContain("invalid Referer header");
   expect(result.status).toBe(400);
   expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_referer");
+});
+
+describe("API Key authentication", () => {
+  test("valid API key succeeds without Origin header", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+      },
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+  });
+
+  test("valid API key succeeds with Origin header", async () => {
+    const origin = "http://myapp.com";
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        Origin: origin,
+        "x-corsfix-key": "cfx_valid_test_key",
+      },
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+  });
 });
