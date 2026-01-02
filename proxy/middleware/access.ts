@@ -36,7 +36,6 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         return res.status(403).end("Corsfix: Invalid API key.");
       }
 
-      req.ctx_api_key_request = true;
       req.ctx_user_id = user.id;
     } else {
       const application = await getApplication(origin_domain);

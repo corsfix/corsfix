@@ -238,4 +238,23 @@ describe("API Key authentication", () => {
     expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
     expect(result.headers.get("X-Corsfix-Status")).toBe("success");
   });
+
+  test("preflight with x-corsfix-key in access-control-request-headers succeeds", async () => {
+    const origin = "http://myapp.com";
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: origin,
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "x-corsfix-key",
+      },
+    });
+
+    expect(result.status).toBe(204);
+    expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+    expect(result.headers.get("Access-Control-Allow-Headers")).toBe("x-corsfix-key");
+    expect(result.headers.get("X-Corsfix-Status")).toBe("preflight");
+  });
 });

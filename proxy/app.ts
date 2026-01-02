@@ -7,6 +7,7 @@ import {
   validatePayloadSize,
   validateTargetUrl,
 } from "./middleware/validation";
+import { detectApiKeyRequest } from "./middleware/apiKey";
 import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
 import { CorsfixRequest } from "./types/api";
@@ -48,6 +49,7 @@ app.use("/", handleMetrics);
 app.use("/", validatePayloadSize);
 app.use("/", validateTargetUrl);
 app.use("/", validateJsonpRequest);
+app.use("/", detectApiKeyRequest);
 app.use("/", validateOriginHeader);
 
 app.use("/", handlePreflight);
