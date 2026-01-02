@@ -8,15 +8,16 @@ export const validateOriginHeader = (
   next: MiddlewareNext
 ) => {
   const origin = req.header("Origin");
+
   if (req.ctx_origin) {
+    next();
+  } else if (req.ctx_api_key_request) {
+    req.ctx_origin = origin;
+    req.ctx_origin_domain = "api-key";
     next();
   } else if (isValidUrl(origin)) {
     req.ctx_origin = origin;
     req.ctx_origin_domain = new URL(origin).hostname;
-    next();
-  } else if (req.header("x-corsfix-key")) {
-    req.ctx_origin = origin;
-    req.ctx_origin_domain = "api-key";
     next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
