@@ -14,6 +14,10 @@ export const validateOriginHeader = (
     req.ctx_origin = origin;
     req.ctx_origin_domain = new URL(origin).hostname;
     next();
+  } else if (req.header("x-corsfix-key")) {
+    req.ctx_origin = origin;
+    req.ctx_origin_domain = "api-key";
+    next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
     res.header("X-Corsfix-Status", "invalid_origin", true);

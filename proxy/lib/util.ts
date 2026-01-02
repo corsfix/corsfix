@@ -5,6 +5,7 @@ import ipaddr from "ipaddr.js";
 import { UserV2Entity } from "../models/UserV2Entity";
 import { getConfig } from "./config";
 import { Readable } from "stream";
+import { ApiKeyUser } from "./services/apiKeyService";
 
 interface ProxyRequest {
   url: URL;
@@ -21,11 +22,7 @@ export const isDomainAllowed = (
 };
 
 export const isLocalDomain = (domain: string): boolean => {
-  const localDomains = [
-    "localhost",
-    "corsfix.com",
-    "app.corsfix.com",
-  ];
+  const localDomains = ["localhost", "corsfix.com", "app.corsfix.com"];
 
   // Check for exact match
   if (localDomains.includes(domain)) {
@@ -259,7 +256,9 @@ export const getRpmByProductId = (product_id: string): number => {
   return product.rpm;
 };
 
-export const isTrialActive = (user: UserV2Entity | null): boolean => {
+export const isTrialActive = (
+  user: UserV2Entity | ApiKeyUser | null
+): boolean => {
   if (!user) {
     return false;
   }

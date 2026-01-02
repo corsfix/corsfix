@@ -7,6 +7,7 @@ import {
 } from "../lib/util";
 import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
+import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
 import { IS_SELFHOST, SELFHOST_RPM, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
@@ -16,6 +17,7 @@ import { getConfig } from "../lib/config";
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
   const target_domain = req.ctx_target_domain!;
+  const apiKey = req.header("x-corsfix-key");
 
   let rateLimitConfig: RateLimitConfig;
 
@@ -26,30 +28,42 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       local: true,
     };
   } else {
-    const application = await getApplication(origin_domain);
-    if (!application) {
-      res.header("X-Corsfix-Status", "domain_not_registered", true);
-      return res
-        .status(403)
-        .end(
-          `Corsfix: Please add your website domain (${origin_domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
-        );
-    }
-    if (!isDomainAllowed(target_domain, application.target_domains)) {
-      res.header("X-Corsfix-Status", "target_not_allowed", true);
-      return res
-        .status(403)
-        .end(
-          `Corsfix: Target domain (${target_domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
-        );
-    }
+    let user;
+    if (apiKey) {
+      user = await getUserByApiKey(apiKey);
+      if (!user) {
+        res.header("X-Corsfix-Status", "invalid_api_key", true);
+        return res.status(403).end("Corsfix: Invalid API key.");
+      }
 
-    const user = await getUser(application.user_id);
-    if (!user) {
-      res.header("X-Corsfix-Status", "user_not_found", true);
-      return res.status(403).end(`Corsfix: User not found!`);
+      req.ctx_api_key_request = true;
+      req.ctx_user_id = user.id;
+    } else {
+      const application = await getApplication(origin_domain);
+      if (!application) {
+        res.header("X-Corsfix-Status", "domain_not_registered", true);
+        return res
+          .status(403)
+          .end(
+            `Corsfix: Please add your website domain (${origin_domain}) to the dashboard to use the CORS proxy. (https://corsfix.com/docs/dashboard/application)`
+          );
+      }
+      if (!isDomainAllowed(target_domain, application.target_domains)) {
+        res.header("X-Corsfix-Status", "target_not_allowed", true);
+        return res
+          .status(403)
+          .end(
+            `Corsfix: Target domain (${target_domain}) not allowed. Check the documentation for adding target domains. (https://corsfix.com/docs/dashboard/application)`
+          );
+      }
+
+      user = await getUser(application.user_id);
+      if (!user) {
+        res.header("X-Corsfix-Status", "user_not_found", true);
+        return res.status(403).end(`Corsfix: User not found!`);
+      }
+      req.ctx_user_id = application.user_id;
     }
-    req.ctx_user_id = application.user_id;
 
     const config = getConfig();
     let product = null;
@@ -72,7 +86,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     } else if (isTrialActive(user)) {
       rpm = trialLimit.rpm;
 
-      const metricsMtd = await getMonthToDateMetrics(application.user_id);
+      const metricsMtd = await getMonthToDateMetrics(req.ctx_user_id);
       if (metricsMtd.bytes >= trialLimit.bytes) {
         res.header("X-Corsfix-Status", "trial_limit_reached", true);
         return res

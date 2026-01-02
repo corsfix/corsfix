@@ -1,6 +1,7 @@
 import { app } from "./app";
 import { initConfig } from "./lib/config";
 import dbConnect from "./lib/dbConnect";
+import { registerApiKeyInvalidateCacheHandlers } from "./lib/services/apiKeyService";
 import { registerAppInvalidateCacheHandlers } from "./lib/services/applicationService";
 import { initRedis } from "./lib/services/cacheService";
 import { registerMetricShutdownHandlers } from "./lib/services/metricService";
@@ -19,6 +20,7 @@ const PORT = 80;
 
   await initPubSub();
   registerAppInvalidateCacheHandlers();
+  registerApiKeyInvalidateCacheHandlers();
 
   registerMetricShutdownHandlers();
 

@@ -39,9 +39,9 @@ export const getApplication = async (
 export const registerAppInvalidateCacheHandlers = () => {
   const pubSub = getPubSubClient();
 
-  pubSub.subscribe("app-invalidate", (err, count) => {
+  pubSub.subscribe("app-invalidate", (err) => {
     if (err) console.error(err);
-    console.log(`Subscribed to ${count} channels.`);
+    console.log(`Subscribed to app-invalidate channel.`);
   });
 
   pubSub.on("message", (channel, message) => {

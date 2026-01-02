@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { isLocalDomain } from "@/lib/utils";
+import { ApiKeyButton } from "@/components/api-key-button";
 
 interface ApplicationListProps {
   initialApplications: Application[];
@@ -589,13 +590,12 @@ export default function ApplicationList({
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             Your Applications
-            <Button
-              size="sm"
-              data-umami-event="application-add"
-              onClick={startAdding}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" /> Add Application
-            </Button>
+            <div className="flex gap-2">
+              <ApiKeyButton variant="outline" />
+              <Button data-umami-event="application-add" onClick={startAdding}>
+                Add Application
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

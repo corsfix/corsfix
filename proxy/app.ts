@@ -60,6 +60,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
   const origin = req.ctx_origin!;
   const origin_domain = req.ctx_origin_domain!;
+  const api_key_request = req.ctx_api_key_request!;
 
   req.ctx_cached_request = "x-corsfix-cache" in req.headers;
 
@@ -93,7 +94,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       targetUrl,
       filteredHeaders,
     };
-    if (!isLocalDomain(origin_domain)) {
+    if (!isLocalDomain(origin_domain) && !api_key_request) {
       const application = await getApplication(origin_domain);
       ({ url: processedUrl, headers: processedHeaders } = await processRequest(
         targetUrl,

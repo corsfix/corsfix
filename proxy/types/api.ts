@@ -8,6 +8,7 @@ export interface CorsfixRequest extends Request {
   ctx_callback?: string;
   ctx_user_id?: string;
   ctx_cached_request?: boolean;
+  ctx_api_key_request?: boolean;
   ctx_bytes?: number;
 }
 
