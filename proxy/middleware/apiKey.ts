@@ -10,7 +10,8 @@ export const detectApiKeyRequest = (
     req.header("x-corsfix-key") ||
     req
       .header("access-control-request-headers")
-      ?.toLowerCase()
+      ?.split(",")
+      .map((header) => header.trim().toLowerCase())
       .includes("x-corsfix-key")
   );
   next();
