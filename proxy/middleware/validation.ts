@@ -12,7 +12,10 @@ export const validateOriginHeader = (
   if (req.ctx_origin) {
     next();
   } else if (req.ctx_api_key_request) {
-    req.ctx_origin = origin;
+    // For API key requests, ensure ctx_origin is always a defined string.
+    // Use the Origin header if present; otherwise fall back to a sentinel value.
+    req.ctx_origin =
+      typeof origin === "string" && origin.length > 0 ? origin : "api-key";
     req.ctx_origin_domain = "api-key";
     next();
   } else if (isValidUrl(origin)) {
