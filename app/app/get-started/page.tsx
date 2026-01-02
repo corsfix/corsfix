@@ -10,6 +10,7 @@ import {
 import Nav from "@/components/nav";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { ExternalLink, NotepadText } from "lucide-react";
+import { ApiKeyButton } from "@/components/api-key-button";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getTrialEnds, isTrialActive } from "@/lib/utils";
@@ -71,12 +72,13 @@ export default async function GetStarted() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <Link href="/applications">
                   <Button data-umami-event="get-started-applications">
                     Add Application
                   </Button>
                 </Link>
+                <ApiKeyButton />
               </div>
             </CardContent>
           </Card>

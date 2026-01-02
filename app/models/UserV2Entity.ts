@@ -9,6 +9,7 @@ export interface UserV2Entity extends Document {
   customer_id?: string;
   subscription_product_id?: string;
   subscription_active?: boolean;
+  api_key?: string;
 }
 
 const UserV2Schema = new Schema<UserV2Entity>(
@@ -21,12 +22,14 @@ const UserV2Schema = new Schema<UserV2Entity>(
     customer_id: String,
     subscription_product_id: String,
     subscription_active: Boolean,
+    api_key: String,
   },
   { collection: "usersv2" }
 );
 
 UserV2Schema.index({ email: 1 });
 UserV2Schema.index({ legacy_id: 1 });
+UserV2Schema.index({ api_key: 1 });
 
 export const UserV2Entity: Model<UserV2Entity> =
   mongoose.models.UserV2 || mongoose.model("UserV2", UserV2Schema);
