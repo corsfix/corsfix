@@ -16,8 +16,22 @@ export async function generateApiKey(userId: string): Promise<string> {
   if (!user) throw new Error("User not found");
 
   const oldKey = user.api_key;
-  const key = "cfx_" + crypto.randomBytes(16).toString("hex");
 
+  const maxAttempts = 5;
+  let key: string | undefined;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const candidate = "cfx_" + crypto.randomBytes(16).toString("hex");
+    const existingUser = await UserV2Entity.findOne({ api_key: candidate }).lean();
+    if (!existingUser) {
+      key = candidate;
+      break;
+    }
+  }
+
+  if (!key) {
+    throw new Error("Failed to generate a unique API key");
+  }
   user.api_key = key;
   await user.save();
 
