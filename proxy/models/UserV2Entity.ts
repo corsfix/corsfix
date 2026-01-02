@@ -29,7 +29,7 @@ const UserV2Schema = new Schema<UserV2Entity>(
 
 UserV2Schema.index({ email: 1 });
 UserV2Schema.index({ legacy_id: 1 });
-UserV2Schema.index({ api_key: 1 });
+UserV2Schema.index({ api_key: 1 }, { unique: true, sparse: true });
 
 export const UserV2Entity: Model<UserV2Entity> =
   mongoose.models.UserV2 || mongoose.model("UserV2", UserV2Schema);
