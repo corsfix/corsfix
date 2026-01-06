@@ -33,7 +33,7 @@ export function AuthGuard({
   }, [status]);
 
   // Pages that don't require authentication
-  if (pathname === "/auth" || pathname === "/order-success" || pathname == "/playground") {
+  if (pathname === "/auth" || pathname === "/order-success" || pathname === "/playground") {
     return children;
   }
 
