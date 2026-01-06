@@ -11,14 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun, Monitor, User } from "lucide-react";
 import * as React from "react";
 
 export function UserNav() {
   const { data: session } = useSession();
+  const router = useRouter();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
@@ -84,32 +85,44 @@ export function UserNav() {
         >
           <Avatar className="h-8 w-8">
             <AvatarFallback>
-              {session?.user?.name?.[0] || session?.user?.email?.[0]}
+              {session?.user
+                ? session.user.name?.[0] || session.user.email?.[0]
+                : <User className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {session?.user?.name || session?.user?.email}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {session?.user?.email}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        {session?.user && (
+          <>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {session.user.name || session.user.email}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {session.user.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem data-umami-event="theme-toggle" onClick={cycleTheme}>
           Theme:&nbsp;
           {getThemeLabel()}
           {getThemeIcon()}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem data-umami-event="user-logout" onClick={logOut}>
-          Log out
-        </DropdownMenuItem>
+        {session?.user ? (
+          <DropdownMenuItem data-umami-event="user-logout" onClick={logOut}>
+            Log out
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem data-umami-event="user-login" onClick={() => router.push("/auth")}>
+            Log in
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

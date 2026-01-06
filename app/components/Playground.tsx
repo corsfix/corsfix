@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImportCurlModal } from "@/components/ImportCurlModal";
@@ -175,7 +176,7 @@ function ensureValidUrl(url: string): string {
 // Create a default empty config
 function getDefaultConfig(): RequestConfig {
   return {
-    url: "",
+    url: "https://rand.sh/animals",
     method: "GET",
     headers: {},
     headerItems: [],
@@ -187,6 +188,8 @@ function getDefaultConfig(): RequestConfig {
     region: "auto",
   };
 }
+
+const WELCOME_MODAL_STORAGE_KEY = "playground-welcome-dismissed";
 
 export default function Playground({
   isCloud,
@@ -219,7 +222,24 @@ export default function Playground({
   const [showExampleDialog, setShowExampleDialog] = useState(false);
   const [isImportCurlModalOpen, setIsImportCurlModalOpen] = useState(false);
   const [initialCurlText, setInitialCurlText] = useState("");
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const sendButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Check localStorage for welcome modal preference
+  useEffect(() => {
+    const dismissed = localStorage.getItem(WELCOME_MODAL_STORAGE_KEY);
+    if (dismissed !== "true") {
+      setShowWelcomeModal(true);
+    }
+  }, []);
+
+  const handleWelcomeContinue = useCallback(() => {
+    if (dontShowAgain) {
+      localStorage.setItem(WELCOME_MODAL_STORAGE_KEY, "true");
+    }
+    setShowWelcomeModal(false);
+  }, [dontShowAgain]);
 
   const isHtmlResponse =
     response?.headers["content-type"]?.includes("text/html");
@@ -1252,6 +1272,53 @@ export default function Playground({
         onImport={handleImportCurl}
         initialCurl={initialCurlText}
       />
+
+      {/* Welcome Modal */}
+      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+        <DialogContent
+          className="sm:max-w-md mx-1"
+          onInteractOutside={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Welcome to Corsfix Playground!</DialogTitle>
+          </DialogHeader>
+          <div className="text-muted-foreground">
+            Here you can explore a variety of features and try out different
+            requests to see how the proxy works.
+            <br />
+            <br />
+            If you just want to start using the proxy, you can set up your
+            website in{" "}
+            <Link
+              href="/applications"
+              className="underline text-foreground font-semibold hover:text-primary"
+            >
+              Applications
+            </Link>
+            .
+          </div>
+
+          <DialogFooter className="flex-row items-center justify-between gap-2 sm:justify-between mt-6">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="dontShowAgain"
+                className="h-4 w-4 rounded border-gray-300"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+              />
+              <label
+                htmlFor="dontShowAgain"
+                className="text-sm text-muted-foreground"
+              >
+                Don&apos;t show this again
+              </label>
+            </div>
+            <Button onClick={handleWelcomeContinue}>Got it</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
