@@ -62,8 +62,9 @@ test("invalid url if no tld", async () => {
 test("invalid if no origin header", async () => {
   const targetUrl = `http://api.test/get`;
   const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`);
-  const text = await result.text();
-  expect(text).toContain("invalid Origin header");
+  const json = await result.json();
+  expect(json.corsfix_error).toBe("invalid_origin");
+  expect(json.message).toContain("Origin header");
   expect(result.status).toBe(400);
   expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_origin");
 });
@@ -202,9 +203,10 @@ test("invalid jsonp request without referer", async () => {
       },
     }
   );
-  const text = await result.text();
+  const json = await result.json();
 
-  expect(text).toContain("invalid Referer header");
+  expect(json.corsfix_error).toBe("invalid_referer");
+  expect(json.message).toContain("Referer header");
   expect(result.status).toBe(400);
   expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_referer");
 });
