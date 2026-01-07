@@ -30,6 +30,8 @@ export const app = new Server({
 app.set_error_handler((_: Request, res: Response, error: Error) => {
   console.error("Uncaught error occurred.", error);
   res.header("X-Corsfix-Status", "uncaught_error", true);
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Expose-Headers", "*");
   res.status(500).end("Corsfix: Uncaught error occurred.");
 });
 
@@ -153,6 +155,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     const { name, message, cause } = error as Error;
     if (name === "AbortError" || name === "TimeoutError") {
       res.header("X-Corsfix-Status", "timeout", true);
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Expose-Headers", "*");
       res
         .status(504)
         .end(
@@ -161,15 +165,21 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     } else if (message === "fetch failed") {
       if ((cause as any).code === "ENOTFOUND") {
         res.header("X-Corsfix-Status", "target_not_found", true);
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Expose-Headers", "*");
         res.status(404).end("Corsfix: Target URL not found.");
       } else {
         console.error("Fetch error occurred.", error);
         res.header("X-Corsfix-Status", "target_unreachable", true);
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Expose-Headers", "*");
         res.status(502).end("Corsfix: Unable to reach target URL.");
       }
     } else {
       console.error("Unknown error occurred.", error);
       res.header("X-Corsfix-Status", "unknown_error", true);
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Expose-Headers", "*");
       res.status(500).end("Corsfix: Unknown error occurred.");
     }
   }
@@ -218,6 +228,8 @@ const textOnlyHandler = async (
     contentLength > ONE_MEGABYTE
   ) {
     res.header("X-Corsfix-Status", "response_too_large", true);
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Expose-Headers", "*");
     return res.status(400).end("Corsfix: Text response size too large.");
   }
 
@@ -235,6 +247,8 @@ const textOnlyHandler = async (
       // Check if we exceeded size limit
       if (bytes > ONE_MEGABYTE) {
         res.header("X-Corsfix-Status", "response_too_large", true);
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Expose-Headers", "*");
         return res
           .status(400)
           .end("Corsfix: Response size too large (max 1MB).");
@@ -270,6 +284,8 @@ const textOnlyHandler = async (
       return res.send(compression.compressed);
     } catch (error) {
       res.header("X-Corsfix-Status", "response_not_text", true);
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Expose-Headers", "*");
       return res.status(400).end("Corsfix: Response is not valid text.");
     }
   }
@@ -298,6 +314,8 @@ const jsonpHandler = async (
       contentLength > ONE_MEGABYTE
     ) {
       res.header("X-Corsfix-Status", "response_too_large", true);
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Expose-Headers", "*");
       return res
         .status(400)
         .end("Corsfix: Response size too large for JSONP (max 1MB).");
@@ -313,6 +331,8 @@ const jsonpHandler = async (
       // Check if we exceeded size limit
       if (bytes > ONE_MEGABYTE) {
         res.header("X-Corsfix-Status", "response_too_large", true);
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Expose-Headers", "*");
         return res
           .status(400)
           .end("Corsfix: Response size too large for JSONP (max 1MB).");
