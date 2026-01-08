@@ -185,9 +185,13 @@ const corsHandler = async (
   if (apiResponse.body) {
     const contentLengthHeader =
       apiResponse.headers["content-length"]?.toString();
-    const contentLength = contentLengthHeader
-      ? parseInt(contentLengthHeader, 10)
-      : undefined;
+    let contentLength: number | undefined = undefined;
+    if (contentLengthHeader !== undefined) {
+      const parsedLength = parseInt(contentLengthHeader, 10);
+      if (Number.isFinite(parsedLength) && parsedLength > 0) {
+        contentLength = parsedLength;
+      }
+    }
 
     let bytes = 0;
     const counter = new Transform({
