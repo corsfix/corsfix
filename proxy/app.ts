@@ -202,8 +202,15 @@ const corsHandler = async (
     });
 
     const readable = Readable.from(apiResponse.body).pipe(counter);
-    await res.stream(readable, contentLength);
-    req.ctx_bytes = bytes;
+    try {
+      await res.stream(readable, contentLength);
+    } catch (error) {
+      console.error("Error while streaming response:", error);
+      // Ensure the response is properly terminated on error
+      res.end();
+    } finally {
+      req.ctx_bytes = bytes;
+    }
     return;
   }
 
