@@ -1,6 +1,7 @@
 import { MiddlewareNext, Request, Response } from "hyper-express";
 import { getProxyRequest, isValidUrl } from "../lib/util";
 import { CorsfixRequest } from "../types/api";
+import { sendCorsfixError } from "../errors";
 
 export const validateOriginHeader = (
   req: CorsfixRequest,
@@ -24,14 +25,7 @@ export const validateOriginHeader = (
     next();
   } else {
     res.header("X-Robots-Tag", "noindex, nofollow");
-    res.header("X-Corsfix-Status", "invalid_origin", true);
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Expose-Headers", "*");
-    return res
-      .status(400)
-      .end(
-        "Corsfix: Missing or invalid Origin header. This CORS proxy is intended for use with fetch/AJAX requests in your JavaScript code, not as a generic web proxy. (https://corsfix.com/docs/cors-proxy/api)"
-      );
+    return sendCorsfixError(res, "invalid_origin");
   }
 };
 
@@ -49,14 +43,7 @@ export const validateJsonpRequest = (
       req.ctx_origin = referrerUrl.origin;
       req.ctx_origin_domain = referrerUrl.hostname;
     } else {
-      res.header("X-Corsfix-Status", "invalid_referer", true);
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header("Access-Control-Expose-Headers", "*");
-      return res
-        .status(400)
-        .end(
-          "Corsfix: Missing or invalid Referer header for JSONP request. (https://corsfix.com/docs/cors-proxy/jsonp)"
-        );
+      return sendCorsfixError(res, "invalid_referer");
     }
   }
 
@@ -91,14 +78,7 @@ export const validateTargetUrl = (
     req.ctx_callback = callback;
   } catch (e) {
     res.header("X-Robots-Tag", "noindex, nofollow");
-    res.header("X-Corsfix-Status", "invalid_url", true);
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Expose-Headers", "*");
-    return res
-      .status(400)
-      .end(
-        "Corsfix: Invalid URL provided. Check the documentation for CORS proxy API usage. (https://corsfix.com/docs/cors-proxy/api)"
-      );
+    return sendCorsfixError(res, "invalid_url");
   }
   next();
 };
@@ -112,14 +92,7 @@ export const validatePayloadSize = (
   if (contentLengthHeader) {
     const contentLength = parseInt(contentLengthHeader, 10);
     if (!isNaN(contentLength) && contentLength > 5 * 1024 * 1024) {
-      res.header("X-Corsfix-Status", "payload_too_large", true);
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header("Access-Control-Expose-Headers", "*");
-      return res
-        .status(413)
-        .end(
-          "Corsfix: Payload Too Large. Maximum allowed request size is 5MB. (https://corsfix.com/docs/cors-proxy/api)"
-        );
+      return sendCorsfixError(res, "payload_too_large");
     }
   }
   next();
