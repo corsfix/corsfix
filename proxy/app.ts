@@ -15,6 +15,7 @@ import { handleProxyAccess } from "./middleware/access";
 import { Dispatcher } from "undici";
 import { compressTextResponse } from "./lib/compression";
 import { sendCorsfixError } from "./errors";
+import { Readable, Transform } from "stream";
 
 import "dotenv/config";
 
@@ -182,12 +183,24 @@ const corsHandler = async (
   }
 
   if (apiResponse.body) {
+    const contentLengthHeader =
+      apiResponse.headers["content-length"]?.toString();
+    const contentLength = contentLengthHeader
+      ? parseInt(contentLengthHeader, 10)
+      : undefined;
+
     let bytes = 0;
-    for await (const value of apiResponse.body) {
-      res.write(value);
-      bytes += value.length;
-    }
+    const counter = new Transform({
+      transform(chunk, _encoding, callback) {
+        bytes += chunk.length;
+        callback(null, chunk);
+      },
+    });
+
+    const readable = Readable.from(apiResponse.body).pipe(counter);
+    await res.stream(readable, contentLength);
     req.ctx_bytes = bytes;
+    return;
   }
 
   return res.end();
