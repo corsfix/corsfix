@@ -2,7 +2,7 @@
   <p><a href="https://corsfix.com"><img src="https://corsfix.com/landing.jpg" alt="Corsfix"></a></p>
   <p>
     <a href="https://corsfix.com">Website</a> &bull; 
-    <a href="#%EF%B8%8F-demo">Demo</a> &bull; 
+    <a href="https://app.corsfix.com/playground">Demo</a> &bull; 
     <a href="https://corsfix.com/docs">Documentation</a> &bull; 
     <a href="https://discord.gg/WEAeqrRjp2">Discord</a> &bull; 
     <a href="#AGPL-3.0-1-ov-file">License</a> &bull; 
@@ -30,12 +30,12 @@ Start using Corsfix in your web applications.
 
 - Bypass CORS errors
 - Setup origin and domain allowlist
-- Manage and use API key securely
-- Overwrite request headers
-- Optimize response with caching
+- Hide API keys in the frontend
+- Cache API responses
+- Set forbidden headers
+- Responses streamed for minimal latency
 - Test requests with playground
 - Track performance metrics
-- Minimal latency with chunked transfer
 
 ## 🔎 Preview
 
@@ -69,10 +69,7 @@ Start using Corsfix in your web applications.
 
 ## ⚡️ Demo
 
-You can quickly try out Corsfix using
-
-- our [Javascript Sandbox](https://sandbox.corsfix.com), to run client JavaScript code and send network requests,
-- or via [Playground](https://app.corsfix.com/playground), if you prefer using GUI (requires login to dashboard).
+You can quickly try out Corsfix using our [Playground](https://app.corsfix.com/playground).
 
 ## 🙋 FAQ
 
