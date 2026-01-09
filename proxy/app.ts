@@ -113,7 +113,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       body: ["GET", "HEAD"].includes(req.method)
         ? undefined
         : await req.buffer(),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(60000),
       decompress: enableDecompression,
       maxRedirects: 5,
     });
@@ -202,6 +202,9 @@ const corsHandler = async (
     });
 
     const readable = Readable.from(apiResponse.body).pipe(counter);
+    readable.on("error", (error) => {
+      console.error("Stream error:", error);
+    });
     try {
       await res.stream(readable, contentLength);
     } catch (error) {
