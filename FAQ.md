@@ -61,7 +61,7 @@ We are not the first to build a CORS proxy. In fact, CORS proxies have existed f
 The ones mentioned above are pioneers in the CORS proxy space. However, for a more robust solution, you might want to consider Corsfix. We listed our key features in the [README.md](README.md), but some of them include the ability to:
 
 - Control which website can access the proxy, and to fetch which domain
-- Manage secrets, such as API keys, and use them securely
+- Hide API keys from frontend code
 - Override request headers
 - Cache responses
 - And more.
