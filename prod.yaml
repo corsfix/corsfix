@@ -22,6 +22,7 @@ services:
   app:
     image: ghcr.io/corsfix/corsfix-app:latest
     platform: linux/amd64
+    pull_policy: always
     restart: always
     environment:
       - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
@@ -34,6 +35,7 @@ services:
       - DOMAIN=${DOMAIN}
   proxy:
     image: ghcr.io/corsfix/corsfix-proxy:latest
+    pull_policy: always
     restart: always
     environment:
       - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
