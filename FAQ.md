@@ -36,7 +36,9 @@ In order to function, yes it does. By reading the target URL and modifying the p
 
 ### It can leak cookies
 
-Any URL that returns a `Set-Cookie` header will also get passed to the client, which stores the cookie in the browser. The thing is, the domain of that cookie won't be of the API, but instead it will be of the proxy URL. We avoid this problem by explicitly removing `Set-Cookie` headers to prevent leakage.
+Any URL that returns a `Set-Cookie` header will also get passed to the client, which is stored under the proxy domain. This can cause cookies from different URLs to be shared, since the browser only knows that the cookie is for the proxy domain, and not the target URL.
+
+To avoid this, we rename the cookie header to `X-Corsfix-Set-Cookie`, this prevents the browser automatically storing it, while still allowing the developer to use it however they want.
 
 ### It can expose local networks (SSRF)
 
