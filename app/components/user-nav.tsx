@@ -15,6 +15,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor, User } from "lucide-react";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import * as React from "react";
 
 export function UserNav() {
@@ -22,6 +23,7 @@ export function UserNav() {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
 
   // useEffect only runs on the client, so now we can safely show the UI
   React.useEffect(() => {
@@ -76,54 +78,73 @@ export function UserNav() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          data-umami-event="user-nav"
-          variant="ghost"
-          className="relative h-8 w-8 rounded-full border"
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>
-              {session?.user
-                ? session.user.name?.[0] || session.user.email?.[0]
-                : <User className="h-4 w-4" />}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        {session?.user && (
-          <>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {session.user.name || session.user.email}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {session.user.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuItem data-umami-event="theme-toggle" onClick={cycleTheme}>
-          Theme:&nbsp;
-          {getThemeLabel()}
-          {getThemeIcon()}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {session?.user ? (
-          <DropdownMenuItem data-umami-event="user-logout" onClick={logOut}>
-            Log out
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            data-umami-event="user-nav"
+            variant="ghost"
+            className="relative h-8 w-8 rounded-full border"
+          >
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>
+                {session?.user ? (
+                  session.user.name?.[0] || session.user.email?.[0]
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          {session?.user && (
+            <>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {session.user.name || session.user.email}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {session.user.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem
+            data-umami-event="theme-toggle"
+            onClick={cycleTheme}
+          >
+            Theme:&nbsp;
+            {getThemeLabel()}
+            {getThemeIcon()}
           </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem data-umami-event="user-login" onClick={() => router.push("/auth")}>
-            Log in
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            data-umami-event="give-feedback"
+            onClick={() => setFeedbackOpen(true)}
+          >
+            Give Feedback
           </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSeparator />
+          {session?.user ? (
+            <DropdownMenuItem data-umami-event="user-logout" onClick={logOut}>
+              Log out
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              data-umami-event="user-login"
+              onClick={() => router.push("/auth")}
+            >
+              Log in
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 }
