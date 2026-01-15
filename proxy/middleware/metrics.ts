@@ -11,11 +11,11 @@ export const handleMetrics = (
   next: MiddlewareNext
 ) => {
   res.on("close", () => {
-    const { ctx_user_id, ctx_bytes, ctx_cached_request } = req;
+    const { ctx_user_id, ctx_bytes, ctx_cache_duration } = req;
     const origin_domain = req.ctx_origin_domain!;
 
     if (ctx_user_id && ctx_bytes) {
-      if (IS_CLOUD && ctx_cached_request) {
+      if (IS_CLOUD && ctx_cache_duration) {
         const url = getProxyRequest(req).url.href;
         const key = `metrics|${url}|${origin_domain}`;
 
@@ -28,7 +28,7 @@ export const handleMetrics = (
               bytes: ctx_bytes,
             });
 
-            await redisClient.set(key, metricsData, "EX", 2 * 60 * 60); // expire in 2 hours
+            await redisClient.set(key, metricsData, "EX", 2 * ctx_cache_duration);
 
             if (!value) {
               batchCountMetrics(ctx_user_id, origin_domain, ctx_bytes);

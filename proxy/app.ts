@@ -14,6 +14,7 @@ import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
 import { Dispatcher } from "undici";
 import { compressTextResponse } from "./lib/compression";
+import { parseCacheDuration } from "./lib/cacheDuration";
 import { sendCorsfixError } from "./errors";
 import { Readable, Transform } from "stream";
 
@@ -65,7 +66,10 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
   const api_key_request = req.ctx_api_key_request!;
 
-  req.ctx_cached_request = "x-corsfix-cache" in req.headers;
+  const cacheHeader = req.header("x-corsfix-cache");
+  if (cacheHeader !== undefined) {
+    req.ctx_cache_duration = parseCacheDuration(cacheHeader);
+  }
 
   const filteredHeaders: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
@@ -138,9 +142,12 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       }
     }
 
-    if (req.ctx_cached_request && !callback) {
+    if (req.ctx_cache_duration && !callback) {
       responseHeaders.delete("expires");
-      responseHeaders.set("Cache-Control", "public, max-age=3600");
+      responseHeaders.set(
+        "Cache-Control",
+        `public, max-age=${req.ctx_cache_duration}`
+      );
     }
 
     if (callback) {
