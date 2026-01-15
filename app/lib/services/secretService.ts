@@ -4,6 +4,7 @@ import { SecretEntity } from "@/models/SecretEntity";
 import { encrypt, getKekVersion, maskSecret } from "../utils";
 import crypto from "crypto";
 import { ApplicationEntity } from "@/models/ApplicationEntity";
+import redisConnect from "../redisConnect";
 
 export async function getApplicationSecrets(
   user_id: string
@@ -61,6 +62,9 @@ export async function createSecret(
 
   await secret.save();
 
+  const redis = await redisConnect();
+  redis.publish("secret-invalidate", application_id);
+
   return {
     application_id: application_id,
     id: secret.id,
@@ -105,6 +109,9 @@ export async function updateSecret(
 
   await existingSecret.save();
 
+  const redis = await redisConnect();
+  redis.publish("secret-invalidate", existingSecret.application_id.toString());
+
   return {
     application_id: existingSecret.application_id.toString(),
     id: existingSecret.id,
@@ -127,6 +134,9 @@ export async function deleteSecret(user_id: string, id: string): Promise<void> {
   }
 
   await secret.deleteOne();
+
+  const redis = await redisConnect();
+  redis.publish("secret-invalidate", secret.application_id.toString());
 }
 
 export async function deleteSecretsForApplication(
@@ -252,4 +262,7 @@ export async function manageApplicationSecrets(
       await secret.save();
     }
   }
+
+  const redis = await redisConnect();
+  redis.publish("secret-invalidate", application_id);
 }
