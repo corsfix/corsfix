@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
+import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/lib/validation";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   isLogin: boolean;
@@ -29,7 +30,6 @@ export function UserAuthForm({
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const buttonSuccessRef = useRef<HTMLButtonElement>(null);
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
@@ -41,7 +41,7 @@ export function UserAuthForm({
       return;
     }
 
-    if (!emailPattern.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       toast.error("Please enter a valid email address");
       inputRef.current?.focus();
       return;
@@ -68,14 +68,20 @@ export function UserAuthForm({
       return;
     }
 
-    if (!emailPattern.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       toast.error("Please enter a valid email address");
       inputRef.current?.focus();
       return;
     }
 
-    if (!password || password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+    if (!password) {
+      toast.error("Please enter your password");
+      passwordRef.current?.focus();
+      return;
+    }
+
+    if (!isLogin && password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       passwordRef.current?.focus();
       return;
     }
