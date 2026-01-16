@@ -1,7 +1,7 @@
-app.{$DOMAIN:localhost} {
+{$APP_DOMAIN:app.localhost} {
     reverse_proxy app:3000
 }
 
-proxy.{$DOMAIN:localhost} {
+{$PROXY_DOMAIN:proxy.localhost} {
     reverse_proxy proxy:80
 }

@@ -193,13 +193,13 @@ const WELCOME_MODAL_STORAGE_KEY = "playground-welcome-dismissed";
 
 export default function Playground({
   isCloud,
-  domain,
+  proxyDomain,
 }: {
   isCloud: boolean;
-  domain: string;
+  proxyDomain: string;
 }) {
   const PROXY_REGIONS = {
-    auto: isCloud ? "proxy.corsfix.com" : `proxy.${domain}`,
+    auto: isCloud ? "proxy.corsfix.com" : proxyDomain,
     ap: "proxy-ap.corsfix.com",
     us: "proxy-us.corsfix.com",
     eu: "proxy-eu.corsfix.com",

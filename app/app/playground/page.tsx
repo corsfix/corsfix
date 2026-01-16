@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 };
 export default function PlaygroundPage() {
   return (
-    <Playground isCloud={IS_CLOUD} domain={process.env.DOMAIN as string} />
+    <Playground isCloud={IS_CLOUD} proxyDomain={process.env.PROXY_DOMAIN as string} />
   );
 }
