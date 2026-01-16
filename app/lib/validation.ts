@@ -19,7 +19,9 @@ export function validateEmail(email: unknown): ValidationResult<string> {
     return { success: false, error: "Invalid email or password" };
   }
 
-  return { success: true, data: trimmedEmail };
+  const normalizedEmail = trimmedEmail.toLowerCase();
+
+  return { success: true, data: normalizedEmail };
 }
 
 export function validatePassword(
