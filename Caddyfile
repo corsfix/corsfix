@@ -1,7 +1,9 @@
 {$APP_DOMAIN:app.localhost} {
     reverse_proxy app:3000
+    # tls /certs/cert.pem /certs/key.pem
 }
 
 {$PROXY_DOMAIN:proxy.localhost} {
     reverse_proxy proxy:80
+    # tls /certs/cert.pem /certs/key.pem
 }
