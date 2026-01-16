@@ -103,6 +103,7 @@ export function UserAuthForm({
 
       if (result.error) {
         toast.error(result.error);
+        setIsLoading(false);
         return;
       }
 
