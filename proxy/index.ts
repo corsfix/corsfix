@@ -7,6 +7,7 @@ import { initRedis } from "./lib/services/cacheService";
 import { registerMetricShutdownHandlers } from "./lib/services/metricService";
 import { initPubSub } from "./lib/services/pubSubService";
 import { registerGlobalRateLimiter } from "./lib/services/ratelimitService";
+import { registerSecretInvalidateCacheHandlers } from "./lib/services/secretService";
 
 import "dotenv/config";
 
@@ -21,6 +22,7 @@ const PORT = 80;
   await initPubSub();
   registerAppInvalidateCacheHandlers();
   registerApiKeyInvalidateCacheHandlers();
+  registerSecretInvalidateCacheHandlers();
 
   registerMetricShutdownHandlers();
 

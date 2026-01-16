@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { CacheableMemory } from "cacheable";
 import { EncryptedObject, SecretEntity } from "../../models/SecretEntity";
+import { getPubSubClient } from "./pubSubService";
 
 const dekCache = new CacheableMemory({
   ttl: "1m",
@@ -92,4 +93,19 @@ export const getSecretsMap = async (
   });
 
   return secretsMap;
+};
+
+export const registerSecretInvalidateCacheHandlers = () => {
+  const pubSub = getPubSubClient();
+
+  pubSub.subscribe("secret-invalidate", (err) => {
+    if (err) console.error(err);
+    console.log(`Subscribed to secret-invalidate channel.`);
+  });
+
+  pubSub.on("message", (channel, message) => {
+    if (channel === "secret-invalidate") {
+      secretCache.delete(message);
+    }
+  });
 };
