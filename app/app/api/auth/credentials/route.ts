@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     console.error("Credentials validation error:", err);
     return NextResponse.json(
-      { error: "Failed to authenticate" },
+      { error: "Failed to validate credentials" },
       { status: 500 }
     );
   }
