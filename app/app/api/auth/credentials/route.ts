@@ -3,6 +3,7 @@ import dbConnect from "@/lib/dbConnect";
 import bcrypt from "bcryptjs";
 import { DISABLE_SIGNUP } from "@/config/constants";
 import { UserV2Entity } from "@/models/UserV2Entity";
+import { validateCredentials } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,48 +12,15 @@ export async function POST(request: NextRequest) {
 
     const isLogin = mode === "login";
 
-    // Basic input validation for email and password
-    if (typeof email !== "string" || typeof password !== "string") {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 400 }
-      );
+    const validation = validateCredentials(email, password, !isLogin);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 400 }
-      );
-    }
-
-    // Simple email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 400 }
-      );
-    }
-
-    // Enforce a minimum password length for new signups
-    if (!isLogin && password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 }
-      );
-    }
+    const validatedEmail = validation.data.email;
 
     await dbConnect();
-    const user = await UserV2Entity.findOne({ email: trimmedEmail });
+    const user = await UserV2Entity.findOne({ email: validatedEmail });
 
     if (isLogin) {
       if (!user || !user.hash) {

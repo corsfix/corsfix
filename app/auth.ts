@@ -8,6 +8,7 @@ import dbConnect from "./lib/dbConnect";
 import { IS_CLOUD, DISABLE_SIGNUP } from "./config/constants";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { validateCredentials } from "./lib/validation";
 
 const adapter = MongoDBAdapter(
   async () => {
@@ -51,9 +52,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           },
           authorize: async (credentials) => {
             const isLogin = credentials.mode === "login";
-            const user = await adapter.getUserByEmail?.(
-              credentials.email as string
+
+            const validation = validateCredentials(
+              credentials.email,
+              credentials.password,
+              !isLogin
             );
+            if (!validation.success) {
+              throw new Error(validation.error);
+            }
+
+            const { email, password } = validation.data;
+            const user = await adapter.getUserByEmail?.(email);
 
             if (isLogin) {
               // Login mode: user must exist
@@ -62,7 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 throw new Error("Invalid email or password");
               }
               const isValidPassword = await bcrypt.compare(
-                credentials.password as string,
+                password,
                 user.hash as string
               );
               if (!isValidPassword) {
@@ -79,13 +89,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }
 
               const salt = await bcrypt.genSalt(10);
-              const hash = await bcrypt.hash(
-                credentials.password as string,
-                salt
-              );
+              const hash = await bcrypt.hash(password, salt);
               const newUser = await adapter.createUser?.({
                 id: new mongoose.Types.ObjectId().toHexString(),
-                email: credentials.email as string,
+                email: email,
                 hash: hash,
                 emailVerified: null,
               });
