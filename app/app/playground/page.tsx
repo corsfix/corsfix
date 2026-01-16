@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { IS_CLOUD } from "@/config/constants";
 import Playground from "@/components/Playground";
+import { getProxyDomain } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,6 @@ export const metadata: Metadata = {
 };
 export default function PlaygroundPage() {
   return (
-    <Playground isCloud={IS_CLOUD} proxyDomain={process.env.PROXY_DOMAIN as string} />
+    <Playground isCloud={IS_CLOUD} proxyDomain={getProxyDomain()} />
   );
 }
