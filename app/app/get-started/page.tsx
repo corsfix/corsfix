@@ -124,8 +124,8 @@ export default async function GetStarted() {
                     <code lang="javascript">
                       {`// Example usage with fetch
 const url = "https://api.example.com"
-fetch("https://proxy.${
-                        IS_CLOUD ? "corsfix.com" : process.env.DOMAIN
+fetch("https://${
+                        IS_CLOUD ? "proxy.corsfix.com" : process.env.PROXY_DOMAIN
                       }/?" + url);`}
                     </code>
                   </pre>

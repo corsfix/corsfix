@@ -31,8 +31,8 @@ services:
       - KEK_VERSION_1=${KEK_VERSION_1}
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true
-      - AUTH_URL=https://app.${DOMAIN}
-      - DOMAIN=${DOMAIN}
+      - AUTH_URL=https://${APP_DOMAIN}
+      - PROXY_DOMAIN=${PROXY_DOMAIN}
   proxy:
     image: ghcr.io/corsfix/corsfix-proxy:latest
     pull_policy: always
@@ -41,6 +41,7 @@ services:
       - MONGODB_URI=mongodb://${MONGODB_USER:-proxy}:${MONGODB_PASSWORD:-corsfix}@mongodb/db?authSource=admin
       - REDIS_URI=redis://default:${REDIS_PASSWORD:-corsfix}@redis
       - KEK_VERSION_1=${KEK_VERSION_1}
+      - APP_DOMAIN=${APP_DOMAIN}
   caddy:
     image: caddy:2-alpine
     restart: always
@@ -52,7 +53,8 @@ services:
       - .caddy/data:/data
       - .caddy/config:/config
     environment:
-      - DOMAIN=${DOMAIN}
+      - APP_DOMAIN=${APP_DOMAIN}
+      - PROXY_DOMAIN=${PROXY_DOMAIN}
     depends_on:
       - app
       - proxy

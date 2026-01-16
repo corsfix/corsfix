@@ -24,6 +24,10 @@ export const isDomainAllowed = (
 export const isLocalDomain = (domain: string): boolean => {
   const localDomains = ["localhost", "corsfix.com", "app.corsfix.com"];
 
+  // Add configured domains for self-hosted deployments
+  const appDomain = process.env.APP_DOMAIN;
+  if (appDomain) localDomains.push(appDomain);
+
   // Check for exact match
   if (localDomains.includes(domain)) {
     return true;
