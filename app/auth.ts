@@ -47,14 +47,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           credentials: {
             email: { label: "Email" },
             password: { label: "Password", type: "password" },
+            mode: { label: "Mode" },
           },
           authorize: async (credentials) => {
+            const isLogin = credentials.mode === "login";
             const user = await adapter.getUserByEmail?.(
               credentials.email as string
             );
 
-            if (!user) {
-              // Check if signup is disabled for self-hosted instances
+            if (isLogin) {
+              // Login mode: user must exist
+              // User exists but has no password (OAuth user)
+              if (!user || !user.hash) {
+                throw new Error("Invalid email or password");
+              }
+              const isValidPassword = await bcrypt.compare(
+                credentials.password as string,
+                user.hash as string
+              );
+              if (!isValidPassword) {
+                throw new Error("Invalid email or password");
+              }
+              return user;
+            } else {
+              // Signup mode: user must not exist
+              if (user) {
+                throw new Error("User already exists");
+              }
               if (DISABLE_SIGNUP) {
                 throw new Error("Signups are disabled");
               }
@@ -77,15 +96,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
               return newUser;
             }
-            if (
-              await bcrypt.compare(
-                credentials.password as string,
-                user.hash as string
-              )
-            ) {
-              return user;
-            }
-            return null;
           },
         }),
       ],

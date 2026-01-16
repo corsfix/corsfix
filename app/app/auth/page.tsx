@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { IS_CLOUD } from "@/config/constants";
+import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
 import { Metadata } from "next";
 import { AuthForm } from "@/components/auth-form";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -35,7 +35,7 @@ export default function AuthenticationPage() {
           </div>
         </div>
         <div className="lg:p-8">
-          <AuthForm isCloud={IS_CLOUD} />
+          <AuthForm isCloud={IS_CLOUD} disableSignup={DISABLE_SIGNUP} />
         </div>
       </div>
     </>
