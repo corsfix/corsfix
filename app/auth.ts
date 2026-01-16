@@ -57,7 +57,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             if (isLogin) {
               // Login mode: user must exist
-              // User exists but has no password (OAuth user)
+              // User not found or user exists but has no password (e.g. OAuth-only user)
               if (!user || !user.hash) {
                 throw new Error("Invalid email or password");
               }
