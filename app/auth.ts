@@ -8,6 +8,7 @@ import dbConnect from "./lib/dbConnect";
 import { IS_CLOUD, DISABLE_SIGNUP } from "./config/constants";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { validateCredentials } from "./lib/validation";
 
 const adapter = MongoDBAdapter(
   async () => {
@@ -47,26 +48,51 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           credentials: {
             email: { label: "Email" },
             password: { label: "Password", type: "password" },
+            mode: { label: "Mode" },
           },
           authorize: async (credentials) => {
-            const user = await adapter.getUserByEmail?.(
-              credentials.email as string
-            );
+            const isLogin = credentials.mode === "login";
 
-            if (!user) {
-              // Check if signup is disabled for self-hosted instances
+            const validation = validateCredentials(
+              credentials.email,
+              credentials.password,
+              !isLogin
+            );
+            if (!validation.success) {
+              throw new Error(validation.error);
+            }
+
+            const { email, password } = validation.data;
+            const user = await adapter.getUserByEmail?.(email);
+
+            if (isLogin) {
+              // Login mode: user must exist
+              // User not found or user exists but has no password (e.g. OAuth-only user)
+              if (!user || !user.hash) {
+                throw new Error("Invalid email or password");
+              }
+              const isValidPassword = await bcrypt.compare(
+                password,
+                user.hash as string
+              );
+              if (!isValidPassword) {
+                throw new Error("Invalid email or password");
+              }
+              return user;
+            } else {
+              // Signup mode: user must not exist
+              if (user) {
+                throw new Error("User already exists");
+              }
               if (DISABLE_SIGNUP) {
                 throw new Error("Signups are disabled");
               }
 
               const salt = await bcrypt.genSalt(10);
-              const hash = await bcrypt.hash(
-                credentials.password as string,
-                salt
-              );
+              const hash = await bcrypt.hash(password, salt);
               const newUser = await adapter.createUser?.({
                 id: new mongoose.Types.ObjectId().toHexString(),
-                email: credentials.email as string,
+                email: email,
                 hash: hash,
                 emailVerified: null,
               });
@@ -77,15 +103,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
               return newUser;
             }
-            if (
-              await bcrypt.compare(
-                credentials.password as string,
-                user.hash as string
-              )
-            ) {
-              return user;
-            }
-            return null;
           },
         }),
       ],

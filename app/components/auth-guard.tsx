@@ -9,9 +9,11 @@ import { LoadingSpinner } from "./loading-spinner";
 export function AuthGuard({
   children,
   isCloud,
+  disableSignup,
 }: {
   children: React.ReactNode;
   isCloud: boolean;
+  disableSignup: boolean;
 }) {
   const { status } = useSession();
   const router = useRouter();
@@ -47,7 +49,7 @@ export function AuthGuard({
   return (
     <>
       {children}
-      <AuthModal isOpen={isAuthModalOpen} isCloud={isCloud} />
+      <AuthModal isOpen={isAuthModalOpen} isCloud={isCloud} disableSignup={disableSignup} />
     </>
   );
 }

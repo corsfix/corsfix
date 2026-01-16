@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import { toast } from "sonner";
+import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/lib/validation";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   isLogin: boolean;
   isModal?: boolean;
   isCloud: boolean;
+  disableSignup?: boolean;
 }
 
 export function UserAuthForm({
@@ -21,10 +22,13 @@ export function UserAuthForm({
   isLogin,
   isModal,
   isCloud,
+  disableSignup,
   ...props
 }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const buttonSuccessRef = useRef<HTMLButtonElement>(null);
 
   function onSubmit(event: React.SyntheticEvent) {
@@ -37,14 +41,90 @@ export function UserAuthForm({
       return;
     }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
       toast.error("Please enter a valid email address");
       inputRef.current?.focus();
       return;
     }
 
     handleSignIn("email", { email });
+  }
+
+  async function onSubmitCredentials(event: React.SyntheticEvent) {
+    event.preventDefault();
+
+    if (!isLogin && disableSignup) {
+      toast.error("Signup is disabled");
+      return;
+    }
+
+    const email = inputRef.current?.value?.trim() || "";
+    const password = passwordRef.current?.value?.trim() || "";
+    const confirmPassword = confirmPasswordRef.current?.value?.trim() || "";
+
+    if (!email) {
+      toast.error("Please enter your email");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      toast.error("Please enter a valid email address");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (!password) {
+      toast.error("Please enter your password");
+      passwordRef.current?.focus();
+      return;
+    }
+
+    if (!isLogin && password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      passwordRef.current?.focus();
+      return;
+    }
+
+    if (!isLogin && password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      confirmPasswordRef.current?.focus();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // First validate credentials via API (for proper error messages)
+      const response = await fetch("/api/auth/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          mode: isLogin ? "login" : "signup",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.error) {
+        toast.error(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // On success, call client-side signIn to set session cookies
+      await signIn("credentials", {
+        email,
+        password,
+        mode: isLogin ? "login" : "signup",
+      });
+    } catch (error) {
+      console.error("Error signing in:", error);
+      toast.error("Unable to sign in. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function handleSignIn(
@@ -137,11 +217,64 @@ export function UserAuthForm({
         </>
       ) : (
         <>
-          <div className="text-center">
-            <Link href={"/api/auth/signin"}>
-              <Button type="button">Open authentication page &rarr;</Button>
-            </Link>
-          </div>
+          <form onSubmit={onSubmitCredentials}>
+            <div className="grid gap-2">
+              <div className="grid gap-1">
+                <Label className="sr-only" htmlFor="email">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  placeholder="name@example.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  ref={inputRef}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label className="sr-only" htmlFor="password">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  placeholder="Password"
+                  type="password"
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  disabled={isLoading}
+                  ref={passwordRef}
+                />
+              </div>
+              {!isLogin && (
+                <div className="grid gap-1">
+                  <Label className="sr-only" htmlFor="confirm-password">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirm-password"
+                    placeholder="Confirm Password"
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={isLoading}
+                    ref={confirmPasswordRef}
+                  />
+                </div>
+              )}
+              <Button className="mt-6" data-umami-event="auth-credentials" disabled={isLoading}>
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isLogin ? "Sign In" : "Sign Up"}
+              </Button>
+            </div>
+          </form>
+          <button
+            ref={buttonSuccessRef}
+            className="hidden"
+            data-umami-event={isModal ? "auth-success-modal" : "auth-success"}
+          />
         </>
       )}
     </div>

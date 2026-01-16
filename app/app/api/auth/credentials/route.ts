@@ -1,0 +1,62 @@
+import { NextRequest, NextResponse } from "next/server";
+import dbConnect from "@/lib/dbConnect";
+import bcrypt from "bcryptjs";
+import { DISABLE_SIGNUP } from "@/config/constants";
+import { UserV2Entity } from "@/models/UserV2Entity";
+import { validateCredentials } from "@/lib/validation";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, password, mode } = body;
+
+    const isLogin = mode === "login";
+
+    const validation = validateCredentials(email, password, !isLogin);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const validatedEmail = validation.data.email;
+
+    await dbConnect();
+    const user = await UserV2Entity.findOne({ email: validatedEmail });
+
+    if (isLogin) {
+      if (!user || !user.hash) {
+        return NextResponse.json(
+          { error: "Invalid email or password" },
+          { status: 401 }
+        );
+      }
+      const isValidPassword = await bcrypt.compare(password, user.hash);
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: "Invalid email or password" },
+          { status: 401 }
+        );
+      }
+    } else {
+      if (user) {
+        return NextResponse.json(
+          { error: "User already exists" },
+          { status: 409 }
+        );
+      }
+      if (DISABLE_SIGNUP) {
+        return NextResponse.json(
+          { error: "Signups are disabled" },
+          { status: 403 }
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    console.error("Credentials validation error.");
+    return NextResponse.json(
+      { error: "Failed to validate credentials" },
+      { status: 500 }
+    );
+  }
+}
