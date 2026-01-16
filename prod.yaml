@@ -52,6 +52,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - .caddy/data:/data
       - .caddy/config:/config
+      - ${TLS_CERT:-/dev/null}:/certs/cert.pem:ro
+      - ${TLS_KEY:-/dev/null}:/certs/key.pem:ro
     environment:
       - APP_DOMAIN=${APP_DOMAIN}
       - PROXY_DOMAIN=${PROXY_DOMAIN}
