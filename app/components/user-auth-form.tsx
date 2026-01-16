@@ -59,8 +59,8 @@ export function UserAuthForm({
     }
 
     const email = inputRef.current?.value?.trim() || "";
-    const password = passwordRef.current?.value || "";
-    const confirmPassword = confirmPasswordRef.current?.value || "";
+    const password = passwordRef.current?.value?.trim() || "";
+    const confirmPassword = confirmPasswordRef.current?.value?.trim() || "";
 
     if (!email) {
       toast.error("Please enter your email");
