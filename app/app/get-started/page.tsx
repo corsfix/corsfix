@@ -13,7 +13,7 @@ import { ExternalLink, NotepadText } from "lucide-react";
 import { ApiKeyButton } from "@/components/api-key-button";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { getTrialEnds, isTrialActive } from "@/lib/utils";
+import { getProxyDomain, getTrialEnds, isTrialActive } from "@/lib/utils";
 import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
@@ -125,7 +125,7 @@ export default async function GetStarted() {
                       {`// Example usage with fetch
 const url = "https://api.example.com"
 fetch("https://${
-                        IS_CLOUD ? "proxy.corsfix.com" : process.env.PROXY_DOMAIN
+                        IS_CLOUD ? "proxy.corsfix.com" : getProxyDomain()
                       }/?" + url);`}
                     </code>
                   </pre>

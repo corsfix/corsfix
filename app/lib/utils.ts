@@ -155,6 +155,12 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+export const getProxyDomain = (): string => {
+  const domain = process.env.PROXY_DOMAIN || "";
+  // Strip default HTTPS port if present
+  return domain.replace(/:443$/, "");
+};
+
 export const isLocalDomain = (domain: string): boolean => {
   const localDomains = [
     "localhost",
