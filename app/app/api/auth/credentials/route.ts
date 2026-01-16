@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       if (DISABLE_SIGNUP) {
         return NextResponse.json(
           { error: "Signups are disabled" },
-          { status: 401 }
+          { status: 403 }
         );
       }
     }
