@@ -200,10 +200,10 @@ const corsHandler = async (
       }
     }
 
-    let bytes = 0;
+    req.ctx_bytes = 0;
     const counter = new Transform({
       transform(chunk, _encoding, callback) {
-        bytes += chunk.length;
+        req.ctx_bytes += chunk.length;
         callback(null, chunk);
       },
     });
@@ -217,8 +217,6 @@ const corsHandler = async (
     } catch (error) {
       console.error("Error while streaming response:", error);
       res.end();
-    } finally {
-      req.ctx_bytes = bytes;
     }
     return;
   }
