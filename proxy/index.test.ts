@@ -138,7 +138,7 @@ test("proxy request (path)", async () => {
 
 test("proxy request with redirect if 3xx", async () => {
   const origin = "http://127.0.0.1:3000";
-  const targetUrl = `https://httpbin.agrd.workers.dev/absolute-redirect/3`;
+  const targetUrl = `https://httpbin.agrd.workers.dev/absolute-redirect/1`;
 
   const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
     headers: {
@@ -152,7 +152,7 @@ test("proxy request with redirect if 3xx", async () => {
 
 test("proxy request with redirect if 3xx (relative)", async () => {
   const origin = "http://127.0.0.1:3000";
-  const targetUrl = `https://httpbin.agrd.workers.dev/redirect/3`;
+  const targetUrl = `https://httpbin.agrd.workers.dev/redirect/1`;
 
   const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
     headers: {
