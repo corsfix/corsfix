@@ -42,19 +42,24 @@ const cloudProviders = [
       const baseUrl = new URL(url).origin;
       const interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${Buffer.from(url).toString("base64")}`;
 
-      await transport.sendMail({
-        to: identifier,
-        from: provider.from,
-        subject: "Sign in to Corsfix",
-        text: `Sign in to Corsfix\n\nClick here to sign in: ${interstitialUrl}\n\n`,
-        html: `
-          <body style="font-family: sans-serif; padding: 20px;">
-            <h1>Sign in to Corsfix</h1>
-            <p>Click the button below to sign in:</p>
-            <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
-          </body>
-        `,
-      });
+      try {
+        await transport.sendMail({
+          to: identifier,
+          from: provider.from,
+          subject: "Sign in to Corsfix",
+          text: `Sign in to Corsfix\n\nClick here to sign in: ${interstitialUrl}\n\n`,
+          html: `
+            <body style="font-family: sans-serif; padding: 20px;">
+              <h1>Sign in to Corsfix</h1>
+              <p>Click the button below to sign in:</p>
+              <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
+            </body>
+          `,
+        });
+      } catch (error) {
+        console.error("Failed to send verification email", error);
+        throw new Error("Unable to send verification email. Please try again later.");
+      }
     },
   }),
 ];
