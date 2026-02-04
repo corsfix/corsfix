@@ -26,20 +26,22 @@ export async function GET(request: NextRequest) {
     return new Response("Invalid verification link.", { status: 400 });
   }
 
-  const url = escapeHtml(safeUrl);
+  const htmlUrl = escapeHtml(safeUrl);
+  // Escape < to \u003c to prevent </script> breaking out of script tag
+  const jsUrl = JSON.stringify(safeUrl).replace(/</g, "\\u003c");
 
   return new Response(
     `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0;url=${url}">
   <title>Redirecting...</title>
 </head>
 <body>
   <noscript>
-    <p><a href="${url}">Click here</a> to continue.</p>
+    <p><a href="${htmlUrl}">Click here</a> to continue.</p>
   </noscript>
+  <script>window.location.href = ${jsUrl};</script>
 </body>
 </html>`,
     { headers: { "Content-Type": "text/html" } },
