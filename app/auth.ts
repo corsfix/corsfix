@@ -41,9 +41,10 @@ const cloudProviders = [
 
       let interstitialUrl = url;
       try {
-        const baseUrl = new URL(url).origin;
-        const encodedCallback = encodeURIComponent(Buffer.from(url).toString("base64"));
-        interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${encodedCallback}`;
+        const parsed = new URL(url);
+        const path = parsed.pathname + parsed.search;
+        const encodedPath = Buffer.from(path).toString("base64");
+        interstitialUrl = `${parsed.origin}/api/auth/verify?path=${encodedPath}`;
       } catch {
         // Fallback to the original URL if parsing fails to avoid unexpected crashes.
       }
