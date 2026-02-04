@@ -42,7 +42,8 @@ const cloudProviders = [
       let interstitialUrl = url;
       try {
         const baseUrl = new URL(url).origin;
-        interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${Buffer.from(url).toString("base64")}`;
+        const encodedCallback = encodeURIComponent(Buffer.from(url).toString("base64"));
+        interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${encodedCallback}`;
       } catch {
         // Fallback to the original URL if parsing fails to avoid unexpected crashes.
       }
@@ -53,17 +54,25 @@ const cloudProviders = [
           from: provider.from,
           subject: "Sign in to Corsfix",
           text: `Sign in to Corsfix\n\nClick here to sign in: ${interstitialUrl}\n\n`,
-          html: `
-            <body style="font-family: sans-serif; padding: 20px;">
-              <h1>Sign in to Corsfix</h1>
-              <p>Click the button below to sign in:</p>
-              <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
-            </body>
-          `,
+          html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to Corsfix</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h1>Sign in to Corsfix</h1>
+  <p>Click the button below to sign in:</p>
+  <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
+</body>
+</html>`,
         });
       } catch (error) {
         console.error("Failed to send verification email", error);
         throw new Error("Unable to send verification email. Please try again later.");
+      } finally {
+        transport.close();
       }
     },
   }),
