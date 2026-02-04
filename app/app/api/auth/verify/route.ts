@@ -9,16 +9,31 @@ export async function GET(request: NextRequest) {
 
   const decodedUrl = Buffer.from(callbackUrl, "base64").toString("utf-8");
 
+  const baseUrl = request.nextUrl.origin;
+
+  let safeUrl: string;
+  try {
+    const parsedUrl = new URL(decodedUrl, baseUrl);
+
+    if (parsedUrl.origin !== baseUrl) {
+      return new Response("Invalid verification link.", { status: 400 });
+    }
+
+    safeUrl = parsedUrl.toString();
+  } catch {
+    return new Response("Invalid verification link.", { status: 400 });
+  }
+
   const html = /*html*/ `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0;url=${decodedUrl}">
+  <meta http-equiv="refresh" content="0;url=${safeUrl}">
   <title>Redirecting...</title>
 </head>
 <body>
   <noscript>
-    <p><a href="${decodedUrl}">Click here</a> to continue.</p>
+    <p><a href="${safeUrl}">Click here</a> to continue.</p>
   </noscript>
 </body>
 </html>`;
