@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   }
 
   const htmlUrl = escapeHtml(safeUrl);
-  const jsUrl = JSON.stringify(safeUrl);
+  // Escape < to \u003c to prevent </script> breaking out of script tag
+  const jsUrl = JSON.stringify(safeUrl).replace(/</g, "\\u003c");
 
   return new Response(
     `<!DOCTYPE html>
