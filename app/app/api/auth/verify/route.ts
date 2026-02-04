@@ -7,7 +7,12 @@ export async function GET(request: NextRequest) {
     return new Response("Invalid verification link.", { status: 400 });
   }
 
-  const decodedUrl = Buffer.from(callbackUrl, "base64").toString("utf-8");
+  let decodedUrl: string;
+  try {
+    decodedUrl = Buffer.from(callbackUrl, "base64").toString("utf-8");
+  } catch {
+    return new Response("Invalid verification link.", { status: 400 });
+  }
 
   const baseUrl = request.nextUrl.origin;
 
