@@ -39,8 +39,13 @@ const cloudProviders = [
     sendVerificationRequest: async ({ identifier, url, provider }) => {
       const transport = createTransport(provider.server);
 
-      const baseUrl = new URL(url).origin;
-      const interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${Buffer.from(url).toString("base64")}`;
+      let interstitialUrl = url;
+      try {
+        const baseUrl = new URL(url).origin;
+        interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${Buffer.from(url).toString("base64")}`;
+      } catch {
+        // Fallback to the original URL if parsing fails to avoid unexpected crashes.
+      }
 
       try {
         await transport.sendMail({
