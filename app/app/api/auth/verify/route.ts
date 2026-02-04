@@ -9,19 +9,18 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function parseCallbackUrl(encoded: string, baseUrl: string): string | null {
+function decodePath(encoded: string): string | null {
   try {
     const decoded = Buffer.from(encoded, "base64").toString("utf-8");
-    const parsed = new URL(decoded, baseUrl);
-    return parsed.origin === baseUrl ? parsed.toString() : null;
+    return decoded.startsWith("/api/auth/callback/") ? decoded : null;
   } catch {
     return null;
   }
 }
 
 export async function GET(request: NextRequest) {
-  const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-  const safeUrl = callbackUrl && parseCallbackUrl(callbackUrl, request.nextUrl.origin);
+  const encodedPath = request.nextUrl.searchParams.get("path");
+  const safeUrl = encodedPath && decodePath(encodedPath);
 
   if (!safeUrl) {
     return new Response("Invalid verification link.", { status: 400 });
