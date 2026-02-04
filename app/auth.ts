@@ -9,6 +9,7 @@ import { IS_CLOUD, DISABLE_SIGNUP } from "./config/constants";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { validateCredentials } from "./lib/validation";
+import { createTransport } from "nodemailer";
 
 const adapter = MongoDBAdapter(
   async () => {
@@ -19,7 +20,7 @@ const adapter = MongoDBAdapter(
     collections: {
       Users: "usersv2",
     },
-  }
+  },
 );
 
 const cloudProviders = [
@@ -35,6 +36,45 @@ const cloudProviders = [
       },
     },
     from: process.env.EMAIL_FROM,
+    sendVerificationRequest: async ({ identifier, url, provider }) => {
+      const transport = createTransport(provider.server);
+
+      let interstitialUrl = url;
+      try {
+        const baseUrl = new URL(url).origin;
+        const encodedCallback = encodeURIComponent(Buffer.from(url).toString("base64"));
+        interstitialUrl = `${baseUrl}/api/auth/verify?callbackUrl=${encodedCallback}`;
+      } catch {
+        // Fallback to the original URL if parsing fails to avoid unexpected crashes.
+      }
+
+      try {
+        await transport.sendMail({
+          to: identifier,
+          from: provider.from,
+          subject: "Sign in to Corsfix",
+          text: `Sign in to Corsfix\n\nClick here to sign in: ${interstitialUrl}\n\n`,
+          html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to Corsfix</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h1>Sign in to Corsfix</h1>
+  <p>Click the button below to sign in:</p>
+  <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
+</body>
+</html>`,
+        });
+      } catch (error) {
+        console.error("Failed to send verification email", error);
+        throw new Error("Unable to send verification email. Please try again later.");
+      } finally {
+        transport.close();
+      }
+    },
   }),
 ];
 
@@ -56,7 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             const validation = validateCredentials(
               credentials.email,
               credentials.password,
-              !isLogin
+              !isLogin,
             );
             if (!validation.success) {
               throw new Error(validation.error);
@@ -73,7 +113,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }
               const isValidPassword = await bcrypt.compare(
                 password,
-                user.hash as string
+                user.hash as string,
               );
               if (!isValidPassword) {
                 throw new Error("Invalid email or password");
