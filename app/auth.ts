@@ -44,7 +44,7 @@ const cloudProviders = [
         const parsed = new URL(url);
         const path = parsed.pathname + parsed.search;
         const encodedPath = Buffer.from(path).toString("base64");
-        interstitialUrl = `${parsed.origin}/api/auth/verify?path=${encodedPath}`;
+        interstitialUrl = `${parsed.origin}/auth?emailVerify=${encodedPath}`;
       } catch {
         // Fallback to the original URL if parsing fails to avoid unexpected crashes.
       }
@@ -53,19 +53,19 @@ const cloudProviders = [
         await transport.sendMail({
           to: identifier,
           from: provider.from,
-          subject: "Sign in to Corsfix",
-          text: `Sign in to Corsfix\n\nClick here to sign in: ${interstitialUrl}\n\n`,
+          subject: "Your Corsfix Link",
+          text: `Your Corsfix Link\n\nClick here to access your account: ${interstitialUrl}\n\n`,
           html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in to Corsfix</title>
+  <title>Your Corsfix Link</title>
 </head>
 <body style="font-family: sans-serif; padding: 20px;">
-  <h1>Sign in to Corsfix</h1>
-  <p>Click the button below to sign in:</p>
-  <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Sign in</a>
+  <h1>Your Corsfix Link</h1>
+  <p>Click here to access your account:</p>
+  <a href="${interstitialUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px;">Go to Corsfix</a>
 </body>
 </html>`,
         });
