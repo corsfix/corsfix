@@ -38,10 +38,8 @@ export async function GET(request: NextRequest) {
   <title>Redirecting...</title>
 </head>
 <body>
-  <noscript>
-    <p><a href="${htmlUrl}">Click here</a> to continue.</p>
-  </noscript>
-  <script>window.location.href = ${jsUrl};</script>
+  <p>If nothing happens, <a href="${htmlUrl}">click here</a> to continue.</p>
+  <script>setTimeout(function() { window.location.href = ${jsUrl}; }, 5000);</script>
 </body>
 </html>`,
     { headers: { "Content-Type": "text/html" } },
