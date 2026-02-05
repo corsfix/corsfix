@@ -49,16 +49,13 @@ export function EmailVerifyForm({ encodedPath }: { encodedPath: string }) {
       </div>
       <div className="grid gap-4">
         <div className="grid gap-2">
-          <Input
-            id="verify-email"
-            type="email"
-            defaultValue={email}
-            disabled
-          />
+          <Input id="verify-email" type="email" defaultValue={email} disabled />
         </div>
-        <Button asChild data-umami-event="auth-verify-continue">
-          <a href={callbackPath}>Continue</a>
-        </Button>
+        <form action={callbackPath} method="POST">
+          <Button type="submit" data-umami-event="auth-verify-continue" className="w-full">
+            Continue
+          </Button>
+        </form>
       </div>
     </div>
   );
