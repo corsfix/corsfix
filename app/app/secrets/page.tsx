@@ -3,7 +3,8 @@ import SecretList from "@/components/secret-list";
 import { Application } from "@/types/api";
 import { Metadata } from "next";
 import Link from "next/link";
-import { CircleHelp, ExternalLink, KeyRound } from "lucide-react";
+import { ExternalLink, KeyRound } from "lucide-react";
+import { FeedbackLink } from "@/components/feedback-link";
 import { getApplicationSecrets } from "@/lib/services/secretService";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
@@ -47,19 +48,18 @@ export default async function SecretsPage() {
           <ExternalLink size={24} className="inline pb-1" />
         </Link>
         <SecretList initialApplications={initialApplications} />
-        <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
-          <CircleHelp size={16} className="text-violet-400 mr-2" />
-          <span>
-            Done adding secrets?{" "}
-            <a
-              href="https://corsfix.com/docs/cors-proxy/secrets-variable"
-              target="_blank"
-              className="text-violet-500 underline p-0.5 font-medium"
-            >
-              Use it in your requests
-            </a>
-          </span>
-        </div>
+        <p className="mt-8 text-center text-sm">
+          <span className="text-muted-foreground">Done adding secrets?</span>{" "}
+          <a
+            href="https://corsfix.com/docs/cors-proxy/secrets-variable"
+            target="_blank"
+            className="text-violet-500 underline p-0.5 font-medium"
+          >
+            Use it in your requests
+          </a>
+          {" "}&middot;{" "}
+          <FeedbackLink />
+        </p>
       </div>
     </>
   );

@@ -4,13 +4,10 @@ import { UserAuthForm } from "@/components/user-auth-form";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
 
 export function AuthForm({
-  isCloud,
   disableSignup,
 }: {
-  isCloud: boolean;
   disableSignup: boolean;
 }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -44,24 +41,7 @@ export function AuthForm({
               : "Enter your email below to create your account"}
           </p>
         </div>
-        <UserAuthForm isLogin={isLogin} isCloud={isCloud} disableSignup={disableSignup} />
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          By continuing, you agree to our{" "}
-          <Link
-            href="https://corsfix.com/terms"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link
-            href="https://corsfix.com/privacy"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Privacy Policy
-          </Link>
-          .
-        </p>
+        <UserAuthForm isLogin={isLogin} disableSignup={disableSignup} />
       </div>
     </>
   );

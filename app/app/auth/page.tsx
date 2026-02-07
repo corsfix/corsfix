@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
+import { DISABLE_SIGNUP } from "@/config/constants";
 import { Metadata } from "next";
 import { AuthForm } from "@/components/auth-form";
 import { EmailVerifyForm } from "@/components/email-verify-form";
@@ -50,7 +50,7 @@ export default async function AuthenticationPage({
           {emailVerify ? (
             <EmailVerifyForm encodedPath={emailVerify} />
           ) : (
-            <AuthForm isCloud={IS_CLOUD} disableSignup={DISABLE_SIGNUP} />
+            <AuthForm disableSignup={DISABLE_SIGNUP} />
           )}
         </div>
       </div>

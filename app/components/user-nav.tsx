@@ -15,11 +15,15 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor, User } from "lucide-react";
+import { useApp } from "@/components/app-provider";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import * as React from "react";
 
+const GITHUB_ISSUES_URL = "https://github.com/corsfix/corsfix/issues";
+
 export function UserNav() {
   const { data: session } = useSession();
+  const { isCloud } = useApp();
   const router = useRouter();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -124,7 +128,13 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             data-umami-event="give-feedback"
-            onClick={() => setFeedbackOpen(true)}
+            onClick={() => {
+              if (isCloud) {
+                setFeedbackOpen(true);
+              } else {
+                window.open(GITHUB_ISSUES_URL, "_blank");
+              }
+            }}
           >
             Give Feedback
           </DropdownMenuItem>

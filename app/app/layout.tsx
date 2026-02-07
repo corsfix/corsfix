@@ -26,6 +26,7 @@ import dynamic from "next/dynamic";
 import { SessionProvider } from "next-auth/react";
 import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AppProvider } from "@/components/app-provider";
 import MSClarity from "../components/clarity";
 
 const CrispWithNoSSR = dynamic(() => import("../components/crisp"));
@@ -58,7 +59,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>
-            <AuthGuard isCloud={IS_CLOUD} disableSignup={DISABLE_SIGNUP}>{children}</AuthGuard>
+            <AppProvider isCloud={IS_CLOUD}>
+              <AuthGuard disableSignup={DISABLE_SIGNUP}>{children}</AuthGuard>
+            </AppProvider>
           </SessionProvider>
           <Toaster />
         </ThemeProvider>

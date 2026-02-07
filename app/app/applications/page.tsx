@@ -4,7 +4,8 @@ import ApplicationList from "@/components/application-list";
 import { Application } from "@/types/api";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CircleHelp, ExternalLink, Globe } from "lucide-react";
+import { ExternalLink, Globe } from "lucide-react";
+import { FeedbackLink } from "@/components/feedback-link";
 import { auth } from "@/auth";
 import { getUserId } from "@/lib/utils";
 
@@ -46,20 +47,18 @@ export default async function ApplicationsPage() {
           <ExternalLink size={24} className="inline pb-1" />
         </Link>
         <ApplicationList initialApplications={initialApplications} />
-        <div className="mt-8 flex items-center p-3 border rounded-md mx-auto w-fit text-sm">
-          <CircleHelp size={16} className="text-violet-400 mr-2" />
-          <span>
-            Done adding websites?{" "}
-            <a
-              href="https://corsfix.com/docs/cors-proxy/api"
-              target="_blank"
-              className="text-violet-500 underline p-0.5 font-medium"
-            >
-              Start sending requests
-            </a>
-            .
-          </span>
-        </div>
+        <p className="mt-8 text-center text-sm">
+          <span className="text-muted-foreground">Done adding websites?</span>{" "}
+          <a
+            href="https://corsfix.com/docs/cors-proxy/api"
+            target="_blank"
+            className="text-violet-500 underline p-0.5 font-medium"
+          >
+            Start sending requests
+          </a>
+          {" "}&middot;{" "}
+          <FeedbackLink />
+        </p>
       </div>
     </>
   );

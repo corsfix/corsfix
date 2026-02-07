@@ -52,7 +52,7 @@ const trialBenefits = [
 ];
 
 const paidBenefits = [
-  "Unlimited proxy requests",
+  "Unlimited requests",
   "Unlimited web applications",
   "{{bandwidth}} data transfer",
   "No content or size limits",
@@ -169,7 +169,7 @@ export default async function CreditsPage() {
                     </>
                   ) : (
                     <div className="text-sm">
-                      Upgrade to use Corsfix on live web applications
+                      Upgrade to use Corsfix on production
                     </div>
                   )}
                 </div>
@@ -208,7 +208,7 @@ export default async function CreditsPage() {
                       </div>
                       <Infinity />
                     </>
-                  ) : (
+                  ) : isTrial || subscription.active ? (
                     <>
                       <div className="text-sm">
                         {new Date().toLocaleDateString("en-US", {
@@ -221,6 +221,10 @@ export default async function CreditsPage() {
                         {formatBytes(subscription.bandwidth)}
                       </span>
                     </>
+                  ) : (
+                    <div className="text-sm">
+                      Upgrade to use Corsfix on production
+                    </div>
                   )}
                 </div>
               </div>
@@ -305,7 +309,7 @@ export default async function CreditsPage() {
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="flex items-center gap-1">
-                              Unlimited proxy requests
+                              Unlimited text requests
                               <TooltipProvider delayDuration={0}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>

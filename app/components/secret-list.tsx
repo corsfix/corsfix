@@ -1,8 +1,7 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -41,9 +40,8 @@ export default function SecretList({ initialApplications }: SecretListProps) {
 
   const [unsavedChanges, setUnsavedChanges] = useState<UnsavedChanges>({});
   const [saveLoading, setSaveLoading] = useState<{ [appId: string]: boolean }>(
-    {}
+    {},
   );
-
   useEffect(() => {
     setApplications(initialApplications);
 
@@ -84,7 +82,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
     appId: string,
     index: number,
     field: "name" | "value",
-    value: string
+    value: string,
   ) => {
     setAppSecrets((prev) => {
       const updated = [...(prev[appId] || [])];
@@ -150,12 +148,12 @@ export default function SecretList({ initialApplications }: SecretListProps) {
 
     // Create maps for easier comparison using ID as key
     const originalSecretsMap = new Map(
-      originalSecretsForApp.map((secret) => [secret.id!, secret])
+      originalSecretsForApp.map((secret) => [secret.id!, secret]),
     );
     const currentSecretsMap = new Map(
       currentSecrets
         .filter((s) => s.id && s.name.trim())
-        .map((secret) => [secret.id!, secret])
+        .map((secret) => [secret.id!, secret]),
     );
 
     const secretsData: Array<{
@@ -217,8 +215,8 @@ export default function SecretList({ initialApplications }: SecretListProps) {
       // Update the applications state with the new secrets
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === appId ? { ...app, secrets: response.data } : app
-        )
+          app.id === appId ? { ...app, secrets: response.data } : app,
+        ),
       );
 
       // Update the original secrets for future comparisons
@@ -266,7 +264,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       {applications.map((app) => {
         const secrets = appSecrets[app.id] || [];
         const hasUnsavedChanges = unsavedChanges[app.id];
@@ -274,109 +272,151 @@ export default function SecretList({ initialApplications }: SecretListProps) {
         const hasNoTargetDomains = app.targetDomains?.includes("*");
 
         return (
-          <Card key={app.id} className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex flex-col items-start gap-2">
-                  <div>{app.name}&apos;s secrets</div>
-                  <div className="text-sm font-normal text-muted-foreground">
-                    ({secretCount} {secretCount === 1 ? "secret" : "secrets"})
+          <div key={app.id} className="w-full border rounded-lg">
+            <details className="group">
+              <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer">
+                <div className="flex items-center justify-between px-6 py-4 rounded-lg hover:bg-muted/50">
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="font-semibold leading-none tracking-tight">
+                      {app.name}&apos;s secrets
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      ({secretCount} {secretCount === 1 ? "secret" : "secrets"})
+                    </div>
                   </div>
+                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
                 </div>
-                <div className="flex gap-2 items-center">
-                  {hasUnsavedChanges && (
-                    <span className="text-sm text-amber-600">
-                      Unsaved changes
-                    </span>
-                  )}
-                  <Button
-                    onClick={() => handleSaveSecrets(app.id)}
-                    disabled={!hasUnsavedChanges || saveLoading[app.id]}
-                  >
-                    {saveLoading[app.id] ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </CardTitle>
-              {hasNoTargetDomains && (
-                <div className="text-sm text-yellow-600">
-                  Warning: Protect your secrets from being exposed by specifying
-                  target domains for this application.
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {secrets.length > 0 && (
-                  <div className="flex gap-2 items-start">
-                    <div className="w-1/2 md:w-1/4">
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Name
-                      </label>
-                    </div>
-                    <div className="w-1/2 md:w-3/4">
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Value
-                      </label>
-                    </div>
+              </summary>
+              <div className="p-6 pt-0">
+                {hasNoTargetDomains && (
+                  <div className="text-sm text-yellow-600 mb-2">
+                    <a
+                      href="https://corsfix.com/docs/dashboard/secrets#keeping-your-secrets-safe"
+                      target="_blank"
+                      className="underline"
+                    >
+                      Protect your secrets from being exposed
+                    </a>{" "}
+                    by specifying target domains for this application.
                   </div>
                 )}
-                {secrets.map((secret, index) => (
-                  <div key={index} className="flex gap-2 items-start">
-                    <div className="w-1/2 md:w-1/4">
-                      <Input
-                        value={secret.name}
-                        onChange={(e) =>
-                          updateSecretRow(app.id, index, "name", e.target.value)
-                        }
-                        placeholder="API_KEY"
-                        className="font-mono font-bold"
-                        maxLength={64}
-                      />
+                <div className="space-y-3">
+                  {secrets.length > 0 && (
+                    <div className="flex gap-2 items-start">
+                      <div className="w-1/2 md:w-1/4">
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Name
+                        </label>
+                      </div>
+                      <div className="w-1/2 md:w-3/4">
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Value
+                        </label>
+                      </div>
                     </div>
-                    <div className="w-1/2 md:w-3/4">
-                      <Input
-                        value={secret.value}
-                        onChange={(e) =>
-                          updateSecretRow(
-                            app.id,
-                            index,
-                            "value",
-                            e.target.value
-                          )
-                        }
-                        placeholder={
-                          secret.id && secret.masked_value
-                            ? secret.masked_value
-                            : secret.id
-                            ? "Leave empty to keep current value"
-                            : "your-secret-value"
-                        }
-                        className="font-mono"
-                        maxLength={255}
-                      />
+                  )}
+                  {secrets.map((secret, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="w-1/2 md:w-1/4">
+                        <Input
+                          value={secret.name}
+                          onChange={(e) =>
+                            updateSecretRow(
+                              app.id,
+                              index,
+                              "name",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="your-api-key"
+                          className="font-mono font-bold placeholder:text-foreground/50 placeholder:font-normal"
+                          maxLength={64}
+                        />
+                      </div>
+                      <div className="w-1/2 md:w-3/4">
+                        <Input
+                          value={secret.value}
+                          onChange={(e) =>
+                            updateSecretRow(
+                              app.id,
+                              index,
+                              "value",
+                              e.target.value,
+                            )
+                          }
+                          placeholder={
+                            secret.id && secret.masked_value
+                              ? secret.masked_value
+                              : secret.id
+                                ? "Leave empty to keep current value"
+                                : "your-secret-value"
+                          }
+                          className="font-mono placeholder:text-foreground/50"
+                          maxLength={255}
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteSecretRow(app.id, index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center mt-6">
+                  {secrets.length < 20 ? (
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteSecretRow(app.id, index)}
+                      variant="outline"
+                      onClick={() => addNewSecretRow(app.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-2" /> Add new
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <div className="flex gap-2 items-center">
+                    {hasUnsavedChanges && (
+                      <>
+                        <span className="text-sm text-amber-600">
+                          Unsaved changes
+                        </span>
+                        <Button
+                          variant="outline"
+                          disabled={saveLoading[app.id]}
+                          onClick={() => {
+                            const original = originalSecrets[app.id] || [];
+                            setAppSecrets((prev) => ({
+                              ...prev,
+                              [app.id]: original.map((secret) => ({
+                                id: secret.id,
+                                name: secret.name,
+                                value: "",
+                                masked_value: secret.masked_value,
+                              })),
+                            }));
+                            setUnsavedChanges((prev) => ({
+                              ...prev,
+                              [app.id]: false,
+                            }));
+                          }}
+                        >
+                          Revert
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      onClick={() => handleSaveSecrets(app.id)}
+                      disabled={!hasUnsavedChanges || saveLoading[app.id]}
+                    >
+                      {saveLoading[app.id] ? "Saving..." : "Save"}
                     </Button>
                   </div>
-                ))}
-              </div>
-              {secrets.length < 20 && (
-                <div className="flex">
-                  <Button
-                    variant="outline"
-                    onClick={() => addNewSecretRow(app.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add new
-                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </details>
+          </div>
         );
       })}
     </div>

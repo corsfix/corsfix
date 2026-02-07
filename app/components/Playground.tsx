@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/resizable";
 import { generateId } from "@/lib/utils";
 import { HeaderItem } from "@/types/api";
+import { useApp } from "@/components/app-provider";
 import status from "statuses";
 
 // Types
@@ -191,13 +192,8 @@ function getDefaultConfig(): RequestConfig {
 
 const WELCOME_MODAL_STORAGE_KEY = "playground-welcome-dismissed";
 
-export default function Playground({
-  isCloud,
-  proxyDomain,
-}: {
-  isCloud: boolean;
-  proxyDomain: string;
-}) {
+export default function Playground({ proxyDomain }: { proxyDomain: string }) {
+  const { isCloud } = useApp();
   const PROXY_REGIONS = {
     auto: isCloud ? "proxy.corsfix.com" : proxyDomain,
     ap: "proxy-ap.corsfix.com",
@@ -217,7 +213,7 @@ export default function Playground({
     "headers" | "body" | "preview"
   >("body");
   const [selectedPreset, setSelectedPreset] = useState<ExamplePreset | null>(
-    null
+    null,
   );
   const [showExampleDialog, setShowExampleDialog] = useState(false);
   const [isImportCurlModalOpen, setIsImportCurlModalOpen] = useState(false);
@@ -344,7 +340,7 @@ export default function Playground({
       // Remove Content-Type header if set to "none"
       setConfig((prev) => {
         const newHeaderItems = prev.headerItems.filter(
-          (item) => item.name !== "Content-Type"
+          (item) => item.name !== "Content-Type",
         );
         return {
           ...prev,
@@ -354,7 +350,7 @@ export default function Playground({
     } else {
       // Add or update Content-Type header
       const contentTypeIndex = config.headerItems.findIndex(
-        (item) => item.name === "Content-Type"
+        (item) => item.name === "Content-Type",
       );
 
       if (contentTypeIndex >= 0) {
@@ -394,7 +390,7 @@ export default function Playground({
       setConfig((prev) => ({
         ...prev,
         headerItems: prev.headerItems.filter(
-          (item) => item.name !== "x-corsfix-cache"
+          (item) => item.name !== "x-corsfix-cache",
         ),
       }));
     }
@@ -548,12 +544,12 @@ export default function Playground({
   const updateHeaderItem = (
     id: string,
     field: "name" | "value",
-    newValue: string
+    newValue: string,
   ) => {
     setConfig((prev) => ({
       ...prev,
       headerItems: prev.headerItems.map((item) =>
-        item.id === id ? { ...item, [field]: newValue } : item
+        item.id === id ? { ...item, [field]: newValue } : item,
       ),
     }));
   };
@@ -578,12 +574,12 @@ export default function Playground({
   const updateOverrideHeaderItem = (
     id: string,
     field: "name" | "value",
-    newValue: string
+    newValue: string,
   ) => {
     setConfig((prev) => ({
       ...prev,
       overrideHeaderItems: prev.overrideHeaderItems.map((item) =>
-        item.id === id ? { ...item, [field]: newValue } : item
+        item.id === id ? { ...item, [field]: newValue } : item,
       ),
     }));
   };
@@ -592,7 +588,7 @@ export default function Playground({
     setConfig((prev) => ({
       ...prev,
       overrideHeaderItems: prev.overrideHeaderItems.filter(
-        (item) => item.id !== id
+        (item) => item.id !== id,
       ),
     }));
   };
@@ -839,7 +835,7 @@ export default function Playground({
                                     updateHeaderItem(
                                       item.id,
                                       "name",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="font-mono text-sm"
@@ -851,7 +847,7 @@ export default function Playground({
                                     updateHeaderItem(
                                       item.id,
                                       "value",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="font-mono text-sm"
@@ -896,7 +892,7 @@ export default function Playground({
                                     updateOverrideHeaderItem(
                                       item.id,
                                       "name",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="font-mono text-sm"
@@ -908,7 +904,7 @@ export default function Playground({
                                     updateOverrideHeaderItem(
                                       item.id,
                                       "value",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="font-mono text-sm"
@@ -1216,7 +1212,7 @@ export default function Playground({
                                     {value}
                                   </div>
                                 </div>
-                              )
+                              ),
                             )}
                           </div>
                         )}
@@ -1277,15 +1273,14 @@ export default function Playground({
       <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
         <DialogContent
           className="sm:max-w-md mx-1"
-          onInteractOutside={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Welcome to Corsfix Playground!</DialogTitle>
           </DialogHeader>
           <div className="text-muted-foreground">
-            Here you can explore a variety of features and try out different
-            requests to see how the proxy works.
+            Explore our features and try out different requests to see how the
+            proxy works.
             <br />
             <br />
             If you just want to start using the proxy, you can set up your

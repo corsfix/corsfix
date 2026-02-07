@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useApp } from "@/components/app-provider";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
 export function MainNav({ className }: { className?: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isCloud } = useApp();
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if we're on mobile view
@@ -52,7 +54,7 @@ export function MainNav({ className }: { className?: string }) {
     { href: "/secrets", label: "Secrets" },
     { href: "/metrics", label: "Metrics" },
     { href: "/playground", label: "Playground" },
-    { href: "/billing", label: "Billing" },
+    ...(isCloud ? [{ href: "/billing", label: "Billing" }] : []),
     { href: "https://corsfix.com/docs", label: "Docs", external: true },
   ];
 
