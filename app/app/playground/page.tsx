@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { IS_CLOUD } from "@/config/constants";
 import Playground from "@/components/Playground";
 import { getProxyDomain } from "@/lib/utils";
 
@@ -10,6 +9,6 @@ export const metadata: Metadata = {
 };
 export default function PlaygroundPage() {
   return (
-    <Playground isCloud={IS_CLOUD} proxyDomain={getProxyDomain()} />
+    <Playground proxyDomain={getProxyDomain()} />
   );
 }

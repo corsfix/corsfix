@@ -9,11 +9,12 @@ import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/lib/validation";
+import { useApp } from "@/components/app-provider";
+import Link from "next/link";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   isLogin: boolean;
   isModal?: boolean;
-  isCloud: boolean;
   disableSignup?: boolean;
 }
 
@@ -21,10 +22,10 @@ export function UserAuthForm({
   className,
   isLogin,
   isModal,
-  isCloud,
   disableSignup,
   ...props
 }: UserAuthFormProps) {
+  const { isCloud } = useApp();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -81,7 +82,9 @@ export function UserAuthForm({
     }
 
     if (!isLogin && password.length < MIN_PASSWORD_LENGTH) {
-      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      toast.error(
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+      );
       passwordRef.current?.focus();
       return;
     }
@@ -129,7 +132,7 @@ export function UserAuthForm({
 
   async function handleSignIn(
     provider: string,
-    options?: Record<string, unknown>
+    options?: Record<string, unknown>,
   ) {
     setIsLoading(true);
     try {
@@ -214,6 +217,25 @@ export function UserAuthForm({
             className="hidden"
             data-umami-event={isModal ? "auth-success-modal" : "auth-success"}
           />
+          <p className="px-2 text-center text-xs text-muted-foreground">
+            By continuing, you agree to our{" "}
+            <Link
+              href="https://corsfix.com/terms"
+              className="underline underline-offset-4 hover:text-primary"
+              target="_blank"
+            >
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="https://corsfix.com/privacy"
+              className="underline underline-offset-4 hover:text-primary"
+              target="_blank"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </>
       ) : (
         <>
@@ -262,7 +284,11 @@ export function UserAuthForm({
                   />
                 </div>
               )}
-              <Button className="mt-6" data-umami-event="auth-credentials" disabled={isLoading}>
+              <Button
+                className="mt-6"
+                data-umami-event="auth-credentials"
+                disabled={isLoading}
+              >
                 {isLoading && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 )}

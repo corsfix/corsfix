@@ -2,18 +2,16 @@
 
 import React, { useState } from "react";
 import { UserAuthForm } from "./user-auth-form";
-import Link from "next/link";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@radix-ui/react-dialog";
 
 interface AuthModalProps {
   isOpen: boolean;
-  isCloud: boolean;
   disableSignup: boolean;
 }
 
-export function AuthModal({ isOpen, isCloud, disableSignup }: AuthModalProps) {
+export function AuthModal({ isOpen, disableSignup }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleAuthMode = () => {
@@ -48,26 +46,7 @@ export function AuthModal({ isOpen, isCloud, disableSignup }: AuthModalProps) {
               </Button>
             </div>
           )}
-          <UserAuthForm isLogin={isLogin} isCloud={isCloud} disableSignup={disableSignup} />
-          <p className="px-2 text-center text-xs text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <Link
-              href="https://corsfix.com/terms"
-              className="underline underline-offset-4 hover:text-primary"
-              target="_blank"
-            >
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="https://corsfix.com/privacy"
-              className="underline underline-offset-4 hover:text-primary"
-              target="_blank"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </p>
+          <UserAuthForm isLogin={isLogin} disableSignup={disableSignup} />
         </div>
       </DialogContent>
     </Dialog>
