@@ -16,6 +16,7 @@ interface SecretListProps {
 
 interface SecretFormData {
   id?: string;
+  clientId?: string;
   name: string;
   value: string;
   masked_value?: string;
@@ -73,7 +74,10 @@ export default function SecretList({ initialApplications }: SecretListProps) {
   const addNewSecretRow = (appId: string) => {
     setAppSecrets((prev) => ({
       ...prev,
-      [appId]: [...(prev[appId] || []), { name: "", value: "" }],
+      [appId]: [
+        ...(prev[appId] || []),
+        { clientId: crypto.randomUUID(), name: "", value: "" },
+      ],
     }));
     setUnsavedChanges((prev) => ({ ...prev, [appId]: true }));
   };
@@ -316,7 +320,10 @@ export default function SecretList({ initialApplications }: SecretListProps) {
                     </div>
                   )}
                   {secrets.map((secret, index) => (
-                    <div key={index} className="flex gap-2 items-start">
+                    <div
+                      key={secret.id ?? secret.clientId}
+                      className="flex gap-2 items-start"
+                    >
                       <div className="w-1/2 md:w-1/4">
                         <Input
                           value={secret.name}
@@ -328,7 +335,7 @@ export default function SecretList({ initialApplications }: SecretListProps) {
                               e.target.value,
                             )
                           }
-                          placeholder="your-api-key"
+                          placeholder="YOUR-API-KEY"
                           className="font-mono font-bold placeholder:text-foreground/50 placeholder:font-normal"
                           maxLength={64}
                         />
