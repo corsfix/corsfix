@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Parse comma-separated domains into array
     const domainsArray = validDomains
-      ? validDomains.split(",").filter(Boolean)
+      ? [...new Set(validDomains.split(",").map((d) => d.trim()).filter(Boolean))]
       : undefined;
 
     // Get granular per-domain data (cached), then filter + aggregate in app layer

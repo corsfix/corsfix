@@ -146,7 +146,10 @@ export const aggregateByDate = (
   // Filter by domains if specified
   const filtered =
     domains && domains.length > 0
-      ? points.filter((p) => domains.includes(p.origin_domain))
+      ? (() => {
+          const domainSet = new Set(domains);
+          return points.filter((p) => domainSet.has(p.origin_domain));
+        })()
       : points;
 
   // Aggregate by date

@@ -21,7 +21,7 @@ const UserOriginDailySchema = new Schema<UserOriginDailyEntity>({
 });
 
 UserOriginDailySchema.index({ user_id: 1, date: 1 });
-UserOriginDailySchema.index({ user_id: 1, origin: 1, date: 1 });
+UserOriginDailySchema.index({ user_id: 1, origin_domain: 1, date: 1 });
 
 export const UserOriginDailyEntity: Model<UserOriginDailyEntity> =
   mongoose.models.UserOriginDaily ||

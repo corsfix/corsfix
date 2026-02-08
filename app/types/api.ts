@@ -52,7 +52,7 @@ export const GetMetricsSchema = z.object({
   yearMonth: z.string().regex(/^\d{4}-\d{2}$/, {
     message: "Invalid year month format. Expected YYYY-MM",
   }),
-  domains: z.string().optional(),
+  domains: z.string().max(2048).optional(),
 });
 
 export type GetMetrics = z.input<typeof GetMetricsSchema>;

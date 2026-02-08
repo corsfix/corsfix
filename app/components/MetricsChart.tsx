@@ -117,7 +117,13 @@ export default function MetricsChart() {
       const result = await response.json();
       if (result.success) {
         setData(result.data.metrics);
-        setAvailableDomains(result.data.availableDomains);
+        const newAvailable: string[] = result.data.availableDomains;
+        setAvailableDomains(newAvailable);
+        // Prune selected domains that no longer exist in the new month
+        setSelectedDomains((prev) => {
+          const valid = prev.filter((d) => newAvailable.includes(d));
+          return valid.length === prev.length ? prev : valid;
+        });
       }
     } catch (error) {
       console.error("Error fetching metrics:", error);
