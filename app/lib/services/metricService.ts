@@ -1,4 +1,4 @@
-import { Metric, MetricPoint } from "@/types/api";
+import { DomainMetricPoint, Metric, MetricPoint } from "@/types/api";
 import { UserOriginDailyEntity } from "../../models/UserOriginDailyEntity";
 import dbConnect from "../dbConnect";
 import { CacheableMemory } from "cacheable";
@@ -73,7 +73,7 @@ export const getMonthToDateMetrics = async (
 export const getMetricsYearMonth = async (
   userId: string,
   yearMonth: string
-): Promise<MetricPoint[]> => {
+): Promise<DomainMetricPoint[]> => {
   // Validate yearMonth format (YYYY-MM)
   const yearMonthRegex = /^\d{4}-\d{2}$/;
   if (!yearMonthRegex.test(yearMonth)) {
@@ -85,7 +85,7 @@ export const getMetricsYearMonth = async (
   // Try to get from cache first
   const cachedMetrics = await metricCache.get(cacheKey);
   if (cachedMetrics) {
-    return cachedMetrics as MetricPoint[];
+    return cachedMetrics as DomainMetricPoint[];
   }
 
   await dbConnect();
@@ -98,7 +98,7 @@ export const getMetricsYearMonth = async (
   const endOfMonth = new Date(Date.UTC(year, month, 0)); // Last day of the month
 
   try {
-    // Query metrics for the month, aggregating by date
+    // Query metrics for the month, grouped by date and origin_domain
     const dbMetrics = await UserOriginDailyEntity.aggregate([
       {
         $match: {
@@ -108,43 +108,22 @@ export const getMetricsYearMonth = async (
       },
       {
         $group: {
-          _id: "$date",
+          _id: { date: "$date", origin_domain: "$origin_domain" },
           totalRequests: { $sum: "$req_count" },
           totalBytes: { $sum: "$bytes" },
         },
       },
       {
-        $sort: { _id: 1 }, // Sort by date ascending
+        $sort: { "_id.date": 1 },
       },
     ]);
 
-    // Create a map of existing data for quick lookup
-    const metricsMap = new Map<string, { req_count: number; bytes: number }>();
-    dbMetrics.forEach((metric) => {
-      const dateKey = metric._id.toISOString().split("T")[0]; // Get YYYY-MM-DD format
-      metricsMap.set(dateKey, {
-        req_count: metric.totalRequests || 0,
-        bytes: metric.totalBytes || 0,
-      });
-    });
-
-    // Generate all dates in the month and populate with data or zeros
-    const result: MetricPoint[] = [];
-    const currentDate = new Date(startOfMonth);
-
-    while (currentDate <= endOfMonth) {
-      const dateKey = currentDate.toISOString().split("T")[0];
-      const existingData = metricsMap.get(dateKey);
-
-      result.push({
-        date: new Date(currentDate),
-        req_count: existingData?.req_count || 0,
-        bytes: existingData?.bytes || 0,
-      });
-
-      // Move to next day
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-    }
+    const result: DomainMetricPoint[] = dbMetrics.map((metric) => ({
+      date: metric._id.date,
+      origin_domain: metric._id.origin_domain || "",
+      req_count: metric.totalRequests || 0,
+      bytes: metric.totalBytes || 0,
+    }));
 
     await metricCache.set(cacheKey, result);
 
@@ -153,4 +132,59 @@ export const getMetricsYearMonth = async (
     console.error("Error fetching metrics for month:", error);
     throw error;
   }
+};
+
+/**
+ * Filter domain metric points by domains and aggregate into daily MetricPoints.
+ * If domains is empty/undefined, all data is included.
+ */
+export const aggregateByDate = (
+  points: DomainMetricPoint[],
+  yearMonth: string,
+  domains?: string[]
+): MetricPoint[] => {
+  // Filter by domains if specified
+  const filtered =
+    domains && domains.length > 0
+      ? (() => {
+          const domainSet = new Set(domains);
+          return points.filter((p) => domainSet.has(p.origin_domain));
+        })()
+      : points;
+
+  // Aggregate by date
+  const map = new Map<string, { req_count: number; bytes: number }>();
+  for (const p of filtered) {
+    const dateKey = new Date(p.date).toISOString().split("T")[0];
+    const existing = map.get(dateKey);
+    if (existing) {
+      existing.req_count += p.req_count;
+      existing.bytes += p.bytes;
+    } else {
+      map.set(dateKey, { req_count: p.req_count, bytes: p.bytes });
+    }
+  }
+
+  // Fill all days in the month
+  const [year, month] = yearMonth.split("-").map(Number);
+  const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const endOfMonth = new Date(Date.UTC(year, month, 0));
+
+  const result: MetricPoint[] = [];
+  const currentDate = new Date(startOfMonth);
+
+  while (currentDate <= endOfMonth) {
+    const dateKey = currentDate.toISOString().split("T")[0];
+    const existing = map.get(dateKey);
+
+    result.push({
+      date: new Date(currentDate),
+      req_count: existing?.req_count || 0,
+      bytes: existing?.bytes || 0,
+    });
+
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+  }
+
+  return result;
 };

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DomainFilter } from "@/components/DomainFilter";
 import {
   Select,
   SelectContent,
@@ -32,7 +33,7 @@ const generateMonthOptions = () => {
   const months = [];
   const now = new Date();
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const date = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
     );
@@ -65,6 +66,8 @@ export default function MetricsChart() {
   const [selectedRange, setSelectedRange] = useState<TimeRange>(
     getCurrentMonth()
   );
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [showRequests, setShowRequests] = useState(true);
   const [showBytes, setShowBytes] = useState(true);
 
@@ -99,9 +102,13 @@ export default function MetricsChart() {
   );
 
   // Fetch metrics data
-  const fetchMetrics = async (range: TimeRange) => {
+  const fetchMetrics = async (range: TimeRange, domains: string[]) => {
     try {
-      const response = await fetch(`/api/metrics?yearMonth=${range}`);
+      const params = new URLSearchParams({ yearMonth: range });
+      if (domains.length > 0) {
+        params.set("domains", domains.join(","));
+      }
+      const response = await fetch(`/api/metrics?${params}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch metrics");
@@ -109,7 +116,14 @@ export default function MetricsChart() {
 
       const result = await response.json();
       if (result.success) {
-        setData(result.data);
+        setData(result.data.metrics);
+        const newAvailable: string[] = result.data.availableDomains;
+        setAvailableDomains(newAvailable);
+        // Prune selected domains that no longer exist in the new month
+        setSelectedDomains((prev) => {
+          const valid = prev.filter((d) => newAvailable.includes(d));
+          return valid.length === prev.length ? prev : valid;
+        });
       }
     } catch (error) {
       console.error("Error fetching metrics:", error);
@@ -119,30 +133,19 @@ export default function MetricsChart() {
   // Handle range change
   const handleRangeChange = (range: TimeRange) => {
     setSelectedRange(range);
-    fetchMetrics(range);
+    fetchMetrics(range, selectedDomains);
+  };
+
+  // Handle domain selection change
+  const handleDomainChange = (domains: string[]) => {
+    setSelectedDomains(domains);
+    fetchMetrics(selectedRange, domains);
   };
 
   // Initial data load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const currentMonth = getCurrentMonth();
-        const response = await fetch(`/api/metrics?yearMonth=${currentMonth}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch metrics");
-        }
-
-        const result = await response.json();
-        if (result.success) {
-          setData(result.data);
-        }
-      } catch (error) {
-        console.error("Error fetching initial metrics:", error);
-      }
-    };
-
-    loadInitialData();
+    fetchMetrics(getCurrentMonth(), []);
   }, []);
 
   // Format chart data
@@ -205,6 +208,11 @@ export default function MetricsChart() {
         </div>
 
         <div className="flex gap-2 p-3">
+          <DomainFilter
+            availableDomains={availableDomains}
+            selectedDomains={selectedDomains}
+            onSelectionChange={handleDomainChange}
+          />
           <Select
             value={
               MONTH_OPTIONS.some((m) => m.value === selectedRange)
