@@ -4,8 +4,6 @@ import { ChartLine } from "lucide-react";
 import MetricsChart from "@/components/MetricsChart";
 import { Metadata } from "next/types";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Metrics | Corsfix Dashboard",
 };

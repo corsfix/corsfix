@@ -6,8 +6,6 @@ import { AuthForm } from "@/components/auth-form";
 import { EmailVerifyForm } from "@/components/email-verify-form";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Authentication | Corsfix Dashboard",
 };

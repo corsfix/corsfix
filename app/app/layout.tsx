@@ -4,6 +4,12 @@ import "./globals.css";
 import { AuthGuard } from "@/components/auth-guard";
 import { Toaster } from "@/components/ui/sonner";
 import Script from "next/script";
+import { SessionProvider } from "next-auth/react";
+import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AppProvider } from "@/components/app-provider";
+import MSClarity from "../components/clarity";
+import nextDynamic from "next/dynamic";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -22,14 +28,9 @@ export const metadata: Metadata = {
     "Manage your apps, subscription, and use the playground in the Corsfix dashboard.",
 };
 
-import dynamic from "next/dynamic";
-import { SessionProvider } from "next-auth/react";
-import { IS_CLOUD, DISABLE_SIGNUP } from "@/config/constants";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AppProvider } from "@/components/app-provider";
-import MSClarity from "../components/clarity";
+export const dynamic = "force-dynamic";
 
-const CrispWithNoSSR = dynamic(() => import("../components/crisp"));
+const CrispWithNoSSR = nextDynamic(() => import("../components/crisp"));
 
 export default function RootLayout({
   children,
