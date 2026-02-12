@@ -10,7 +10,7 @@ export const handleMetrics = (
   res: Response,
   next: MiddlewareNext
 ) => {
-  res.on("close", () => {
+  res.once("close", () => {
     const { ctx_user_id, ctx_bytes, ctx_cache_duration } = req;
     const origin_domain = req.ctx_origin_domain!;
 
