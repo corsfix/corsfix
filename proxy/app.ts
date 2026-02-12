@@ -214,6 +214,7 @@ const corsHandler = async (
     readable.on("error", () => {});
     try {
       await res.stream(readable, contentLength);
+      res.emit("close");
     } catch (error) {
       console.error("Error while streaming response:", error);
       res.end();
