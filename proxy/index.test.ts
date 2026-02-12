@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { app } from "./app";
 import * as apiKeyService from "./lib/services/apiKeyService";
 import * as configService from "./lib/config";
+import * as metricService from "./lib/services/metricService";
 
 const PORT = 8090;
 
@@ -31,6 +32,10 @@ vi.spyOn(configService, "getConfig").mockReturnValue({
     },
   ],
 });
+
+const batchCountMetricsSpy = vi
+  .spyOn(metricService, "batchCountMetrics")
+  .mockImplementation(() => {});
 
 beforeAll(async () => {
   await app.listen(PORT);
@@ -209,6 +214,38 @@ test("invalid jsonp request without referer", async () => {
   expect(json.message).toContain("Referer header");
   expect(result.status).toBe(400);
   expect(result.headers.get("X-Corsfix-Status")).toBe("invalid_referer");
+});
+
+describe("Metrics counting", () => {
+  test("counts metrics for response with Content-Length", async () => {
+    batchCountMetricsSpy.mockClear();
+
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+      },
+    });
+    await result.text();
+
+    expect(result.status).toBe(200);
+    expect(batchCountMetricsSpy).toHaveBeenCalledOnce();
+  });
+
+  test("counts metrics for response without Content-Length", async () => {
+    batchCountMetricsSpy.mockClear();
+
+    const targetUrl = `https://httpbin.agrd.workers.dev/range/1`;
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+      },
+    });
+    await result.text();
+
+    expect(result.status).toBe(200);
+    expect(batchCountMetricsSpy).toHaveBeenCalledOnce();
+  });
 });
 
 describe("API Key authentication", () => {
