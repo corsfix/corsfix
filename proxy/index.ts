@@ -11,6 +11,13 @@ import { registerSecretInvalidateCacheHandlers } from "./lib/services/secretServ
 
 import "dotenv/config";
 
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION — process crashing:", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
+
 const PORT = 80;
 
 (async () => {
