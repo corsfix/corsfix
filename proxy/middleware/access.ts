@@ -9,13 +9,11 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST, SELFHOST_RPM, trialLimit } from "../config/constants";
+import { IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
 import { sendCorsfixError } from "../errors";
-
-const TEXT_ONLY_HOSTNAME = process.env.TEXT_ONLY_HOSTNAME;
 
 const isTextOnlyRequest = (req: CorsfixRequest): boolean => {
   if (!TEXT_ONLY_HOSTNAME) return false;
