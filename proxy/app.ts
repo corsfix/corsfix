@@ -159,15 +159,14 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
   } catch (error: unknown) {
     const { name, message, cause } = error as Error;
+    const code = (error as any).code ?? (cause as any)?.code;
     if (name === "AbortError" || name === "TimeoutError") {
       sendCorsfixError(res, "timeout");
-    } else if (message === "fetch failed") {
-      if ((cause as any).code === "ENOTFOUND") {
-        sendCorsfixError(res, "target_not_found");
-      } else {
-        console.error("Fetch error occurred.", error);
-        sendCorsfixError(res, "target_unreachable");
-      }
+    } else if (code === "ENOTFOUND") {
+      sendCorsfixError(res, "target_not_found");
+    } else if (message === "fetch failed" || code === "ECONNRESET") {
+      if (code !== "ECONNRESET") console.error("Fetch error occurred.", error);
+      sendCorsfixError(res, "target_unreachable");
     } else {
       console.error("Unknown error occurred.", error);
       sendCorsfixError(res, "unknown_error");
