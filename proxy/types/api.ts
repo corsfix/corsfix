@@ -9,6 +9,7 @@ export interface CorsfixRequest extends Request {
   ctx_user_id?: string;
   ctx_cache_duration?: number;
   ctx_api_key_request?: boolean;
+  ctx_text_only?: boolean;
   ctx_bytes?: number;
 }
 

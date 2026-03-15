@@ -8,6 +8,7 @@ export type CorsfixError =
   | "invalid_subscription"
   | "invalid_url"
   | "payload_too_large"
+  | "plan_mismatch"
   | "rate_limited"
   | "response_not_text"
   | "response_too_large"
@@ -66,6 +67,13 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
     message: "The target URL is invalid or malformed",
     if_you_are_admin:
       "Check the URL format - it must be a valid HTTP/HTTPS URL",
+    if_you_are_user: "Please contact the website owner about this issue",
+  },
+  plan_mismatch: {
+    status: 403,
+    message: "Your plan does not match this proxy endpoint",
+    if_you_are_admin:
+      "Check that you are using the correct proxy URL for your plan",
     if_you_are_user: "Please contact the website owner about this issue",
   },
   payload_too_large: {
