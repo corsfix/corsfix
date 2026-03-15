@@ -1,10 +1,23 @@
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import { request } from "undici";
 import { app } from "./app";
 import * as apiKeyService from "./lib/services/apiKeyService";
 import * as configService from "./lib/config";
 import * as metricService from "./lib/services/metricService";
 
 const PORT = 8090;
+const TEXT_ONLY_HOST = "lite.test.local";
+
+// Mock constants to enable cloud mode and set text-only hostname
+vi.mock("./config/constants", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./config/constants")>();
+  return {
+    ...original,
+    IS_CLOUD: true,
+    IS_SELFHOST: false,
+    TEXT_ONLY_HOSTNAME: "lite.test.local",
+  };
+});
 
 // Mock getUserByApiKey
 vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
@@ -14,6 +27,14 @@ vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
         id: "test-user-id",
         subscription_active: true,
         subscription_product_id: "prod_123",
+        trial_ends_at: new Date("2099-01-01"),
+      };
+    }
+    if (apiKey === "cfx_textonly_test_key") {
+      return {
+        id: "test-textonly-user-id",
+        subscription_active: true,
+        subscription_product_id: "prod_textonly",
         trial_ends_at: new Date("2099-01-01"),
       };
     }
@@ -29,6 +50,13 @@ vi.spyOn(configService, "getConfig").mockReturnValue({
       name: "Test Product",
       rpm: 1000,
       rateLimitKey: "user_id",
+    },
+    {
+      id: "prod_textonly",
+      name: "Test TextOnly Product",
+      rpm: 600,
+      rateLimitKey: "user_id",
+      textOnly: true,
     },
   ],
 });
@@ -295,5 +323,57 @@ describe("API Key authentication", () => {
     expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
     expect(result.headers.get("Access-Control-Allow-Headers")).toBe("x-corsfix-key");
     expect(result.headers.get("X-Corsfix-Status")).toBe("preflight");
+  });
+});
+
+describe("Text-only mode", () => {
+  test("text-only plan + text-only hostname succeeds with text response", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_textonly_test_key",
+        host: TEXT_ONLY_HOST,
+      },
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers["x-corsfix-status"]).toBe("success");
+  });
+
+  test("text-only plan + standard hostname returns plan_mismatch", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_textonly_test_key",
+      },
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.headers["x-corsfix-status"]).toBe("plan_mismatch");
+  });
+
+  test("standard plan + text-only hostname returns plan_mismatch", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+        host: TEXT_ONLY_HOST,
+      },
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.headers["x-corsfix-status"]).toBe("plan_mismatch");
+  });
+
+  test("text-only rejects binary response", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/image/png`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_textonly_test_key",
+        host: TEXT_ONLY_HOST,
+      },
+    });
+
+    expect(result.headers["x-corsfix-status"]).toBe("response_not_text");
   });
 });

@@ -9,16 +9,28 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST, SELFHOST_RPM, trialLimit } from "../config/constants";
+import { IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
 import { sendCorsfixError } from "../errors";
 
+const isTextOnlyRequest = (req: CorsfixRequest): boolean => {
+  if (!TEXT_ONLY_HOSTNAME) return false;
+  const host = req.header("host");
+  if (!host) return false;
+  // Strip port if present
+  const hostname = host.split(":")[0];
+  return hostname === TEXT_ONLY_HOSTNAME;
+};
+
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
   const target_domain = req.ctx_target_domain!;
   const apiKey = req.header("x-corsfix-key");
+
+  const textOnlyRequest = isTextOnlyRequest(req);
+  req.ctx_text_only = textOnlyRequest;
 
   let rateLimitConfig: RateLimitConfig;
 
@@ -69,6 +81,12 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       if (!product) {
         return sendCorsfixError(res, "invalid_subscription");
       }
+
+      const isTextOnlyPlan = !!product.textOnly;
+      if (textOnlyRequest !== isTextOnlyPlan) {
+        return sendCorsfixError(res, "plan_mismatch");
+      }
+
       rpm = getRpmByProductId(product.id);
     } else if (isTrialActive(user)) {
       rpm = trialLimit.rpm;

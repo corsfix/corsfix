@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   rpm: number;
   rateLimitKey?: "ip" | "user_id";
+  textOnly?: boolean;
 }
 
 interface Config {

@@ -20,7 +20,6 @@ import { Readable, Transform } from "stream";
 
 import "dotenv/config";
 
-const TEXT_ONLY = process.env.TEXT_ONLY === "true";
 const ONE_MEGABYTE = 1024 * 1024;
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -110,7 +109,8 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       ));
     }
 
-    const enableDecompression = !!(callback || TEXT_ONLY);
+    const textOnly = req.ctx_text_only;
+    const enableDecompression = !!(callback || textOnly);
     let apiResponse = await proxyRequest(processedUrl, {
       method: req.method,
       headers: processedHeaders,
@@ -152,7 +152,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
 
     if (callback) {
       jsonpHandler(req, res, callback, apiResponse, responseHeaders);
-    } else if (TEXT_ONLY) {
+    } else if (textOnly) {
       textOnlyHandler(req, res, apiResponse, responseHeaders);
     } else {
       corsHandler(req, res, apiResponse, responseHeaders);
