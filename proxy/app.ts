@@ -151,21 +151,26 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     }
 
     if (callback) {
-      jsonpHandler(req, res, callback, apiResponse, responseHeaders);
+      await jsonpHandler(req, res, callback, apiResponse, responseHeaders);
     } else if (textOnly) {
-      textOnlyHandler(req, res, apiResponse, responseHeaders);
+      await textOnlyHandler(req, res, apiResponse, responseHeaders);
     } else {
-      corsHandler(req, res, apiResponse, responseHeaders);
+      await corsHandler(req, res, apiResponse, responseHeaders);
     }
   } catch (error: unknown) {
     const { name, message, cause } = error as Error;
-    const code = (error as any).code ?? (cause as any)?.code;
+    const code = (error as any).code;
+    const causeCode = (cause as any)?.code;
+    const networkCode = code === causeCode ? code : (causeCode ?? code);
     if (name === "AbortError" || name === "TimeoutError") {
       sendCorsfixError(res, "timeout");
-    } else if (code === "ENOTFOUND") {
+    } else if (networkCode === "ENOTFOUND" || networkCode === "EAI_AGAIN") {
       sendCorsfixError(res, "target_not_found");
-    } else if (message === "fetch failed" || code === "ECONNRESET") {
-      if (code !== "ECONNRESET") console.error("Fetch error occurred.", error);
+    } else if (
+      message === "fetch failed" ||
+      networkCode === "ECONNRESET" ||
+      networkCode === "ECONNREFUSED"
+    ) {
       sendCorsfixError(res, "target_unreachable");
     } else {
       console.error("Unknown error occurred.", error);
