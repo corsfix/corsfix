@@ -161,7 +161,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
     const { name, message, cause } = error as Error;
     const code = (error as any).code;
     const causeCode = (cause as any)?.code;
-    const networkCode = code === causeCode ? code : (causeCode ?? code);
+    const networkCode = causeCode ?? code;
     if (name === "AbortError" || name === "TimeoutError") {
       sendCorsfixError(res, "timeout");
     } else if (networkCode === "ENOTFOUND" || networkCode === "EAI_AGAIN") {
