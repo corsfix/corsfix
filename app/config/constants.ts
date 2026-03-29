@@ -85,8 +85,16 @@ const configList: Record<string, Config> = {
       },
       {
         id: "d6ce3bb4-bd1b-4d71-b020-88f1dc481c1d",
-        name: "lite",
+        name: "lite (monthly)",
         price: "3.99",
+        rpm: 600,
+        bandwidth: 0,
+        type: "lite",
+      },
+      {
+        id: "48913e30-5467-4032-8c93-4163e9bd5c5b",
+        name: "lite",
+        price: "29",
         rpm: 600,
         bandwidth: 0,
         type: "lite",
