@@ -256,10 +256,23 @@ export default async function CreditsPage() {
                           )}
                         </div>
                         <div className="flex items-end gap-2 mt-4">
-                          <span className="text-3xl font-bold">$3.99</span>
-                          <span className="text-muted-foreground pb-1">
-                            / month
-                          </span>
+                          {subscription.product_id ===
+                          config.products.find((p) => p.name === "lite-monthly")
+                            ?.id ? (
+                            <>
+                              <span className="text-3xl font-bold">$3.99</span>
+                              <span className="text-muted-foreground pb-1">
+                                / month
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-3xl font-bold">$29</span>
+                              <span className="text-muted-foreground pb-1">
+                                / year
+                              </span>
+                            </>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col">
@@ -267,7 +280,7 @@ export default async function CreditsPage() {
                           <div className="mb-6 flex-none">
                             <Link
                               href={getCustomerCheckoutLink(
-                                "https://buy.polar.sh/polar_cl_YutObDmIpdlxLAyBu3fC2nrf3JrsTpMocTwVi3A3LBw",
+                                config.products.find((p) => p.name === "lite")?.link ?? "",
                                 session?.user?.email
                               )}
                               target="_blank"
@@ -289,12 +302,12 @@ export default async function CreditsPage() {
                                 data-umami-event="billing-manage"
                                 className="w-full flex items-center gap-2"
                                 variant={
-                                  subscription.name == "lite"
+                                  subscription.isLite
                                     ? "default"
                                     : "outline"
                                 }
                               >
-                                {subscription.name == "lite" ? (
+                                {subscription.isLite ? (
                                   <>
                                     Manage <SquareArrowOutUpRight />
                                   </>
@@ -309,79 +322,32 @@ export default async function CreditsPage() {
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="flex items-center gap-1">
-                              Unlimited text requests
-                              <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">
-                                      Proxy URL: lite.corsfix.com
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              Proxy URL: lite.corsfix.com
                             </span>
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Unlimited web applications</span>
+                            <span>Unlimited requests & bandwidth</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span>Text contents (JSON API, HTML, etc)</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="flex items-center gap-1">
-                              Unlimited data transfer
-                              <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">
-                                      Text only, max 1 MB per request
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              600 RPM (shared across your users)
                             </span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Text contents (max. 1MB size)</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="flex items-center gap-1">
-                              600 RPM (shared)
-                              <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">
-                                      The RPM pool is shared for all visitors of
-                                      your websites, different from Standard
-                                      plans where the RPM is per individual IP
-                                      address
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              Up to 1 MB per response
                             </span>
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>EU region infrastructure</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Secrets variable</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Priority support</span>
+                            <span>European infrastructure</span>
                           </li>
                         </ul>
                       </CardContent>
