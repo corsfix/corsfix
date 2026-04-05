@@ -256,10 +256,23 @@ export default async function CreditsPage() {
                           )}
                         </div>
                         <div className="flex items-end gap-2 mt-4">
-                          <span className="text-3xl font-bold">$29</span>
-                          <span className="text-muted-foreground pb-1">
-                            / year
-                          </span>
+                          {subscription.product_id ===
+                          config.products.find((p) => p.name === "lite-monthly")
+                            ?.id ? (
+                            <>
+                              <span className="text-3xl font-bold">$3.99</span>
+                              <span className="text-muted-foreground pb-1">
+                                / month
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-3xl font-bold">$29</span>
+                              <span className="text-muted-foreground pb-1">
+                                / year
+                              </span>
+                            </>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col">
@@ -289,12 +302,12 @@ export default async function CreditsPage() {
                                 data-umami-event="billing-manage"
                                 className="w-full flex items-center gap-2"
                                 variant={
-                                  subscription.name == "lite"
+                                  subscription.isLite
                                     ? "default"
                                     : "outline"
                                 }
                               >
-                                {subscription.name == "lite" ? (
+                                {subscription.isLite ? (
                                   <>
                                     Manage <SquareArrowOutUpRight />
                                   </>
