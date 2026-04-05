@@ -267,7 +267,7 @@ export default async function CreditsPage() {
                           <div className="mb-6 flex-none">
                             <Link
                               href={getCustomerCheckoutLink(
-                                "https://buy.polar.sh/polar_cl_K9G2lnu5SFjRySFLDVlK9knxW1KShfxrxS5So237ZUg",
+                                config.products.find((p) => p.name === "lite")?.link ?? "",
                                 session?.user?.email
                               )}
                               target="_blank"
