@@ -46,6 +46,11 @@ export default function RootLayout({
             src="https://cloud.umami.is/script.js"
             data-website-id="35d32708-fd12-4ae8-a732-5702e13fe819"
           ></Script>
+          <Script
+            src="https://rybbit.corsfix.com/api/script.js"
+            data-site-id="2aa152cf1682"
+            strategy="afterInteractive"
+          />
           <CrispWithNoSSR />
           <MSClarity />
         </>
