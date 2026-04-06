@@ -35,40 +35,44 @@ let rpm120Redis: RateLimiterRedis;
 let rpm180Redis: RateLimiterRedis;
 let rpm600Redis: RateLimiterRedis;
 
+const syncToRedis = (
+  rateLimiterMemory: RateLimiterMemory,
+  rateLimiterRedis: RateLimiterRedis,
+  key: string
+): void => {
+  rateLimiterRedis
+    .consume(key, SYNC_THRESHOLD)
+    .then((redisRes) => {
+      rateLimiterMemory.set(
+        key,
+        redisRes.consumedPoints,
+        redisRes.msBeforeNext / 1000
+      );
+    })
+    .catch((error) => {
+      if (error instanceof Error) {
+        console.error("Redis rate limit sync error: ", error);
+      } else {
+        // Over-limit: update local memory with global count so next request is denied locally
+        const redisRes = error as RateLimiterRes;
+        rateLimiterMemory.set(
+          key,
+          redisRes.consumedPoints,
+          redisRes.msBeforeNext / 1000
+        );
+      }
+    });
+};
+
 const consumeSyncRedis = async (
   rateLimiterMemory: RateLimiterMemory,
   rateLimiterRedis: RateLimiterRedis,
   key: string
 ): Promise<RateLimiterRes> => {
-  let memoryRes = await rateLimiterMemory.consume(key);
+  const memoryRes = await rateLimiterMemory.consume(key);
 
   if (memoryRes.consumedPoints % SYNC_THRESHOLD === 0) {
-    console.log("Syncing rate limit data to Redis");
-    let redisRes;
-    let shouldThrow = false;
-    try {
-      redisRes = await rateLimiterRedis.consume(key, SYNC_THRESHOLD);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Redis Error: ", error);
-      } else {
-        redisRes = error as RateLimiterRes;
-        shouldThrow = true;
-      }
-    }
-
-    if (redisRes) {
-      await rateLimiterMemory.set(
-        key,
-        redisRes.consumedPoints,
-        redisRes.msBeforeNext / 1000
-      );
-      memoryRes = redisRes;
-
-      if (shouldThrow) {
-        throw redisRes;
-      }
-    }
+    syncToRedis(rateLimiterMemory, rateLimiterRedis, key);
   }
 
   return memoryRes;
