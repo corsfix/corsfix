@@ -53,6 +53,7 @@ const syncToRedis = (
       if (error instanceof Error) {
         console.error("Redis rate limit sync error: ", error);
       } else {
+        // Over-limit: update local memory with global count so next request is denied locally
         const redisRes = error as RateLimiterRes;
         rateLimiterMemory.set(
           key,
