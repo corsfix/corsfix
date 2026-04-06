@@ -37,6 +37,7 @@ export interface Subscription {
   bandwidth: number;
   active: boolean;
   isLite?: boolean;
+  extraBandwidth?: number;
 }
 
 export const UpsertSecretSchema = z.object({

@@ -29,6 +29,7 @@ import {
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getMonthToDateMetrics } from "@/lib/services/metricService";
+import { FounderBenefitModal } from "@/components/founder-benefit-modal";
 
 function getCustomerCheckoutLink(
   baseLink: string | null | undefined,
@@ -129,6 +130,13 @@ export default async function CreditsPage() {
                   ? subscription.name.charAt(0).toUpperCase() +
                     subscription.name.slice(1)
                   : "-"}
+                {subscription.extraBandwidth && (
+                  <FounderBenefitModal
+                    extraBandwidth={formatBytes(
+                      subscription.extraBandwidth ?? 0
+                    )}
+                  />
+                )}
                 {isTrial && IS_CLOUD && (
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
@@ -193,7 +201,10 @@ export default async function CreditsPage() {
                         ? "100%"
                         : `${Math.min(
                             Math.ceil(
-                              (bandwidthMtd / subscription.bandwidth) * 100
+                              (bandwidthMtd /
+                                (subscription.bandwidth +
+                                  (subscription.extraBandwidth ?? 0))) *
+                                100
                             ),
                             100
                           )}%`,
@@ -218,7 +229,10 @@ export default async function CreditsPage() {
                       </div>
                       <span>
                         {formatBytes(bandwidthMtd)}&nbsp;/&nbsp;
-                        {formatBytes(subscription.bandwidth)}
+                        {formatBytes(
+                          subscription.bandwidth +
+                            (subscription.extraBandwidth ?? 0)
+                        )}
                       </span>
                     </>
                   ) : (

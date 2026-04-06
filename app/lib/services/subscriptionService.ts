@@ -31,5 +31,6 @@ export async function getActiveSubscription(
     bandwidth: product?.bandwidth || 0,
     active: user.subscription_active,
     isLite: product?.type === "lite",
+    extraBandwidth: user.feature_overrides?.extraBandwidth,
   };
 }

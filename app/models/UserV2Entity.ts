@@ -1,5 +1,9 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface FeatureOverrides {
+  extraBandwidth?: number;
+}
+
 export interface UserV2Entity extends Document {
   name?: string;
   email: string;
@@ -10,6 +14,7 @@ export interface UserV2Entity extends Document {
   subscription_product_id?: string;
   subscription_active?: boolean;
   api_key?: string;
+  feature_overrides?: FeatureOverrides;
 }
 
 const UserV2Schema = new Schema<UserV2Entity>(
@@ -23,6 +28,9 @@ const UserV2Schema = new Schema<UserV2Entity>(
     subscription_product_id: String,
     subscription_active: Boolean,
     api_key: String,
+    feature_overrides: {
+      extraBandwidth: Number,
+    },
   },
   { collection: "usersv2" }
 );
