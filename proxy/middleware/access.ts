@@ -101,6 +101,10 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         }
       }
 
+      if (!user.feature_overrides?.noMinCacheTtl) {
+        req.ctx_min_cache_ttl = product.minCacheTtlSeconds;
+      }
+
       rpm = getRpmByProductId(product.id);
     } else if (isTrialActive(user)) {
       rpm = trialLimit.rpm;

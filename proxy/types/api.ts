@@ -10,6 +10,7 @@ export interface CorsfixRequest extends Request {
   ctx_cache_duration?: number;
   ctx_api_key_request?: boolean;
   ctx_text_only?: boolean;
+  ctx_min_cache_ttl?: number;
   ctx_bytes?: number;
 }
 

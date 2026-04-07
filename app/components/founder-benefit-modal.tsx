@@ -14,17 +14,20 @@ import { useState } from "react";
 interface FounderBenefitModalProps {
   extraBandwidth?: string;
   regionSelection?: boolean;
+  noMinCacheTtl?: boolean;
 }
 
 export const FounderBenefitModal = ({
   extraBandwidth,
   regionSelection,
+  noMinCacheTtl,
 }: FounderBenefitModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const benefits: string[] = [];
   if (extraBandwidth) benefits.push(`+${extraBandwidth} extra data transfer`);
   if (regionSelection) benefits.push("Access to regional proxies");
+  if (noMinCacheTtl) benefits.push("No minimum cache TTL");
 
   return (
     <>

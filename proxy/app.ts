@@ -68,6 +68,9 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const cacheHeader = req.header("x-corsfix-cache");
   if (cacheHeader !== undefined) {
     req.ctx_cache_duration = parseCacheDuration(cacheHeader);
+    if (req.ctx_min_cache_ttl && req.ctx_cache_duration < req.ctx_min_cache_ttl) {
+      req.ctx_cache_duration = req.ctx_min_cache_ttl;
+    }
   }
 
   const filteredHeaders: Record<string, string> = {};
