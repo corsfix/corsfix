@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface FeatureOverrides {
   extraBandwidth?: number;
   regionSelection?: boolean;
-  minCacheTtlSeconds?: number;
+  noMinCacheTtl?: boolean;
 }
 
 export interface UserV2Entity extends Document {
@@ -33,7 +33,7 @@ const UserV2Schema = new Schema<UserV2Entity>(
     feature_overrides: {
       extraBandwidth: Number,
       regionSelection: Boolean,
-      minCacheTtlSeconds: Number,
+      noMinCacheTtl: Boolean,
     },
   },
   { collection: "usersv2" }

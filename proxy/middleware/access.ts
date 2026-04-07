@@ -101,8 +101,9 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         }
       }
 
-      req.ctx_min_cache_ttl =
-        user.feature_overrides?.minCacheTtlSeconds ?? product.minCacheTtlSeconds;
+      if (!user.feature_overrides?.noMinCacheTtl) {
+        req.ctx_min_cache_ttl = product.minCacheTtlSeconds;
+      }
 
       rpm = getRpmByProductId(product.id);
     } else if (isTrialActive(user)) {

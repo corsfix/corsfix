@@ -54,7 +54,7 @@ vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
         subscription_active: true,
         subscription_product_id: "prod_123",
         trial_ends_at: new Date("2099-01-01"),
-        feature_overrides: { minCacheTtlSeconds: 0 },
+        feature_overrides: { noMinCacheTtl: true },
       };
     }
     if (apiKey === "cfx_region_override_key") {

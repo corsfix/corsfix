@@ -132,7 +132,7 @@ export default async function CreditsPage() {
                   : "-"}
                 {(subscription.extraBandwidth ||
                   subscription.regionSelection ||
-                  subscription.minCacheTtlOverride !== undefined) && (
+                  subscription.noMinCacheTtl) && (
                   <FounderBenefitModal
                     extraBandwidth={
                       subscription.extraBandwidth
@@ -140,7 +140,7 @@ export default async function CreditsPage() {
                         : undefined
                     }
                     regionSelection={subscription.regionSelection}
-                    noMinCacheTtl={subscription.minCacheTtlOverride === 0}
+                    noMinCacheTtl={subscription.noMinCacheTtl}
                   />
                 )}
                 {isTrial && IS_CLOUD && (
