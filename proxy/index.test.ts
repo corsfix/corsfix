@@ -444,7 +444,7 @@ describe("Min cache TTL", () => {
     expect(result.headers.get("cache-control")).toBe("public, max-age=3600");
   });
 
-  test("user override minCacheTtlSeconds=0 bypasses floor", async () => {
+  test("noMinCacheTtl override bypasses cache TTL floor", async () => {
     const targetUrl = `https://httpbin.agrd.workers.dev/get`;
     const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
       headers: {
