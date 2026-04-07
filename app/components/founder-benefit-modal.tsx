@@ -12,15 +12,19 @@ import { Gift, Check } from "lucide-react";
 import { useState } from "react";
 
 interface FounderBenefitModalProps {
-  extraBandwidth: string;
+  extraBandwidth?: string;
+  regionSelection?: boolean;
 }
 
 export const FounderBenefitModal = ({
   extraBandwidth,
+  regionSelection,
 }: FounderBenefitModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const benefits = [`+${extraBandwidth} extra data transfer`];
+  const benefits: string[] = [];
+  if (extraBandwidth) benefits.push(`+${extraBandwidth} extra data transfer`);
+  if (regionSelection) benefits.push("Access to regional proxies");
 
   return (
     <>
