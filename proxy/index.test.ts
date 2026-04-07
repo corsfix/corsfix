@@ -16,6 +16,7 @@ vi.mock("./config/constants", async (importOriginal) => {
     IS_CLOUD: true,
     IS_SELFHOST: false,
     TEXT_ONLY_HOSTNAME: "lite.test.local",
+    DEFAULT_PROXY_HOSTNAME: "127.0.0.1",
   };
 });
 

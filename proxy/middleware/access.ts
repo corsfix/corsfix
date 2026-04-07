@@ -15,13 +15,19 @@ import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
 import { sendCorsfixError } from "../errors";
 
+const getHostname = (req: CorsfixRequest): string | undefined => {
+  const host = req.header("host");
+  if (!host) return undefined;
+  return host.split(":")[0];
+};
+
 const isTextOnlyRequest = (req: CorsfixRequest): boolean => {
   if (!TEXT_ONLY_HOSTNAME) return false;
-  const host = req.header("host");
-  if (!host) return false;
-  // Strip port if present
-  const hostname = host.split(":")[0];
-  return hostname === TEXT_ONLY_HOSTNAME;
+  return getHostname(req) === TEXT_ONLY_HOSTNAME;
+};
+
+const isDefaultProxy = (req: CorsfixRequest): boolean => {
+  return getHostname(req) === DEFAULT_PROXY_HOSTNAME;
 };
 
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
@@ -87,12 +93,10 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
         return sendCorsfixError(res, "plan_mismatch");
       }
 
-      const hostname = req.header("host")?.split(":")[0];
-      const isDefaultProxy = !hostname || hostname === DEFAULT_PROXY_HOSTNAME;
-      if (!isDefaultProxy) {
-        const regionSelection =
-          user.feature_overrides?.regionSelection ?? !!product.regionSelection;
-        if (!regionSelection) {
+      if (!isTextOnlyPlan) {
+        const isRegionalRequest = !isDefaultProxy(req);
+        const hasRegionSelection = user.feature_overrides?.regionSelection || product.regionSelection;
+        if (isRegionalRequest && !hasRegionSelection) {
           return sendCorsfixError(res, "region_not_allowed");
         }
       }
