@@ -8,6 +8,7 @@ export interface Product {
   rateLimitKey?: "ip" | "user_id";
   textOnly?: boolean;
   regionSelection?: boolean;
+  minCacheTtlSeconds?: number;
 }
 
 interface Config {

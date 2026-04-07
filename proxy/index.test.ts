@@ -4,6 +4,7 @@ import { app } from "./app";
 import * as apiKeyService from "./lib/services/apiKeyService";
 import * as configService from "./lib/config";
 import * as metricService from "./lib/services/metricService";
+import * as cacheService from "./lib/services/cacheService";
 
 const PORT = 8090;
 const TEXT_ONLY_HOST = "lite.test.local";
@@ -47,6 +48,15 @@ vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
         trial_ends_at: new Date("2099-01-01"),
       };
     }
+    if (apiKey === "cfx_no_cache_floor_key") {
+      return {
+        id: "test-no-cache-floor-user-id",
+        subscription_active: true,
+        subscription_product_id: "prod_123",
+        trial_ends_at: new Date("2099-01-01"),
+        feature_overrides: { minCacheTtlSeconds: 0 },
+      };
+    }
     if (apiKey === "cfx_region_override_key") {
       return {
         id: "test-region-override-user-id",
@@ -68,6 +78,7 @@ vi.spyOn(configService, "getConfig").mockReturnValue({
       name: "Test Product",
       rpm: 1000,
       rateLimitKey: "user_id",
+      minCacheTtlSeconds: 600,
     },
     {
       id: "prod_region",
@@ -89,6 +100,11 @@ vi.spyOn(configService, "getConfig").mockReturnValue({
 const batchCountMetricsSpy = vi
   .spyOn(metricService, "batchCountMetrics")
   .mockImplementation(() => {});
+
+vi.spyOn(cacheService, "getRedisClient").mockReturnValue({
+  get: vi.fn().mockResolvedValue(null),
+  set: vi.fn().mockResolvedValue("OK"),
+} as any);
 
 beforeAll(async () => {
   await app.listen(PORT);
@@ -375,7 +391,6 @@ describe("Region selection", () => {
         host: REGIONAL_HOST,
       },
     });
-
     expect(result.statusCode).toBe(200);
     expect(result.headers["x-corsfix-status"]).toBe("success");
   });
@@ -388,7 +403,6 @@ describe("Region selection", () => {
         host: REGIONAL_HOST,
       },
     });
-
     expect(result.statusCode).toBe(200);
     expect(result.headers["x-corsfix-status"]).toBe("success");
   });
@@ -400,9 +414,46 @@ describe("Region selection", () => {
         "x-corsfix-key": "cfx_valid_test_key",
       },
     });
-
     expect(result.statusCode).toBe(200);
     expect(result.headers["x-corsfix-status"]).toBe("success");
+  });
+});
+
+describe("Min cache TTL", () => {
+  test("cache duration is clamped to product minCacheTtlSeconds", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+        "x-corsfix-cache": "60",
+      },
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("cache-control")).toBe("public, max-age=600");
+  });
+
+  test("cache duration above minimum is not clamped", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+        "x-corsfix-cache": "3600",
+      },
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("cache-control")).toBe("public, max-age=3600");
+  });
+
+  test("user override minCacheTtlSeconds=0 bypasses floor", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_no_cache_floor_key",
+        "x-corsfix-cache": "10",
+      },
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("cache-control")).toBe("public, max-age=10");
   });
 });
 
