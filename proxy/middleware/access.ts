@@ -9,19 +9,25 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
+import { DEFAULT_PROXY_HOSTNAME, IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
 import { sendCorsfixError } from "../errors";
 
+const getHostname = (req: CorsfixRequest): string | undefined => {
+  const host = req.header("host");
+  if (!host) return undefined;
+  return host.split(":")[0];
+};
+
 const isTextOnlyRequest = (req: CorsfixRequest): boolean => {
   if (!TEXT_ONLY_HOSTNAME) return false;
-  const host = req.header("host");
-  if (!host) return false;
-  // Strip port if present
-  const hostname = host.split(":")[0];
-  return hostname === TEXT_ONLY_HOSTNAME;
+  return getHostname(req) === TEXT_ONLY_HOSTNAME;
+};
+
+const isDefaultProxy = (req: CorsfixRequest): boolean => {
+  return getHostname(req) === DEFAULT_PROXY_HOSTNAME;
 };
 
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
@@ -85,6 +91,14 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       const isTextOnlyPlan = !!product.textOnly;
       if (textOnlyRequest !== isTextOnlyPlan) {
         return sendCorsfixError(res, "plan_mismatch");
+      }
+
+      if (!isTextOnlyPlan) {
+        const isRegionalRequest = !isDefaultProxy(req);
+        const hasRegionSelection = user.feature_overrides?.regionSelection || product.regionSelection;
+        if (isRegionalRequest && !hasRegionSelection) {
+          return sendCorsfixError(res, "region_not_allowed");
+        }
       }
 
       rpm = getRpmByProductId(product.id);

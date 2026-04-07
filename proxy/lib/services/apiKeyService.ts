@@ -1,5 +1,5 @@
 import { CacheableMemory } from "cacheable";
-import { UserV2Entity } from "../../models/UserV2Entity";
+import { FeatureOverrides, UserV2Entity } from "../../models/UserV2Entity";
 import { getPubSubClient } from "./pubSubService";
 
 export interface ApiKeyUser {
@@ -7,6 +7,7 @@ export interface ApiKeyUser {
   subscription_active?: boolean;
   subscription_product_id?: string;
   trial_ends_at?: Date;
+  feature_overrides?: FeatureOverrides;
 }
 
 const apiKeyCache = new CacheableMemory({
@@ -39,6 +40,7 @@ export const getUserByApiKey = async (
     subscription_active: user.subscription_active,
     subscription_product_id: user.subscription_product_id,
     trial_ends_at: user.trial_ends_at,
+    feature_overrides: user.feature_overrides,
   };
 
   apiKeyCache.set(cacheKey, apiKeyUser);

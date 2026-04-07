@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface FeatureOverrides {
   extraBandwidth?: number;
+  regionSelection?: boolean;
 }
 
 export interface UserV2Entity extends Document {
@@ -30,6 +31,7 @@ const UserV2Schema = new Schema<UserV2Entity>(
     api_key: String,
     feature_overrides: {
       extraBandwidth: Number,
+      regionSelection: Boolean,
     },
   },
   { collection: "usersv2" }

@@ -16,6 +16,7 @@ vi.mock("./config/constants", async (importOriginal) => {
     IS_CLOUD: true,
     IS_SELFHOST: false,
     TEXT_ONLY_HOSTNAME: "lite.test.local",
+    DEFAULT_PROXY_HOSTNAME: "127.0.0.1",
   };
 });
 
@@ -38,6 +39,23 @@ vi.spyOn(apiKeyService, "getUserByApiKey").mockImplementation(
         trial_ends_at: new Date("2099-01-01"),
       };
     }
+    if (apiKey === "cfx_region_key") {
+      return {
+        id: "test-region-user-id",
+        subscription_active: true,
+        subscription_product_id: "prod_region",
+        trial_ends_at: new Date("2099-01-01"),
+      };
+    }
+    if (apiKey === "cfx_region_override_key") {
+      return {
+        id: "test-region-override-user-id",
+        subscription_active: true,
+        subscription_product_id: "prod_123",
+        trial_ends_at: new Date("2099-01-01"),
+        feature_overrides: { regionSelection: true },
+      };
+    }
     return null;
   }
 );
@@ -50,6 +68,13 @@ vi.spyOn(configService, "getConfig").mockReturnValue({
       name: "Test Product",
       rpm: 1000,
       rateLimitKey: "user_id",
+    },
+    {
+      id: "prod_region",
+      name: "Test Region Product",
+      rpm: 1000,
+      rateLimitKey: "user_id",
+      regionSelection: true,
     },
     {
       id: "prod_textonly",
@@ -323,6 +348,61 @@ describe("API Key authentication", () => {
     expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
     expect(result.headers.get("Access-Control-Allow-Headers")).toBe("x-corsfix-key");
     expect(result.headers.get("X-Corsfix-Status")).toBe("preflight");
+  });
+});
+
+const REGIONAL_HOST = "proxy-ap.corsfix.com";
+
+describe("Region selection", () => {
+  test("regional hostname without regionSelection is rejected", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+        host: REGIONAL_HOST,
+      },
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.headers["x-corsfix-status"]).toBe("region_not_allowed");
+  });
+
+  test("regional hostname with product regionSelection is allowed", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_region_key",
+        host: REGIONAL_HOST,
+      },
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers["x-corsfix-status"]).toBe("success");
+  });
+
+  test("regional hostname with user override regionSelection is allowed", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_region_override_key",
+        host: REGIONAL_HOST,
+      },
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers["x-corsfix-status"]).toBe("success");
+  });
+
+  test("default hostname without regionSelection is allowed", async () => {
+    const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+    const result = await request(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: {
+        "x-corsfix-key": "cfx_valid_test_key",
+      },
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers["x-corsfix-status"]).toBe("success");
   });
 });
 

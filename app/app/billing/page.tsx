@@ -130,11 +130,14 @@ export default async function CreditsPage() {
                   ? subscription.name.charAt(0).toUpperCase() +
                     subscription.name.slice(1)
                   : "-"}
-                {subscription.extraBandwidth && (
+                {(subscription.extraBandwidth || subscription.regionSelection) && (
                   <FounderBenefitModal
-                    extraBandwidth={formatBytes(
-                      subscription.extraBandwidth ?? 0
-                    )}
+                    extraBandwidth={
+                      subscription.extraBandwidth
+                        ? formatBytes(subscription.extraBandwidth)
+                        : undefined
+                    }
+                    regionSelection={subscription.regionSelection}
                   />
                 )}
                 {isTrial && IS_CLOUD && (
