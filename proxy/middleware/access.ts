@@ -9,7 +9,7 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
+import { DEFAULT_PROXY_HOSTNAME, IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
@@ -85,6 +85,16 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       const isTextOnlyPlan = !!product.textOnly;
       if (textOnlyRequest !== isTextOnlyPlan) {
         return sendCorsfixError(res, "plan_mismatch");
+      }
+
+      const hostname = req.header("host")?.split(":")[0];
+      const isDefaultProxy = !hostname || hostname === DEFAULT_PROXY_HOSTNAME;
+      if (!isDefaultProxy) {
+        const regionSelection =
+          user.feature_overrides?.regionSelection ?? !!product.regionSelection;
+        if (!regionSelection) {
+          return sendCorsfixError(res, "region_not_allowed");
+        }
       }
 
       rpm = getRpmByProductId(product.id);

@@ -8,6 +8,7 @@ export interface Product {
   bandwidth: number;
   link?: string;
   type: "standard" | "lite";
+  regionSelection?: boolean;
 }
 
 interface Config {
@@ -25,6 +26,7 @@ const configList: Record<string, Config> = {
         bandwidth: 25_000_000_000,
         link: "https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_wHdNRksqy8ahDKsr8ZNRRwp3OrBTYbbhmUTF4edt7po/redirect",
         type: "standard",
+        regionSelection: false,
       },
       {
         id: "46b89204-f1cf-4e12-a84f-bc00efc0fc70",
@@ -34,6 +36,7 @@ const configList: Record<string, Config> = {
         bandwidth: 100_000_000_000,
         link: "https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_EK7Yv6QfrWNqPY6VaabXlBhQN5lgPKPXJqbRP0ayrzt/redirect",
         type: "standard",
+        regionSelection: true,
       },
       {
         id: "f6381a0c-71db-4d6e-acaf-ce332bf01fb0",
@@ -43,6 +46,7 @@ const configList: Record<string, Config> = {
         bandwidth: 500_000_000_000,
         link: "https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_cz1JZMI0bfbyR6JDoVNueY8jS3IqSER0W6lZncWHn10/redirect",
         type: "standard",
+        regionSelection: true,
       },
       {
         id: "16e7090c-cb67-4545-ae98-6fdda46df7bf",
@@ -73,6 +77,7 @@ const configList: Record<string, Config> = {
         bandwidth: 25_000_000_000,
         link: "https://buy.polar.sh/polar_cl_LZVMGvtQccxLnJrQ1Vc1JhRhXGAHpyzACkfAXyY6Xmg",
         type: "standard",
+        regionSelection: false,
       },
       {
         id: "43398e9e-7f95-45e9-88e3-49d4ba3d4b94",
@@ -82,6 +87,7 @@ const configList: Record<string, Config> = {
         bandwidth: 100_000_000_000,
         link: "https://buy.polar.sh/polar_cl_Abgv-MARys_rNjEtr4kJWLGh3YkvNNlWlATlCEbMrE4",
         type: "standard",
+        regionSelection: true,
       },
       {
         id: "f4821fff-6471-432b-8885-4ef0cd7b7fd8",
@@ -91,6 +97,7 @@ const configList: Record<string, Config> = {
         bandwidth: 500_000_000_000,
         link: "https://buy.polar.sh/polar_cl_LtOUp84qHVmYo0hQ1oj0qdyYsOZ5U6HQNePjUrD6hVM",
         type: "standard",
+        regionSelection: true,
       },
       {
         id: "d6ce3bb4-bd1b-4d71-b020-88f1dc481c1d",

@@ -24,3 +24,5 @@ const parseRPM = (value: string | undefined): number => {
 export const SELFHOST_RPM = parseRPM(process.env.RPM);
 
 export const TEXT_ONLY_HOSTNAME = process.env.TEXT_ONLY_HOSTNAME;
+
+export const DEFAULT_PROXY_HOSTNAME = process.env.DEFAULT_PROXY_HOSTNAME;

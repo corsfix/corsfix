@@ -10,6 +10,7 @@ export type CorsfixError =
   | "payload_too_large"
   | "plan_mismatch"
   | "rate_limited"
+  | "region_not_allowed"
   | "response_not_text"
   | "response_too_large"
   | "target_not_allowed"
@@ -89,6 +90,13 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
     if_you_are_admin:
       "You've exceeded your rate limit - consider upgrading your plan",
     if_you_are_user: "Please wait a moment and try again",
+  },
+  region_not_allowed: {
+    status: 403,
+    message: "Your plan does not include access to this proxy region",
+    if_you_are_admin:
+      "Upgrade to Growth or Scale plan to access regional proxies, or use proxy.corsfix.com",
+    if_you_are_user: "Please contact the website owner about this issue",
   },
   response_not_text: {
     status: 400,
