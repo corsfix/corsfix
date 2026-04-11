@@ -10,6 +10,7 @@ import {
 import { detectApiKeyRequest } from "./middleware/apiKey";
 import { handlePreflight } from "./middleware/preflight";
 import { handleMetrics } from "./middleware/metrics";
+import { handleConcurrency } from "./middleware/concurrency";
 import { CorsfixRequest } from "./types/api";
 import { handleProxyAccess } from "./middleware/access";
 import { Dispatcher } from "undici";
@@ -46,6 +47,7 @@ app.use("/", (req: Request, res: Response, next: MiddlewareNext) => {
 });
 
 app.use("/", handleMetrics);
+app.use("/", handleConcurrency);
 
 app.use("/", validatePayloadSize);
 app.use("/", validateTargetUrl);

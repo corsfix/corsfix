@@ -15,12 +15,14 @@ interface FounderBenefitModalProps {
   extraBandwidth?: string;
   regionSelection?: boolean;
   noMinCacheTtl?: boolean;
+  noConcurrencyLimit?: boolean;
 }
 
 export const FounderBenefitModal = ({
   extraBandwidth,
   regionSelection,
   noMinCacheTtl,
+  noConcurrencyLimit,
 }: FounderBenefitModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,6 +30,7 @@ export const FounderBenefitModal = ({
   if (extraBandwidth) benefits.push(`+${extraBandwidth} extra data transfer`);
   if (regionSelection) benefits.push("Access to regional proxies");
   if (noMinCacheTtl) benefits.push("No minimum cache TTL");
+  if (noConcurrencyLimit) benefits.push("No concurrency limit");
 
   return (
     <>

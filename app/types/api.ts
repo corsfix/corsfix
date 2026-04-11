@@ -40,6 +40,8 @@ export interface Subscription {
   extraBandwidth?: number;
   regionSelection?: boolean;
   noMinCacheTtl?: boolean;
+  noConcurrencyLimit?: boolean;
+  concurrencyLimit?: number;
 }
 
 export const UpsertSecretSchema = z.object({
@@ -84,6 +86,7 @@ export interface MetricPoint {
   date: Date;
   req_count: number;
   bytes: number;
+  peak_concurrent?: number;
 }
 
 export interface DomainMetricPoint {

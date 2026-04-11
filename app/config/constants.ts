@@ -10,6 +10,7 @@ export interface Product {
   type: "standard" | "lite";
   regionSelection?: boolean;
   minCacheTtlSeconds?: number;
+  concurrencyLimit?: number;
 }
 
 interface Config {
@@ -29,6 +30,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: false,
         minCacheTtlSeconds: 600,
+        concurrencyLimit: 3,
       },
       {
         id: "46b89204-f1cf-4e12-a84f-bc00efc0fc70",
@@ -40,6 +42,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: true,
         minCacheTtlSeconds: 60,
+        concurrencyLimit: 15,
       },
       {
         id: "f6381a0c-71db-4d6e-acaf-ce332bf01fb0",
@@ -51,6 +54,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: true,
         minCacheTtlSeconds: 1,
+        concurrencyLimit: 100,
       },
       {
         id: "16e7090c-cb67-4545-ae98-6fdda46df7bf",
@@ -83,6 +87,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: false,
         minCacheTtlSeconds: 600,
+        concurrencyLimit: 3,
       },
       {
         id: "43398e9e-7f95-45e9-88e3-49d4ba3d4b94",
@@ -94,6 +99,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: true,
         minCacheTtlSeconds: 60,
+        concurrencyLimit: 15,
       },
       {
         id: "f4821fff-6471-432b-8885-4ef0cd7b7fd8",
@@ -105,6 +111,7 @@ const configList: Record<string, Config> = {
         type: "standard",
         regionSelection: true,
         minCacheTtlSeconds: 1,
+        concurrencyLimit: 100,
       },
       {
         id: "d6ce3bb4-bd1b-4d71-b020-88f1dc481c1d",
