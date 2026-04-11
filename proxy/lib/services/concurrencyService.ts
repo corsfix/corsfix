@@ -19,28 +19,33 @@ const getDateKey = (): Date => {
   );
 };
 
-const flushPeak = (userId: string, peak: number): void => {
+const flushPeak = (userId: string, dateKey: Date, peak: number): void => {
   UserConcurrencyDailyEntity.updateOne(
-    { user_id: userId, date: getDateKey() },
+    { user_id: userId, date: dateKey },
     { $max: { peak_concurrent: peak } },
     { upsert: true }
   ).catch((err) => console.error("concurrency upsert failed", err));
 };
 
-const updateDailyPeak = (userId: string, count: number): void => {
-  const cacheKey = `${userId}:${getDateKey().getTime()}`;
+const updateDailyPeak = (
+  userId: string,
+  dateKey: Date,
+  count: number
+): void => {
+  const cacheKey = `${userId}:${dateKey.getTime()}`;
   const currentPeak = dailyPeakCache.get<number>(cacheKey) ?? 0;
 
   if (count > currentPeak) {
     dailyPeakCache.set(cacheKey, count);
-    flushPeak(userId, count);
+    flushPeak(userId, dateKey, count);
   }
 };
 
 const syncToRedis = async (
   userId: string,
   ip: string,
-  minuteKey: number
+  minuteKey: number,
+  dateKey: Date
 ): Promise<void> => {
   const redis = getRedisClient();
   if (!redis) return;
@@ -61,7 +66,7 @@ const syncToRedis = async (
     const globalCount = scardValue as number;
 
     // calculate the daily running max for this user
-    updateDailyPeak(userId, globalCount);
+    updateDailyPeak(userId, dateKey, globalCount);
   } catch (err) {
     console.error("concurrency redis sync failed", err);
   }
@@ -79,5 +84,5 @@ export const trackConcurrency = (userId: string, ip: string): void => {
   ips.add(ip);
   localIpCache.set(cacheKey, ips);
 
-  syncToRedis(userId, ip, minuteKey);
+  syncToRedis(userId, ip, minuteKey, getDateKey());
 };

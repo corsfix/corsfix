@@ -12,7 +12,7 @@ const UserConcurrencyDailySchema = new Schema<UserConcurrencyDailyEntity>({
   peak_concurrent: Number,
 });
 
-UserConcurrencyDailySchema.index({ user_id: 1, date: 1 });
+UserConcurrencyDailySchema.index({ user_id: 1, date: 1 }, { unique: true });
 
 export const UserConcurrencyDailyEntity: Model<UserConcurrencyDailyEntity> =
   mongoose.models.UserConcurrencyDaily ||

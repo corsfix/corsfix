@@ -66,12 +66,7 @@ export default function MetricsView({ concurrencyLimit }: MetricsViewProps) {
       const result = await response.json();
       if (result.success) {
         setData(result.data.metrics);
-        const newAvailable: string[] = result.data.availableDomains;
-        setAvailableDomains(newAvailable);
-        setSelectedDomains((prev) => {
-          const valid = prev.filter((d) => newAvailable.includes(d));
-          return valid.length === prev.length ? prev : valid;
-        });
+        setAvailableDomains(result.data.availableDomains);
       }
     } catch (error) {
       console.error("Error fetching metrics:", error);
@@ -80,7 +75,8 @@ export default function MetricsView({ concurrencyLimit }: MetricsViewProps) {
 
   const handleRangeChange = (range: string) => {
     setSelectedRange(range);
-    fetchMetrics(range, selectedDomains);
+    setSelectedDomains([]);
+    fetchMetrics(range, []);
   };
 
   const handleDomainChange = (domains: string[]) => {
