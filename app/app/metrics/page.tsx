@@ -1,27 +1,33 @@
 import Nav from "@/components/nav";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChartLine } from "lucide-react";
-import MetricsChart from "@/components/MetricsChart";
+import MetricsView from "@/components/MetricsView";
 import { Metadata } from "next/types";
+import { auth } from "@/auth";
+import { getActiveSubscription } from "@/lib/services/subscriptionService";
 
 export const metadata: Metadata = {
   title: "Metrics | Corsfix Dashboard",
 };
 
-export default function MetricsPage() {
+export default async function MetricsPage() {
+  const session = await auth();
+  let concurrencyLimit: number | undefined;
+  if (session?.user?.id) {
+    try {
+      const subscription = await getActiveSubscription(session.user.id);
+      concurrencyLimit = subscription.noConcurrencyLimit
+        ? undefined
+        : subscription.concurrencyLimit;
+    } catch (error) {
+      console.error("Failed to load subscription for metrics page", error);
+    }
+  }
+
   return (
     <>
       <Nav />
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4 inline-flex items-center">
-          <ChartLine size={28} className="mr-2" />
-          Metrics
-        </h1>
-        <p className="text-muted-foreground mb-6">
-          Track your API usage and bandwidth consumption
-        </p>
-
-        <MetricsChart />
+        <MetricsView concurrencyLimit={concurrencyLimit} />
 
         {/* Info Section */}
         <div className="mt-6">

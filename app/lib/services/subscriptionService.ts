@@ -34,5 +34,7 @@ export async function getActiveSubscription(
     extraBandwidth: user.feature_overrides?.extraBandwidth,
     regionSelection: user.feature_overrides?.regionSelection,
     noMinCacheTtl: user.feature_overrides?.noMinCacheTtl,
+    noConcurrencyLimit: user.feature_overrides?.noConcurrencyLimit,
+    concurrencyLimit: product?.concurrencyLimit,
   };
 }

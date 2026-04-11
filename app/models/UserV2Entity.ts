@@ -4,6 +4,7 @@ export interface FeatureOverrides {
   extraBandwidth?: number;
   regionSelection?: boolean;
   noMinCacheTtl?: boolean;
+  noConcurrencyLimit?: boolean;
 }
 
 export interface UserV2Entity extends Document {
@@ -34,6 +35,7 @@ const UserV2Schema = new Schema<UserV2Entity>(
       extraBandwidth: Number,
       regionSelection: Boolean,
       noMinCacheTtl: Boolean,
+      noConcurrencyLimit: Boolean,
     },
   },
   { collection: "usersv2" }

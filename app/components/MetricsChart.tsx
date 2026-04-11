@@ -1,15 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DomainFilter } from "@/components/DomainFilter";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState } from "react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -24,71 +17,34 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
 } from "recharts";
 
-type TimeRange = string; // string for custom months
+interface MetricsChartProps {
+  data: MetricPoint[];
+  availableDomains: string[];
+  selectedDomains: string[];
+  onSelectedDomainsChange: (domains: string[]) => void;
+}
 
-const generateMonthOptions = () => {
-  const months = [];
-  const now = new Date();
-
-  for (let i = 0; i < 6; i++) {
-    const date = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
-    );
-    const monthName = date.toLocaleString("default", {
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-    const value = `${date.getUTCFullYear()}-${String(
-      date.getUTCMonth() + 1
-    ).padStart(2, "0")}`;
-    months.push({ value, label: monthName });
-  }
-
-  return months;
-};
-
-const getCurrentMonth = () => {
-  const now = new Date();
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(
-    2,
-    "0"
-  )}`;
-};
-
-const MONTH_OPTIONS = generateMonthOptions();
-
-export default function MetricsChart() {
-  const [data, setData] = useState<MetricPoint[]>([]);
-  const [selectedRange, setSelectedRange] = useState<TimeRange>(
-    getCurrentMonth()
-  );
-  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
-  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+export default function MetricsChart({
+  data,
+  availableDomains,
+  selectedDomains,
+  onSelectedDomainsChange,
+}: MetricsChartProps) {
   const [showRequests, setShowRequests] = useState(true);
   const [showBytes, setShowBytes] = useState(true);
 
-  // Handle checkbox changes with validation
   const handleShowRequestsChange = (checked: boolean) => {
-    // Only allow unchecking if bytes is still checked
-    if (!checked && !showBytes) {
-      return; // Prevent both from being unchecked
-    }
+    if (!checked && !showBytes) return;
     setShowRequests(checked);
   };
 
   const handleShowBytesChange = (checked: boolean) => {
-    // Only allow unchecking if requests is still checked
-    if (!checked && !showRequests) {
-      return; // Prevent both from being unchecked
-    }
+    if (!checked && !showRequests) return;
     setShowBytes(checked);
   };
 
-  // Check if a checkbox should be disabled (when it's the only one checked)
   const isRequestsDisabled = showRequests && !showBytes;
   const isBytesDisabled = showBytes && !showRequests;
 
@@ -100,53 +56,6 @@ export default function MetricsChart() {
     }),
     { requests: 0, bytes: 0 }
   );
-
-  // Fetch metrics data
-  const fetchMetrics = async (range: TimeRange, domains: string[]) => {
-    try {
-      const params = new URLSearchParams({ yearMonth: range });
-      if (domains.length > 0) {
-        params.set("domains", domains.join(","));
-      }
-      const response = await fetch(`/api/metrics?${params}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch metrics");
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data.metrics);
-        const newAvailable: string[] = result.data.availableDomains;
-        setAvailableDomains(newAvailable);
-        // Prune selected domains that no longer exist in the new month
-        setSelectedDomains((prev) => {
-          const valid = prev.filter((d) => newAvailable.includes(d));
-          return valid.length === prev.length ? prev : valid;
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching metrics:", error);
-    }
-  };
-
-  // Handle range change
-  const handleRangeChange = (range: TimeRange) => {
-    setSelectedRange(range);
-    fetchMetrics(range, selectedDomains);
-  };
-
-  // Handle domain selection change
-  const handleDomainChange = (domains: string[]) => {
-    setSelectedDomains(domains);
-    fetchMetrics(selectedRange, domains);
-  };
-
-  // Initial data load
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchMetrics(getCurrentMonth(), []);
-  }, []);
 
   // Format chart data
   const chartData = data.map((point) => ({
@@ -211,35 +120,16 @@ export default function MetricsChart() {
           <DomainFilter
             availableDomains={availableDomains}
             selectedDomains={selectedDomains}
-            onSelectionChange={handleDomainChange}
+            onSelectionChange={onSelectedDomainsChange}
           />
-          <Select
-            value={
-              MONTH_OPTIONS.some((m) => m.value === selectedRange)
-                ? selectedRange
-                : ""
-            }
-            onValueChange={handleRangeChange}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTH_OPTIONS.map((month) => (
-                <SelectItem key={month.value} value={month.value}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[400px] w-full">
+        <ChartContainer config={chartConfig} className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={normalizedChartData}
-              margin={{ right: -15, left: -15 }}
+              margin={{ right: 0, left: -15 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
@@ -254,7 +144,6 @@ export default function MetricsChart() {
                   });
                 }}
               />
-              {/* Dynamic Y-Axis positioning based on what's shown */}
               <YAxis
                 yAxisId="left"
                 orientation="left"
@@ -275,9 +164,12 @@ export default function MetricsChart() {
                 label={{
                   value: "Bytes (MB)",
                   angle: 90,
-                  position: "insideLeft",
-                  dx: 30,
-                  style: { textAnchor: "middle", fill: "var(--color-bytes)" },
+                  position: "insideRight",
+                  dx: 0,
+                  style: {
+                    textAnchor: "middle",
+                    fill: "var(--color-bytes)",
+                  },
                 }}
               />
               <ChartTooltip
@@ -290,11 +182,10 @@ export default function MetricsChart() {
                           ...p,
                           value:
                             p.dataKey === "bytesMB"
-                              ? `${
-                                  typeof p.value === "number"
-                                    ? p.value.toFixed(2)
-                                    : p.value
-                                } MB`
+                              ? `${typeof p.value === "number"
+                                ? p.value.toFixed(2)
+                                : p.value
+                              } MB`
                               : p.value,
                         }))}
                         label={new Date(
@@ -310,16 +201,6 @@ export default function MetricsChart() {
                   }
                   return null;
                 }}
-              />
-              <Legend
-                onClick={(entry) => {
-                  if (entry.dataKey === "requests") {
-                    handleShowRequestsChange(!showRequests);
-                  } else if (entry.dataKey === "bytesMB") {
-                    handleShowBytesChange(!showBytes);
-                  }
-                }}
-                wrapperStyle={{ cursor: "pointer" }}
               />
               <Line
                 yAxisId="left"

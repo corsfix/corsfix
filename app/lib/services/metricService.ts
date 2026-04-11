@@ -1,5 +1,6 @@
 import { DomainMetricPoint, Metric, MetricPoint } from "@/types/api";
 import { UserOriginDailyEntity } from "../../models/UserOriginDailyEntity";
+import { UserConcurrencyDailyEntity } from "../../models/UserConcurrencyDailyEntity";
 import dbConnect from "../dbConnect";
 import { CacheableMemory } from "cacheable";
 
@@ -141,7 +142,8 @@ export const getMetricsYearMonth = async (
 export const aggregateByDate = (
   points: DomainMetricPoint[],
   yearMonth: string,
-  domains?: string[]
+  domains?: string[],
+  concurrency?: { date: Date; peak_concurrent: number }[]
 ): MetricPoint[] => {
   // Filter by domains if specified
   const filtered =
@@ -165,6 +167,15 @@ export const aggregateByDate = (
     }
   }
 
+  // Build concurrency map by date
+  const concurrencyMap = new Map<string, number>();
+  if (concurrency) {
+    for (const c of concurrency) {
+      const dateKey = new Date(c.date).toISOString().split("T")[0];
+      concurrencyMap.set(dateKey, c.peak_concurrent);
+    }
+  }
+
   // Fill all days in the month
   const [year, month] = yearMonth.split("-").map(Number);
   const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
@@ -181,10 +192,45 @@ export const aggregateByDate = (
       date: new Date(currentDate),
       req_count: existing?.req_count || 0,
       bytes: existing?.bytes || 0,
+      peak_concurrent: concurrencyMap.get(dateKey) ?? 0,
     });
 
     currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
+
+  return result;
+};
+
+export const getConcurrencyYearMonth = async (
+  userId: string,
+  yearMonth: string
+): Promise<{ date: Date; peak_concurrent: number }[]> => {
+  const cacheKey = `month_concurrency:${userId}:${yearMonth}`;
+
+  const cached = await metricCache.get(cacheKey);
+  if (cached) {
+    return cached as { date: Date; peak_concurrent: number }[];
+  }
+
+  await dbConnect();
+
+  const [year, month] = yearMonth.split("-").map(Number);
+  const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const endOfMonth = new Date(Date.UTC(year, month, 0));
+
+  const docs = await UserConcurrencyDailyEntity.find({
+    user_id: userId,
+    date: { $gte: startOfMonth, $lte: endOfMonth },
+  })
+    .sort({ date: 1 })
+    .lean();
+
+  const result = docs.map((d) => ({
+    date: d.date,
+    peak_concurrent: d.peak_concurrent,
+  }));
+
+  await metricCache.set(cacheKey, result);
 
   return result;
 };

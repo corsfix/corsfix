@@ -132,7 +132,8 @@ export default async function CreditsPage() {
                   : "-"}
                 {(subscription.extraBandwidth ||
                   subscription.regionSelection ||
-                  subscription.noMinCacheTtl) && (
+                  subscription.noMinCacheTtl ||
+                  subscription.noConcurrencyLimit) && (
                   <FounderBenefitModal
                     extraBandwidth={
                       subscription.extraBandwidth
@@ -141,6 +142,7 @@ export default async function CreditsPage() {
                     }
                     regionSelection={subscription.regionSelection}
                     noMinCacheTtl={subscription.noMinCacheTtl}
+                    noConcurrencyLimit={subscription.noConcurrencyLimit}
                   />
                 )}
                 {isTrial && IS_CLOUD && (

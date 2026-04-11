@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
-import { aggregateByDate, getMetricsYearMonth } from "@/lib/services/metricService";
+import {
+  aggregateByDate,
+  getConcurrencyYearMonth,
+  getMetricsYearMonth,
+} from "@/lib/services/metricService";
 import { getUserId } from "@/lib/utils";
 import { GetMetricsSchema } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -38,8 +42,16 @@ export async function GET(request: NextRequest) {
       : undefined;
 
     // Get granular per-domain data (cached), then filter + aggregate in app layer
-    const domainPoints = await getMetricsYearMonth(userId, validYearMonth);
-    const metrics = aggregateByDate(domainPoints, validYearMonth, domainsArray);
+    const [domainPoints, concurrency] = await Promise.all([
+      getMetricsYearMonth(userId, validYearMonth),
+      getConcurrencyYearMonth(userId, validYearMonth),
+    ]);
+    const metrics = aggregateByDate(
+      domainPoints,
+      validYearMonth,
+      domainsArray,
+      concurrency
+    );
 
     // Extract available domains from the full (unfiltered) dataset
     const availableDomains = [
