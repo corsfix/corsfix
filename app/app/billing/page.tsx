@@ -52,17 +52,6 @@ const trialBenefits = [
   `Secrets variable`,
 ];
 
-const paidBenefits = [
-  "Unlimited requests",
-  "Unlimited web applications",
-  "{{bandwidth}} data transfer",
-  "No content or size limits",
-  "{{rpm}} RPM (per IP)",
-  "Global infrastructure",
-  "Cached response",
-  "Secrets variable",
-  "Priority support",
-];
 
 export const metadata: Metadata = {
   title: "Billing | Corsfix Dashboard",
@@ -257,6 +246,9 @@ export default async function CreditsPage() {
         {IS_CLOUD && (
           <div className="mt-6">
             <h2 className="text-2xl font-semibold">Plans</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              All Corsfix plans include unlimited requests.
+            </p>
             <div className="overflow-x-auto snap-x snap-mandatory pt-4">
               <div className="flex flex-1 min-w-full flex-row w-fit gap-3">
                 <div
@@ -296,6 +288,9 @@ export default async function CreditsPage() {
                             </>
                           )}
                         </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          For JSON APIs & text content
+                        </p>
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col">
                         {!subscription.active && (
@@ -353,12 +348,12 @@ export default async function CreditsPage() {
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Text contents (JSON API, HTML, etc)</span>
+                            <span>Text content (JSON API, HTML, etc)</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="flex items-center gap-1">
-                              600 RPM (shared across your users)
+                              600 RPM (shared across users)
                             </span>
                           </li>
                           <li className="flex items-center gap-2">
@@ -415,6 +410,11 @@ export default async function CreditsPage() {
                                     / month
                                   </span>
                                 </div>
+                                {product.description && (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    {product.description}
+                                  </p>
+                                )}
                               </CardHeader>
                               <CardContent className="flex-1 flex flex-col">
                                 {!subscription.active && (
@@ -460,23 +460,13 @@ export default async function CreditsPage() {
                                   </div>
                                 )}
                                 <ul className="space-y-4 flex-1">
-                                  {paidBenefits.map((benefit, index) => (
+                                  {(product.benefits ?? []).map((benefit, index) => (
                                     <li
                                       key={index}
                                       className="flex items-center gap-2"
                                     >
                                       <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                                      <span>
-                                        {benefit
-                                          .replace(
-                                            "{{rpm}}",
-                                            product.rpm.toString()
-                                          )
-                                          .replace(
-                                            "{{bandwidth}}",
-                                            formatBytes(product.bandwidth)
-                                          )}
-                                      </span>
+                                      <span>{benefit}</span>
                                     </li>
                                   ))}
                                 </ul>
