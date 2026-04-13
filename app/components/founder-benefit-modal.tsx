@@ -28,7 +28,7 @@ export const FounderBenefitModal = ({
 
   const benefits: string[] = [];
   if (extraBandwidth) benefits.push(`+${extraBandwidth} extra data transfer`);
-  if (regionSelection) benefits.push("Access to regional proxies");
+  if (regionSelection) benefits.push("Select any proxy regions");
   if (noMinCacheTtl) benefits.push("No minimum cache TTL");
   if (noConcurrencyLimit) benefits.push("No concurrency limit");
 
