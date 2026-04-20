@@ -6,9 +6,7 @@ import {
   Info,
   Infinity,
   PackageIcon,
-  SquareArrowOutUpRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
@@ -17,7 +15,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Nav from "@/components/nav";
-import Link from "next/link";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { config, IS_CLOUD, trialLimit } from "@/config/constants";
 import {
@@ -30,19 +27,8 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getMonthToDateMetrics } from "@/lib/services/metricService";
 import { FounderBenefitModal } from "@/components/founder-benefit-modal";
-
-function getCustomerCheckoutLink(
-  baseLink: string | null | undefined,
-  email: string | null | undefined
-): string {
-  if (!baseLink || !email) {
-    return baseLink || "/";
-  }
-
-  const url = new URL(baseLink);
-  url.searchParams.set("customer_email", email);
-  return url.toString();
-}
+import { PlansSection } from "./plans-section";
+import type { Subscription } from "@/types/api";
 
 const trialBenefits = [
   `Up to ${trialLimit.app_count} web applications`,
@@ -60,7 +46,9 @@ export const metadata: Metadata = {
 export default async function CreditsPage() {
   const session = await auth();
 
-  let subscription, isTrial, bandwidthMtd;
+  let subscription: Subscription;
+  let isTrial: boolean;
+  let bandwidthMtd: number;
 
   try {
     isTrial = isTrialActive(session);
@@ -79,6 +67,7 @@ export default async function CreditsPage() {
         day: "numeric",
       });
       subscription.name = `trial (until ${formattedDate})`;
+      subscription.label = `Trial (until ${formattedDate})`;
       subscription.bandwidth = trialLimit.bytes;
     }
 
@@ -95,6 +84,13 @@ export default async function CreditsPage() {
     };
     bandwidthMtd = 0;
   }
+
+  const currentPlanDisplay =
+    subscription.label ??
+    subscription.name.charAt(0).toUpperCase() + subscription.name.slice(1);
+
+  const defaultBillingCycle =
+    subscription.billingCycle === "yearly" ? "yearly" : "monthly";
 
   return (
     <>
@@ -115,10 +111,7 @@ export default async function CreditsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold mt-3 text-primary flex items-center gap-2">
-                {IS_CLOUD
-                  ? subscription.name.charAt(0).toUpperCase() +
-                    subscription.name.slice(1)
-                  : "-"}
+                {IS_CLOUD ? currentPlanDisplay : "-"}
                 {(subscription.extraBandwidth ||
                   subscription.regionSelection ||
                   subscription.noMinCacheTtl ||
@@ -244,242 +237,12 @@ export default async function CreditsPage() {
         </div>
 
         {IS_CLOUD && (
-          <div className="mt-6">
-            <h2 className="text-2xl font-semibold">Plans</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              All Corsfix plans include unlimited requests.
-            </p>
-            <div className="overflow-x-auto snap-x snap-mandatory pt-4">
-              <div className="flex flex-1 min-w-full flex-row w-fit gap-3">
-                <div
-                  className="w-1/4 border-2 rounded-2xl p-2 flex flex-col relative"
-                  style={{ borderColor: "#59A2E7" }}
-                >
-                  <div className="w-full min-w-80 h-full">
-                    <h3 className="text-sm font-bold bg-background px-2 text-[#59A2E7] absolute left-1/2 -translate-x-1/2 -top-3">
-                      Lite
-                    </h3>
-                    <Card className="flex flex-col h-full snap-center">
-                      <CardHeader className="flex-none pb-3">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-xl">Lite</CardTitle>
-                          {subscription.isLite && (
-                            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-end gap-2 mt-4">
-                          {subscription.product_id ===
-                          config.products.find((p) => p.name === "lite-monthly")
-                            ?.id ? (
-                            <>
-                              <span className="text-3xl font-bold">$3.99</span>
-                              <span className="text-muted-foreground pb-1">
-                                / month
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-3xl font-bold">$29</span>
-                              <span className="text-muted-foreground pb-1">
-                                / year
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          For JSON APIs & text content
-                        </p>
-                      </CardHeader>
-                      <CardContent className="flex-1 flex flex-col">
-                        {!subscription.active && (
-                          <div className="mb-6 flex-none">
-                            <Link
-                              href={getCustomerCheckoutLink(
-                                config.products.find((p) => p.name === "lite")?.link ?? "",
-                                session?.user?.email
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button
-                                className="w-full"
-                                data-umami-event={`pricing-lite`}
-                              >
-                                Upgrade
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
-                        {subscription.active && (
-                          <div className="mb-6 flex-none">
-                            <Link href="/api/portal" target="_blank">
-                              <Button
-                                data-umami-event="billing-manage"
-                                className="w-full flex items-center gap-2"
-                                variant={
-                                  subscription.isLite
-                                    ? "default"
-                                    : "outline"
-                                }
-                              >
-                                {subscription.isLite ? (
-                                  <>
-                                    Manage <SquareArrowOutUpRight />
-                                  </>
-                                ) : (
-                                  "Change Plan"
-                                )}
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
-                        <ul className="space-y-4 flex-1">
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="flex items-center gap-1">
-                              Proxy URL: lite.corsfix.com
-                            </span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Unlimited requests & bandwidth</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>Text content (JSON API, HTML, etc)</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="flex items-center gap-1">
-                              600 RPM (shared across users)
-                            </span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="flex items-center gap-1">
-                              Up to 1 MB per response
-                            </span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>European infrastructure</span>
-                          </li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-                <div
-                  className="w-3/4 border-2 rounded-2xl p-2 flex flex-col relative"
-                  style={{ borderColor: "#595BE7" }}
-                >
-                  <h3 className="text-sm font-bold bg-background px-2 text-[#595BE7] absolute left-1/2 -translate-x-1/2 -top-3">
-                    Standard
-                  </h3>
-                  <div className="flex flex-row space-x-3 flex-1">
-                    {config.products
-                      .filter((p) => p.type === "standard")
-                      .map((product) => {
-                        const isCurrentPlan =
-                          subscription.name === product.name;
-                        return (
-                          <div
-                            className="w-1/3 min-w-80 h-full"
-                            key={product.id}
-                          >
-                            <Card className="w-full flex flex-col h-full snap-center">
-                              <CardHeader className="flex-none pb-3">
-                                <div className="flex justify-between items-center">
-                                  <CardTitle className="text-xl">
-                                    {product.name.charAt(0).toUpperCase() +
-                                      product.name.slice(1)}
-                                  </CardTitle>
-                                  {isCurrentPlan && (
-                                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                                      Active
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-end gap-2 mt-4">
-                                  <span className="text-3xl font-bold">
-                                    ${product.price}
-                                  </span>
-                                  <span className="text-muted-foreground pb-1">
-                                    / month
-                                  </span>
-                                </div>
-                                {product.description && (
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    {product.description}
-                                  </p>
-                                )}
-                              </CardHeader>
-                              <CardContent className="flex-1 flex flex-col">
-                                {!subscription.active && (
-                                  <div className="mb-6 flex-none">
-                                    <Link
-                                      href={getCustomerCheckoutLink(
-                                        product.link,
-                                        session?.user?.email
-                                      )}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <Button
-                                        className="w-full"
-                                        data-umami-event={`pricing-${product.name.toLowerCase()}`}
-                                      >
-                                        Upgrade
-                                      </Button>
-                                    </Link>
-                                  </div>
-                                )}
-                                {subscription.active && (
-                                  <div className="mb-6 flex-none">
-                                    <Link href="/api/portal" target="_blank">
-                                      <Button
-                                        data-umami-event="billing-manage"
-                                        className="w-full flex items-center gap-2"
-                                        variant={
-                                          subscription.name == product.name
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                      >
-                                        {subscription.name == product.name ? (
-                                          <>
-                                            Manage <SquareArrowOutUpRight />
-                                          </>
-                                        ) : (
-                                          "Change Plan"
-                                        )}
-                                      </Button>
-                                    </Link>
-                                  </div>
-                                )}
-                                <ul className="space-y-4 flex-1">
-                                  {(product.benefits ?? []).map((benefit, index) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                                      <span>{benefit}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PlansSection
+            products={config.products}
+            subscription={subscription}
+            sessionEmail={session?.user?.email}
+            defaultBillingCycle={defaultBillingCycle}
+          />
         )}
       </div>
     </>

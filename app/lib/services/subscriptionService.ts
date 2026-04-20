@@ -26,6 +26,9 @@ export async function getActiveSubscription(
 
   return {
     name: product?.name || "-",
+    label: product?.label,
+    family: product?.family,
+    billingCycle: product?.billingCycle,
     product_id: user.subscription_product_id,
     customer_id: user.customer_id,
     bandwidth: product?.bandwidth || 0,
