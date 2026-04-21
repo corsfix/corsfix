@@ -42,6 +42,7 @@ export default async function GetStarted() {
         day: "numeric",
       });
       subscription.name = `trial (until ${formattedDate})`;
+      subscription.label = `Trial (until ${formattedDate})`;
       planDescription =
         "Try all the features for free. Upgrade to keep using Corsfix on live web applications.";
     } else {
@@ -181,8 +182,9 @@ fetch("https://${
                 <CardTitle className="text-xl">
                   Current plan:{" "}
                   <span className="text-primary">
-                    {subscription.name.charAt(0).toUpperCase() +
-                      subscription.name.slice(1)}
+                    {subscription.label ??
+                      subscription.name.charAt(0).toUpperCase() +
+                        subscription.name.slice(1)}
                   </span>
                 </CardTitle>
                 <CardDescription>{planDescription}</CardDescription>

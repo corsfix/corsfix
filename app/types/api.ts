@@ -32,6 +32,9 @@ export interface User {
 
 export interface Subscription {
   name: string;
+  label?: string;
+  family?: "hobby" | "growth" | "scale" | "lite";
+  billingCycle?: "monthly" | "yearly";
   product_id?: string;
   customer_id?: string;
   bandwidth: number;
