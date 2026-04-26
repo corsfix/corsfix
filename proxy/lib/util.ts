@@ -175,14 +175,20 @@ export interface ProxyRequestOptions {
 }
 
 const makeDispatcher = (
+  hostname: string,
   extraCAs: string[] = [],
   decompress = false
 ): Dispatcher => {
+  const ca =
+    extraCAs.length > 0 ? [...tls.rootCertificates, ...extraCAs] : undefined;
   const base = new EnvHttpProxyAgent(
-    extraCAs.length > 0
+    ca
       ? {
-          connect: { ca: [...tls.rootCertificates, ...extraCAs] },
-          requestTls: { ca: [...tls.rootCertificates, ...extraCAs] },
+          connect: { ca },
+          // ProxyAgent reads servername from requestTls (ignoring per-request
+          // opts.servername set by interceptors.dns) — must pin it here or
+          // TLS validates against the resolved IP.
+          requestTls: { ca, servername: hostname },
         }
       : undefined
   );
@@ -207,7 +213,7 @@ export const proxyRequest = async (
   const maxRedirections = options.maxRedirects ?? 0;
   let currentUrl = url;
   let redirectCount = 0;
-  let dispatcher = makeDispatcher([], options.decompress);
+  let dispatcher = makeDispatcher(currentUrl.hostname, [], options.decompress);
   let dispatcherHost = currentUrl.hostname;
   let aiaAttempted = false;
 
@@ -224,7 +230,7 @@ export const proxyRequest = async (
     // Reset per-host: AIA-fetched intermediates and retry budget should not
     // leak across hostnames in a redirect chain.
     if (currentUrl.hostname !== dispatcherHost) {
-      dispatcher = makeDispatcher([], options.decompress);
+      dispatcher = makeDispatcher(currentUrl.hostname, [], options.decompress);
       dispatcherHost = currentUrl.hostname;
       aiaAttempted = false;
     }
@@ -237,7 +243,11 @@ export const proxyRequest = async (
         aiaAttempted = true;
         const extras = await getTlsCertificates(currentUrl.hostname);
         if (extras.length === 0) throw err;
-        dispatcher = makeDispatcher(extras, options.decompress);
+        dispatcher = makeDispatcher(
+          currentUrl.hostname,
+          extras,
+          options.decompress
+        );
         result = await doRequest();
       } else {
         throw err;
