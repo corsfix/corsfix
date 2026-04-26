@@ -2,12 +2,12 @@ import { Request } from "hyper-express";
 import { EnvHttpProxyAgent, Dispatcher, interceptors, request } from "undici";
 import tls from "tls";
 import { getSecretsMap } from "./services/secretService";
-import ipaddr from "ipaddr.js";
 import { UserV2Entity } from "../models/UserV2Entity";
 import { getConfig } from "./config";
 import { Readable } from "stream";
 import { ApiKeyUser } from "./services/apiKeyService";
 import { getTlsCertificates, isChainError } from "./services/tlsService";
+import { ssrfInterceptor } from "./ssrfInterceptor";
 
 interface ProxyRequest {
   url: URL;
@@ -188,37 +188,7 @@ const makeDispatcher = (
   );
 
   const interceptorList = [
-    (dispatch: Dispatcher.Dispatch) => {
-      return (
-        opts: Dispatcher.DispatchOptions,
-        handler: Dispatcher.DispatchHandler
-      ) => {
-        const { origin } = opts;
-        const url = new URL(origin || "");
-
-        if (!["http:", "https:"].includes(url.protocol)) {
-          opts.origin = `http://127.0.0.1`;
-          opts.path = "/error";
-        }
-
-        const address = url.hostname.replace(/^\[|\]$/g, "");
-        const range = ipaddr.parse(address).range();
-        if (
-          [
-            "unspecified",
-            "linkLocal",
-            "loopback",
-            "private",
-            "reserved",
-          ].includes(range)
-        ) {
-          opts.origin = `http://127.0.0.1`;
-          opts.path = "/error";
-        }
-
-        return dispatch(opts, handler);
-      };
-    },
+    ssrfInterceptor,
     interceptors.dns({
       dualStack: false,
     }),

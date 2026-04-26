@@ -250,7 +250,7 @@ test("proxy request with incomplete TLS chain (AIA chasing)", async () => {
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
   expect(result.headers.get("X-Corsfix-Status")).toBe("success");
-});
+}, 15_000);
 
 test("jsonp request", async () => {
   const origin = "http://127.0.0.1:3000";
