@@ -238,6 +238,20 @@ test("proxy request with redirect if 3xx (relative)", async () => {
   expect(result.headers.get("X-Corsfix-Status")).toBe("success");
 });
 
+test("proxy request with incomplete TLS chain (AIA chasing)", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://incomplete-chain.badssl.com/`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/${targetUrl}`, {
+    headers: {
+      Origin: origin,
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+  expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+}, 15_000);
+
 test("jsonp request", async () => {
   const origin = "http://127.0.0.1:3000";
   const targetUrl = `https://httpbin.agrd.workers.dev/get`;

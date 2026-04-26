@@ -1,11 +1,13 @@
 import { Request } from "hyper-express";
 import { EnvHttpProxyAgent, Dispatcher, interceptors, request } from "undici";
+import tls from "tls";
 import { getSecretsMap } from "./services/secretService";
-import ipaddr from "ipaddr.js";
 import { UserV2Entity } from "../models/UserV2Entity";
 import { getConfig } from "./config";
 import { Readable } from "stream";
 import { ApiKeyUser } from "./services/apiKeyService";
+import { getTlsCertificates, isChainError } from "./services/tlsService";
+import { ssrfInterceptor } from "./ssrfInterceptor";
 
 interface ProxyRequest {
   url: URL;
@@ -172,63 +174,75 @@ export interface ProxyRequestOptions {
   maxRedirects?: number;
 }
 
-export const proxyRequest = async (
-  url: URL,
-  options: ProxyRequestOptions
-): Promise<Dispatcher.ResponseData<any>> => {
+const makeDispatcher = (
+  extraCAs: string[] = [],
+  decompress = false
+): Dispatcher => {
+  const base = new EnvHttpProxyAgent(
+    extraCAs.length > 0
+      ? {
+          connect: { ca: [...tls.rootCertificates, ...extraCAs] },
+          requestTls: { ca: [...tls.rootCertificates, ...extraCAs] },
+        }
+      : undefined
+  );
+
   const interceptorList = [
-    (dispatch: Dispatcher.Dispatch) => {
-      return (
-        opts: Dispatcher.DispatchOptions,
-        handler: Dispatcher.DispatchHandler
-      ) => {
-        const { origin } = opts;
-        const url = new URL(origin || "");
-
-        if (!["http:", "https:"].includes(url.protocol)) {
-          opts.origin = `http://127.0.0.1`;
-          opts.path = "/error";
-        }
-
-        const address = url.hostname.replace(/^\[|\]$/g, "");
-        const range = ipaddr.parse(address).range();
-        if (
-          [
-            "unspecified",
-            "linkLocal",
-            "loopback",
-            "private",
-            "reserved",
-          ].includes(range)
-        ) {
-          opts.origin = `http://127.0.0.1`;
-          opts.path = "/error";
-        }
-
-        return dispatch(opts, handler);
-      };
-    },
+    ssrfInterceptor,
     interceptors.dns({
       dualStack: false,
     }),
   ];
-  if (options.decompress) {
+  if (decompress) {
     interceptorList.unshift(interceptors.decompress());
   }
 
-  const dispatcher = new EnvHttpProxyAgent().compose(interceptorList);
+  return base.compose(interceptorList);
+};
+
+export const proxyRequest = async (
+  url: URL,
+  options: ProxyRequestOptions
+): Promise<Dispatcher.ResponseData<any>> => {
   const maxRedirections = options.maxRedirects ?? 0;
   let currentUrl = url;
   let redirectCount = 0;
+  let dispatcher = makeDispatcher([], options.decompress);
+  let dispatcherHost = currentUrl.hostname;
+  let aiaAttempted = false;
 
-  while (redirectCount <= maxRedirections) {
-    const result = await request(currentUrl, {
+  const doRequest = () =>
+    request(currentUrl, {
       method: options.method,
       body: options.body,
       headers: options.headers,
       signal: options.signal,
       dispatcher: dispatcher,
     });
+
+  while (redirectCount <= maxRedirections) {
+    // Reset per-host: AIA-fetched intermediates and retry budget should not
+    // leak across hostnames in a redirect chain.
+    if (currentUrl.hostname !== dispatcherHost) {
+      dispatcher = makeDispatcher([], options.decompress);
+      dispatcherHost = currentUrl.hostname;
+      aiaAttempted = false;
+    }
+
+    let result;
+    try {
+      result = await doRequest();
+    } catch (err) {
+      if (isChainError(err) && !aiaAttempted) {
+        aiaAttempted = true;
+        const extras = await getTlsCertificates(currentUrl.hostname);
+        if (extras.length === 0) throw err;
+        dispatcher = makeDispatcher(extras, options.decompress);
+        result = await doRequest();
+      } else {
+        throw err;
+      }
+    }
 
     if (300 <= result.statusCode && result.statusCode <= 399) {
       const location = result.headers.location;
