@@ -208,6 +208,7 @@ export const proxyRequest = async (
   let currentUrl = url;
   let redirectCount = 0;
   let dispatcher = makeDispatcher([], options.decompress);
+  let dispatcherHost = currentUrl.hostname;
   let aiaAttempted = false;
 
   const doRequest = () =>
@@ -220,6 +221,14 @@ export const proxyRequest = async (
     });
 
   while (redirectCount <= maxRedirections) {
+    // Reset per-host: AIA-fetched intermediates and retry budget should not
+    // leak across hostnames in a redirect chain.
+    if (currentUrl.hostname !== dispatcherHost) {
+      dispatcher = makeDispatcher([], options.decompress);
+      dispatcherHost = currentUrl.hostname;
+      aiaAttempted = false;
+    }
+
     let result;
     try {
       result = await doRequest();
