@@ -42,6 +42,8 @@ services:
       - REDIS_URI=redis://default:${REDIS_PASSWORD:-corsfix}@redis
       - KEK_VERSION_1=${KEK_VERSION_1}
       - APP_DOMAIN=${APP_DOMAIN}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      - ALLOWED_TARGETS=${ALLOWED_TARGETS:-}
   caddy:
     image: caddy:2-alpine
     restart: always
