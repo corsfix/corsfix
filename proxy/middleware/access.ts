@@ -9,7 +9,15 @@ import { CorsfixRequest, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
-import { DEFAULT_PROXY_HOSTNAME, IS_SELFHOST, SELFHOST_RPM, TEXT_ONLY_HOSTNAME, trialLimit } from "../config/constants";
+import {
+  ALLOWED_ORIGINS,
+  ALLOWED_TARGETS,
+  DEFAULT_PROXY_HOSTNAME,
+  IS_SELFHOST,
+  SELFHOST_RPM,
+  TEXT_ONLY_HOSTNAME,
+  trialLimit,
+} from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
@@ -30,6 +38,11 @@ const isDefaultProxy = (req: CorsfixRequest): boolean => {
   return getHostname(req) === DEFAULT_PROXY_HOSTNAME;
 };
 
+const isEnvAllowlisted = (origin_domain: string) =>
+  IS_SELFHOST &&
+  ALLOWED_ORIGINS.length > 0 &&
+  ALLOWED_ORIGINS.includes(origin_domain);
+
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
   const target_domain = req.ctx_target_domain!;
@@ -45,6 +58,19 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       key: req.header("x-real-ip") || req.ip,
       rpm: 60,
       local: true,
+    };
+  } else if (isEnvAllowlisted(origin_domain)) {
+    const allowedTargets =
+      ALLOWED_TARGETS.length > 0 ? ALLOWED_TARGETS : ["*"];
+    if (!isDomainAllowed(target_domain, allowedTargets)) {
+      return sendCorsfixError(res, "target_not_allowed", {
+        domain: target_domain,
+      });
+    }
+    req.ctx_user_id = "env-allowlist";
+    rateLimitConfig = {
+      key: req.header("x-real-ip") || req.ip,
+      rpm: SELFHOST_RPM,
     };
   } else {
     let user;
