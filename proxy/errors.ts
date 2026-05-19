@@ -79,7 +79,7 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
   },
   payload_too_large: {
     status: 413,
-    message: "The request payload exceeds the maximum allowed size (5MB)",
+    message: "The request payload exceeds the maximum allowed size",
     if_you_are_admin:
       "Reduce your request payload size or contact support for higher limits",
     if_you_are_user: "Please contact the website owner about this issue",

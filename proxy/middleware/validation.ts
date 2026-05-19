@@ -91,7 +91,7 @@ export const validatePayloadSize = (
   const contentLengthHeader = req.header("content-length");
   if (contentLengthHeader) {
     const contentLength = parseInt(contentLengthHeader, 10);
-    if (!isNaN(contentLength) && contentLength > 5 * 1024 * 1024) {
+    if (!isNaN(contentLength) && contentLength > 30 * 1024 * 1024) {
       return sendCorsfixError(res, "payload_too_large");
     }
   }
