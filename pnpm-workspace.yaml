@@ -1,3 +1,7 @@
 packages:
   - "app"
   - "proxy"
+
+onlyBuiltDependencies:
+  - esbuild
+  - msw
