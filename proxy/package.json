@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "tsx watch index.ts",
     "build": "tsc",
@@ -33,11 +34,5 @@
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^3.2.4"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "msw"
-    ]
   }
 }
