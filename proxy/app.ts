@@ -26,7 +26,7 @@ const ONE_MEGABYTE = 1024 * 1024;
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 export const app = new Server({
-  max_body_length: 10 * 1024 * 1024,
+  max_body_length: 40 * 1024 * 1024,
   fast_abort: true,
 });
 
