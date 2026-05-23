@@ -26,3 +26,14 @@ export const SELFHOST_RPM = parseRPM(process.env.RPM);
 export const TEXT_ONLY_HOSTNAME = process.env.TEXT_ONLY_HOSTNAME;
 
 export const DEFAULT_PROXY_HOSTNAME = process.env.DEFAULT_PROXY_HOSTNAME;
+
+const parseDomainList = (value: string | undefined): string[] => {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean);
+};
+
+export const ALLOWED_ORIGINS = parseDomainList(process.env.ALLOWED_ORIGINS);
+export const ALLOWED_TARGETS = parseDomainList(process.env.ALLOWED_TARGETS);
