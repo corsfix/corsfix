@@ -8,6 +8,7 @@ Corsfix is a pnpm monorepo containing the following packages:
 
 - **app** (Next.js) - The dashboard
 - **proxy** (HyperExpress) - The CORS proxy server
+- **sdk** (npm package `corsfix`) - The JavaScript client library
 
 ## Prerequisites
 

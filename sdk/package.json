@@ -1,0 +1,34 @@
+{
+  "name": "corsfix",
+  "version": "1.0.8",
+  "description": "Corsfix CORS proxy JavaScript client library",
+  "main": "index.js",
+  "type": "module",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "unpkg": "corsfix.js",
+  "jsdelivr": "corsfix.js",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "corsfix.js",
+    "fetch.js"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cors",
+    "proxy",
+    "fetch",
+    "api"
+  ],
+  "author": "Corsfix",
+  "license": "MIT"
+}
