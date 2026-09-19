@@ -52,15 +52,19 @@ const proxiedUrlFor = (targetUrl, proxyUrl) => {
 
 // Re-creates a Request against the proxied URL, carrying over everything a
 // caller may have set on it. Mirrors what native fetch(request, init) sees.
+// "navigate" is the one mode the Request constructor refuses, so it is left
+// to default; every other setting is copied verbatim.
 const retarget = (request, url) =>
   new Request(url, {
     method: request.method,
     headers: request.headers,
     body: request.body,
+    ...(request.mode !== "navigate" ? { mode: request.mode } : {}),
     credentials: request.credentials,
     cache: request.cache,
     redirect: request.redirect,
     referrer: request.referrer,
+    referrerPolicy: request.referrerPolicy,
     integrity: request.integrity,
     keepalive: request.keepalive,
     signal: request.signal,

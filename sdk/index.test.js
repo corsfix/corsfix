@@ -113,6 +113,35 @@ describe("Request input", () => {
     expect(headers.get("x-from-request")).toBeNull();
   });
 
+  test("preserves every fetch setting on the Request", async () => {
+    const controller = new AbortController();
+    const req = new Request("https://example.com/", {
+      mode: "no-cors",
+      credentials: "include",
+      cache: "no-store",
+      redirect: "manual",
+      referrer: "https://referrer.example/",
+      referrerPolicy: "no-referrer",
+      keepalive: true,
+      signal: controller.signal,
+    });
+
+    await corsfix.fetch(req);
+
+    const sent = lastCall().url;
+    expect(sent.mode).toBe("no-cors");
+    expect(sent.credentials).toBe("include");
+    expect(sent.cache).toBe("no-store");
+    expect(sent.redirect).toBe("manual");
+    expect(sent.referrer).toBe("https://referrer.example/");
+    expect(sent.referrerPolicy).toBe("no-referrer");
+    expect(sent.keepalive).toBe(true);
+    // Request wraps signals in a dependent signal, so check propagation.
+    expect(sent.signal.aborted).toBe(false);
+    controller.abort();
+    expect(sent.signal.aborted).toBe(true);
+  });
+
   test("honours a custom proxyUrl with a Request input", async () => {
     await corsfix.fetch(new Request("https://example.com"), {
       corsfix: { proxyUrl: "https://lite.corsfix.com" },
