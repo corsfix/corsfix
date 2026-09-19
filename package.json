@@ -9,6 +9,8 @@
     "dev:proxy": "pnpm --filter proxy dev",
     "build:proxy": "pnpm --filter proxy build",
     "start:proxy": "pnpm --filter proxy start",
-    "test:proxy": "pnpm --filter proxy test"
+    "test:proxy": "pnpm --filter proxy test",
+    "test:sdk": "pnpm --filter corsfix test",
+    "build:sdk": "pnpm --filter corsfix build"
   }
 }
