@@ -1,15 +1,15 @@
 {
   "name": "corsfix",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "description": "Corsfix CORS proxy JavaScript client library",
   "main": "index.js",
   "type": "module",
   "types": "index.d.ts",
   "exports": {
     ".": {
+      "types": "./index.d.ts",
       "import": "./index.js",
-      "require": "./index.js",
-      "types": "./index.d.ts"
+      "require": "./index.js"
     }
   },
   "unpkg": "corsfix.js",
@@ -17,11 +17,12 @@
   "files": [
     "index.js",
     "index.d.ts",
-    "corsfix.js",
-    "fetch.js"
+    "corsfix.js"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "esbuild browser.js --bundle --format=iife --outfile=corsfix.js",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
   },
   "keywords": [
     "cors",
@@ -30,5 +31,9 @@
     "api"
   ],
   "author": "Corsfix",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "vitest": "^3.2.4"
+  }
 }
