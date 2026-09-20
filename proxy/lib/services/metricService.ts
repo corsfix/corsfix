@@ -3,6 +3,7 @@ import { Subject } from "rxjs";
 import { bufferTime } from "rxjs/operators";
 import { Metric } from "../../types/api";
 import { CacheableMemory } from "cacheable";
+import { flushPendingFreeTierMetrics } from "./freeTierService";
 
 interface MetricEvent {
   userId: string;
@@ -92,13 +93,13 @@ const processBatchMetrics = async (events: MetricEvent[]): Promise<void> => {
 export const registerMetricShutdownHandlers = () => {
   process.on("SIGINT", async () => {
     console.log("Received SIGINT, shutting down gracefully...");
-    await flushPendingMetrics();
+    await Promise.all([flushPendingMetrics(), flushPendingFreeTierMetrics()]);
     process.exit(0);
   });
 
   process.on("SIGTERM", async () => {
     console.log("Received SIGTERM, shutting down gracefully...");
-    await flushPendingMetrics();
+    await Promise.all([flushPendingMetrics(), flushPendingFreeTierMetrics()]);
     process.exit(0);
   });
 };

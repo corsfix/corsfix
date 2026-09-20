@@ -25,6 +25,18 @@ const ONE_MEGABYTE = 1024 * 1024;
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
+// When the upstream announces its size, reject a free tier response that
+// would push the domain past its monthly allowance instead of streaming it.
+const exceedsFreeTierRemaining = (
+  req: CorsfixRequest,
+  contentLength: number | null | undefined
+): boolean => {
+  if (req.ctx_free_tier_remaining === undefined) return false;
+  if (contentLength === null || contentLength === undefined) return false;
+  if (!Number.isFinite(contentLength)) return false;
+  return contentLength > req.ctx_free_tier_remaining;
+};
+
 export const app = new Server({
   max_body_length: 40 * 1024 * 1024,
   fast_abort: true,
@@ -68,7 +80,7 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
   const api_key_request = req.ctx_api_key_request!;
 
   const cacheHeader = req.header("x-corsfix-cache");
-  if (cacheHeader !== undefined) {
+  if (cacheHeader !== undefined && !req.ctx_free_tier) {
     req.ctx_cache_duration = parseCacheDuration(cacheHeader);
     if (req.ctx_min_cache_ttl && req.ctx_cache_duration < req.ctx_min_cache_ttl) {
       req.ctx_cache_duration = req.ctx_min_cache_ttl;
@@ -105,7 +117,15 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
       targetUrl,
       filteredHeaders,
     };
-    if (!isLocalDomain(origin_domain) && !api_key_request) {
+    // Secrets are a Standard plan feature. Skip the application lookup on
+    // the free tier and on Lite (the text-only host), leaving any
+    // {{variable}} placeholders untouched.
+    if (
+      !isLocalDomain(origin_domain) &&
+      !api_key_request &&
+      !req.ctx_free_tier &&
+      !req.ctx_text_only
+    ) {
       const application = await getApplication(origin_domain);
       ({ url: processedUrl, headers: processedHeaders } = await processRequest(
         targetUrl,
@@ -153,6 +173,16 @@ app.any("/*", async (req: CorsfixRequest, res: Response) => {
         "Cache-Control",
         `public, max-age=${req.ctx_cache_duration}`
       );
+      // Access-Control-Allow-Origin echoes the requester, so a shared cache
+      // must keep one copy per origin or it will hand site A's response
+      // (stamped with A's origin) to site B and break CORS there.
+      responseHeaders.set("Vary", "Origin");
+    } else {
+      // Unless caching was requested, never let the browser (or CDN) reuse a
+      // proxied response. Upstream Last-Modified/ETag headers would otherwise
+      // trigger heuristic caching and skip the proxy entirely.
+      responseHeaders.delete("expires");
+      responseHeaders.set("Cache-Control", "no-store");
     }
 
     if (callback) {
@@ -191,6 +221,22 @@ const corsHandler = async (
   responseHeaders: Headers
 ) => {
   // CORS request
+  const contentLengthHeader =
+    apiResponse.headers["content-length"]?.toString();
+  let contentLength: number | undefined = undefined;
+  if (contentLengthHeader !== undefined) {
+    const parsedLength = parseInt(contentLengthHeader, 10);
+    if (Number.isFinite(parsedLength) && parsedLength > 0) {
+      contentLength = parsedLength;
+    }
+  }
+
+  if (exceedsFreeTierRemaining(req, contentLength)) {
+    return sendCorsfixError(res, "free_tier_transfer_limit", {
+      domain: req.ctx_origin_domain,
+    });
+  }
+
   res.status(apiResponse.statusCode);
   res.header("X-Corsfix-Status", "success", true);
 
@@ -199,16 +245,6 @@ const corsHandler = async (
   }
 
   if (apiResponse.body) {
-    const contentLengthHeader =
-      apiResponse.headers["content-length"]?.toString();
-    let contentLength: number | undefined = undefined;
-    if (contentLengthHeader !== undefined) {
-      const parsedLength = parseInt(contentLengthHeader, 10);
-      if (Number.isFinite(parsedLength) && parsedLength > 0) {
-        contentLength = parsedLength;
-      }
-    }
-
     req.ctx_bytes = 0;
     const counter = new Transform({
       transform(chunk, _encoding, callback) {
@@ -251,6 +287,12 @@ const textOnlyHandler = async (
     contentLength > ONE_MEGABYTE
   ) {
     return sendCorsfixError(res, "response_too_large");
+  }
+
+  if (exceedsFreeTierRemaining(req, contentLength)) {
+    return sendCorsfixError(res, "free_tier_transfer_limit", {
+      domain: req.ctx_origin_domain,
+    });
   }
 
   res.status(apiResponse.statusCode);

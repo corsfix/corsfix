@@ -105,26 +105,26 @@ export const getUserId = (session: Session | null): string => {
   return session.user.legacy_id || session.user.id || "";
 };
 
-export const getTrialEnds = (session: Session | null): Date => {
-  if (!session || !session.user) {
-    return new Date("1970-01-01T00:00:00.000Z");
-  }
-
-  return session.user.trial_ends_at
-    ? new Date(session.user.trial_ends_at)
-    : new Date("2025-10-05T00:00:00.000Z"); // Default for existing users
-};
-
-export const isTrialActive = (session: Session | null): boolean => {
-  if (!session || !session.user) {
+// Trial status is read from the user document (via getActiveSubscription),
+// not the session JWT, so a trial activated moments ago is seen immediately.
+export const isTrialActive = (
+  trialEndsAt: Date | string | null | undefined
+): boolean => {
+  if (!trialEndsAt) {
     return false;
   }
-
-  const now = new Date();
-  const trialEndDate = getTrialEnds(session);
-
-  return now < trialEndDate;
+  return new Date() < new Date(trialEndsAt);
 };
+
+export const formatTrialEnds = (
+  trialEndsAt: Date | string | null | undefined
+): string =>
+  trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : "";
 
 export function formatBytes(bytes: number, decimals: number = 2): string {
   if (!bytes) return "0 Bytes";

@@ -1,6 +1,6 @@
 {
   "name": "corsfix",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Corsfix CORS proxy JavaScript client library",
   "main": "index.js",
   "type": "module",

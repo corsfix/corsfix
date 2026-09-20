@@ -1,7 +1,7 @@
-import { IS_SELFHOST, trialLimit } from "@/config/constants";
+import { IS_SELFHOST, freeTierLimit, trialLimit } from "@/config/constants";
 import { getActiveSubscription } from "./subscriptionService";
 import { countApplication } from "./applicationService";
-import { AuthorizationResult } from "@/types/api";
+import { AuthorizationResult, PlanTier } from "@/types/api";
 import { isTrialActive } from "../utils";
 import { Session } from "next-auth";
 
@@ -21,6 +21,23 @@ export async function authorize(
   }
 }
 
+export async function getPlanTier(
+  session: Session | null
+): Promise<PlanTier | null> {
+  if (!session?.user.id) {
+    return null;
+  }
+
+  const subscription = await getActiveSubscription(session.user.id);
+  if (subscription.active) {
+    return "subscription";
+  }
+  if (isTrialActive(subscription.trial_ends_at)) {
+    return "trial";
+  }
+  return "free";
+}
+
 async function canAddApplications(
   session: Session | null
 ): Promise<AuthorizationResult> {
@@ -37,7 +54,7 @@ async function canAddApplications(
   }
 
   const subscription = await getActiveSubscription(session.user.id);
-  const isTrial = isTrialActive(session);
+  const isTrial = isTrialActive(subscription.trial_ends_at);
 
   if (subscription.active) {
     return {
@@ -50,9 +67,12 @@ async function canAddApplications(
       message: `Max ${trialLimit.app_count} applications during trial. Upgrade for higher limits.`,
     };
   } else {
+    // Free tier: one registered application per account. Other domains can
+    // still use the proxy through the SDK with the unregistered allowance.
+    const applicationCount = await countApplication(session.user.id);
     return {
-      allowed: false,
-      message: "Please upgrade to continue using Corsfix.",
+      allowed: applicationCount < freeTierLimit.app_count,
+      message: `The free tier includes ${freeTierLimit.app_count} application. Upgrade for more.`,
     };
   }
 }
@@ -73,7 +93,16 @@ async function canManageSecrets(
   }
 
   const subscription = await getActiveSubscription(session.user.id);
-  const isTrial = isTrialActive(session);
+  const isTrial = isTrialActive(subscription.trial_ends_at);
+
+  // Secrets are a Standard plan feature: not on Lite, not on the free tier.
+  if (subscription.isLite) {
+    return {
+      allowed: false,
+      message:
+        "Secrets variables are not included in the Lite plan. Upgrade to a Standard plan to use this feature.",
+    };
+  }
 
   if (subscription.active || isTrial) {
     return {
@@ -82,7 +111,8 @@ async function canManageSecrets(
   } else {
     return {
       allowed: false,
-      message: "Please upgrade to continue using Corsfix.",
+      message:
+        "Secrets variables are not available on the free tier. Upgrade to use this feature.",
     };
   }
 }

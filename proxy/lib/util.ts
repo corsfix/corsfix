@@ -23,6 +23,9 @@ export const isDomainAllowed = (
   );
 };
 
+export const getClientIp = (req: Request): string =>
+  req.header("x-real-ip") || req.ip;
+
 export const isLocalDomain = (domain: string): boolean => {
   const localDomains = ["localhost", "corsfix.com", "app.corsfix.com"];
 

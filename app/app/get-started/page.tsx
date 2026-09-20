@@ -11,10 +11,12 @@ import Nav from "@/components/nav";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { ExternalLink, NotepadText } from "lucide-react";
 import { ApiKeyButton } from "@/components/api-key-button";
+import GetStartedCode from "@/components/get-started-code";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { getProxyDomain, getTrialEnds, isTrialActive } from "@/lib/utils";
-import { IS_CLOUD } from "@/config/constants";
+import { formatTrialEnds, getProxyDomain, isTrialActive } from "@/lib/utils";
+import { freeTierLimit, IS_CLOUD } from "@/config/constants";
+import { formatBytes } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Get Started | Corsfix Dashboard",
@@ -25,26 +27,27 @@ export default async function GetStarted() {
   let subscription, planDescription;
 
   try {
-    const isTrial = isTrialActive(session);
-
     if (!session?.user.id) {
       throw Error("Unauthenticated.");
     }
     subscription = await getActiveSubscription(session.user.id);
+    const isTrial = isTrialActive(subscription.trial_ends_at);
 
     if (subscription.active) {
       planDescription =
         "You have access to use Corsfix on live web applications.";
     } else if (isTrial) {
-      const trialEnds = getTrialEnds(session);
-      const formattedDate = trialEnds.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+      const formattedDate = formatTrialEnds(subscription.trial_ends_at);
       subscription.name = `trial (until ${formattedDate})`;
       subscription.label = `Trial (until ${formattedDate})`;
       planDescription =
         "Try all the features for free. Upgrade to keep using Corsfix on live web applications.";
+    } else if (IS_CLOUD) {
+      subscription.name = "free";
+      subscription.label = "Free";
+      planDescription = `Use Corsfix in production with the Corsfix SDK (CDN or NPM). Unlimited requests and ${formatBytes(
+        freeTierLimit.registeredBytes
+      )} data transfer included. Upgrade for more.`;
     } else {
       planDescription = "Upgrade to use Corsfix on live web applications.";
     }
@@ -92,8 +95,8 @@ export default async function GetStarted() {
                     Use Corsfix in your website
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Add the proxy in your request and integrate with your
-                    existing code.
+                    Use the SDK, add the proxy URL to your requests, or drop
+                    in the CDN script.
                   </p>
                   <div className="flex flex-wrap my-6 md:mb-0 gap-2">
                     <Link
@@ -120,16 +123,13 @@ export default async function GetStarted() {
                     </Link>
                   </div>
                 </div>
-                <div className="w-full md:w-1/2 flex items-center overflow-x-auto">
-                  <pre className="overflow-x-auto text-sm w-full border px-2 md:px-3 py-4 rounded-lg">
-                    <code lang="javascript">
-                      {`// Example usage with fetch
-const url = "https://api.example.com"
-fetch("https://${
-                        IS_CLOUD ? "proxy.corsfix.com" : getProxyDomain()
-                      }/?" + url);`}
-                    </code>
-                  </pre>
+                <div className="w-full md:w-1/2 overflow-x-auto">
+                  <GetStartedCode
+                    proxyUrl={`https://${
+                      IS_CLOUD ? "proxy.corsfix.com" : getProxyDomain()
+                    }`}
+                    customProxy={!IS_CLOUD}
+                  />
                 </div>
               </div>
             </div>

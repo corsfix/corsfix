@@ -1,10 +1,22 @@
-import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
 import { request } from "undici";
 import { app } from "./app";
 import * as apiKeyService from "./lib/services/apiKeyService";
 import * as configService from "./lib/config";
 import * as metricService from "./lib/services/metricService";
 import * as cacheService from "./lib/services/cacheService";
+import * as applicationService from "./lib/services/applicationService";
+import * as userService from "./lib/services/userService";
+import * as freeTierService from "./lib/services/freeTierService";
+import * as concurrencyService from "./lib/services/concurrencyService";
 
 const PORT = 8090;
 const TEXT_ONLY_HOST = "lite.test.local";
@@ -180,6 +192,32 @@ test("proxy request (query string)", async () => {
   expect(result.status).toBe(200);
   expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
   expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+});
+
+test("cached responses vary by origin", async () => {
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+  const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+    headers: {
+      Origin: "http://127.0.0.1:3000",
+      "x-corsfix-key": "cfx_valid_test_key",
+      "x-corsfix-cache": "1h",
+    },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Cache-Control")).toBe("public, max-age=3600");
+  expect(result.headers.get("Vary")).toBe("Origin");
+});
+
+test("proxy response is not cacheable unless caching is requested", async () => {
+  const origin = "http://127.0.0.1:3000";
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+
+  const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+    headers: { Origin: origin },
+  });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Cache-Control")).toBe("no-store");
+  expect(result.headers.get("Expires")).toBeNull();
 });
 
 test("proxy request (query param)", async () => {
@@ -520,5 +558,206 @@ describe("Text-only mode", () => {
     });
 
     expect(result.headers["x-corsfix-status"]).toBe("response_not_text");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Free tier
+// ---------------------------------------------------------------------------
+
+const FREE_UNREGISTERED_DOMAIN = "unregistered-free.example";
+const FREE_REGISTERED_DOMAIN = "registered-free.example";
+
+vi.spyOn(applicationService, "getApplication").mockImplementation(
+  async (domain: string) => {
+    if (domain === FREE_REGISTERED_DOMAIN) {
+      return {
+        id: "free-app-id",
+        user_id: "free-user-id",
+        origin_domains: [FREE_REGISTERED_DOMAIN],
+        target_domains: ["*"],
+      };
+    }
+    return null;
+  }
+);
+
+vi.spyOn(userService, "getUser").mockImplementation(async (userId: string) => {
+  if (userId === "free-user-id") {
+    return {
+      id: "free-user-id",
+      email: "free@example.com",
+      subscription_active: false,
+      trial_ends_at: new Date("2000-01-01"),
+    } as any;
+  }
+  return null;
+});
+
+const getFreeTierBytesSpy = vi
+  .spyOn(freeTierService, "getFreeTierBytes")
+  .mockResolvedValue(0);
+const recordFreeTierBytesSpy = vi
+  .spyOn(freeTierService, "recordFreeTierBytes")
+  .mockImplementation(() => {});
+const admitFreeTierIpSpy = vi
+  .spyOn(concurrencyService, "admitFreeTierIp")
+  .mockResolvedValue(true);
+
+describe("free tier", () => {
+  const targetUrl = `https://httpbin.agrd.workers.dev/get`;
+  // What the SDK sends: the url= form plus the sdk=1 flag.
+  const sdkUrl = (target: string) =>
+    `http://127.0.0.1:${PORT}/?sdk=1&url=${encodeURIComponent(target)}`;
+
+  // The per-IP rate limiter is in-memory and shared across the whole file,
+  // so give every free tier request its own client IP.
+  let ipCounter = 0;
+  const freeHeaders = (extra: Record<string, string> = {}) => ({
+    "x-real-ip": `203.0.113.${++ipCounter}`,
+    ...extra,
+  });
+
+  beforeEach(() => {
+    getFreeTierBytesSpy.mockResolvedValue(0);
+    admitFreeTierIpSpy.mockResolvedValue(true);
+    recordFreeTierBytesSpy.mockClear();
+    batchCountMetricsSpy.mockClear();
+  });
+
+  test("unregistered domain without the sdk flag is rejected", async () => {
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: freeHeaders({ Origin: `https://${FREE_UNREGISTERED_DOMAIN}` }),
+    });
+    expect(result.status).toBe(403);
+    expect(result.headers.get("X-Corsfix-Status")).toBe(
+      "domain_not_registered"
+    );
+  });
+
+  test("unregistered domain with the sdk flag is served and metered", async () => {
+    const origin = `https://${FREE_UNREGISTERED_DOMAIN}`;
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({ Origin: origin }),
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+    expect(result.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+    expect(result.headers.get("X-RateLimit-Limit")).toBe("60");
+    await result.text();
+
+    await vi.waitFor(() => {
+      expect(recordFreeTierBytesSpy).toHaveBeenCalled();
+    });
+    const [domain, bytes] = recordFreeTierBytesSpy.mock.calls[0];
+    expect(domain).toBe(FREE_UNREGISTERED_DOMAIN);
+    expect(bytes).toBeGreaterThan(0);
+    // No account behind an unregistered domain, so no user metrics.
+    expect(batchCountMetricsSpy).not.toHaveBeenCalled();
+  });
+
+  test("unregistered domain over 10MB is rejected", async () => {
+    getFreeTierBytesSpy.mockResolvedValue(10_000_000);
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({
+        Origin: `https://${FREE_UNREGISTERED_DOMAIN}`,
+      }),
+    });
+    const json = await result.json();
+    expect(result.status).toBe(403);
+    expect(result.headers.get("X-Corsfix-Status")).toBe(
+      "free_tier_transfer_limit"
+    );
+    expect(json.if_you_are_admin).toContain(FREE_UNREGISTERED_DOMAIN);
+  });
+
+  test("registered domain gets the 100MB allowance", async () => {
+    // 10MB would block an unregistered domain but not a registered one.
+    getFreeTierBytesSpy.mockResolvedValue(10_000_000);
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({
+        Origin: `https://${FREE_REGISTERED_DOMAIN}`,
+      }),
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+    await result.text();
+
+    // Registered traffic is still attributed to the owner for the dashboard.
+    await vi.waitFor(() => {
+      expect(batchCountMetricsSpy).toHaveBeenCalled();
+    });
+    expect(batchCountMetricsSpy.mock.calls[0][0]).toBe("free-user-id");
+    expect(batchCountMetricsSpy.mock.calls[0][1]).toBe(FREE_REGISTERED_DOMAIN);
+  });
+
+  test("registered domain over 100MB is rejected", async () => {
+    getFreeTierBytesSpy.mockResolvedValue(100_000_000);
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({
+        Origin: `https://${FREE_REGISTERED_DOMAIN}`,
+      }),
+    });
+    expect(result.status).toBe(403);
+    expect(result.headers.get("X-Corsfix-Status")).toBe(
+      "free_tier_transfer_limit"
+    );
+  });
+
+  test("registered domain without the sdk flag gets no_active_plan", async () => {
+    const result = await fetch(`http://127.0.0.1:${PORT}/?${targetUrl}`, {
+      headers: freeHeaders({ Origin: `https://${FREE_REGISTERED_DOMAIN}` }),
+    });
+    expect(result.status).toBe(403);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("no_active_plan");
+  });
+
+  test("concurrency limit returns 429", async () => {
+    admitFreeTierIpSpy.mockResolvedValue(false);
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({
+        Origin: `https://${FREE_UNREGISTERED_DOMAIN}`,
+      }),
+    });
+    expect(result.status).toBe(429);
+    expect(result.headers.get("X-Corsfix-Status")).toBe(
+      "free_tier_concurrency_limit"
+    );
+    expect(admitFreeTierIpSpy).toHaveBeenCalledWith(
+      FREE_UNREGISTERED_DOMAIN,
+      expect.any(String),
+      1
+    );
+  });
+
+  test("cache header is silently ignored", async () => {
+    const result = await fetch(sdkUrl(targetUrl), {
+      headers: freeHeaders({
+        Origin: `https://${FREE_UNREGISTERED_DOMAIN}`,
+        "x-corsfix-cache": "true",
+      }),
+    });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("X-Corsfix-Status")).toBe("success");
+    expect(result.headers.get("Cache-Control") ?? "").not.toMatch(/max-age/);
+    await result.text();
+  });
+
+  test("known content length past the remaining allowance is rejected", async () => {
+    // 100 bytes left this month, target announces 2000 bytes.
+    getFreeTierBytesSpy.mockResolvedValue(10_000_000 - 100);
+    const result = await fetch(
+      sdkUrl("https://httpbin.agrd.workers.dev/bytes/2000"),
+      {
+        headers: freeHeaders({
+          Origin: `https://${FREE_UNREGISTERED_DOMAIN}`,
+          }),
+      }
+    );
+    expect(result.status).toBe(403);
+    expect(result.headers.get("X-Corsfix-Status")).toBe(
+      "free_tier_transfer_limit"
+    );
+    expect(recordFreeTierBytesSpy).not.toHaveBeenCalled();
   });
 });

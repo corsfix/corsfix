@@ -1,5 +1,7 @@
 import { Request } from "hyper-express";
 
+export type FreeTier = "unregistered" | "registered";
+
 export interface CorsfixRequest extends Request {
   ctx_url?: URL;
   ctx_origin?: string;
@@ -12,6 +14,8 @@ export interface CorsfixRequest extends Request {
   ctx_text_only?: boolean;
   ctx_min_cache_ttl?: number;
   ctx_bytes?: number;
+  ctx_free_tier?: FreeTier;
+  ctx_free_tier_remaining?: number;
 }
 
 export interface Application {

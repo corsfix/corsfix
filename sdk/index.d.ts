@@ -28,11 +28,14 @@ export interface CorsfixRequestInit extends RequestInit {
  */
 export type CorsfixErrorCode =
   | "domain_not_registered"
+  | "free_tier_concurrency_limit"
+  | "free_tier_transfer_limit"
   | "invalid_api_key"
   | "invalid_origin"
   | "invalid_referer"
   | "invalid_subscription"
   | "invalid_url"
+  | "no_active_plan"
   | "payload_too_large"
   | "plan_mismatch"
   | "rate_limited"
@@ -43,7 +46,6 @@ export type CorsfixErrorCode =
   | "target_not_found"
   | "target_unreachable"
   | "timeout"
-  | "trial_expired"
   | "trial_limit_reached"
   | "uncaught_error"
   | "unknown_error"

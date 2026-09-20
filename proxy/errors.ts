@@ -2,11 +2,14 @@ import { Response } from "hyper-express";
 
 export type CorsfixError =
   | "domain_not_registered"
+  | "free_tier_concurrency_limit"
+  | "free_tier_transfer_limit"
   | "invalid_api_key"
   | "invalid_origin"
   | "invalid_referer"
   | "invalid_subscription"
   | "invalid_url"
+  | "no_active_plan"
   | "payload_too_large"
   | "plan_mismatch"
   | "rate_limited"
@@ -17,7 +20,6 @@ export type CorsfixError =
   | "target_not_found"
   | "target_unreachable"
   | "timeout"
-  | "trial_expired"
   | "trial_limit_reached"
   | "uncaught_error"
   | "unknown_error"
@@ -35,8 +37,24 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
     status: 403,
     message: "This website domain hasn't been registered to use the proxy",
     if_you_are_admin:
-      "Please add your website domain ({domain}) to the dashboard to use the proxy",
+      "Please add your website domain ({domain}) to the dashboard to use the proxy, or use the Corsfix SDK to get started on the free tier (https://corsfix.com/docs/free-tier)",
     if_you_are_user: "Please contact the website owner about this issue",
+  },
+  free_tier_concurrency_limit: {
+    status: 429,
+    message: "This website has reached the free tier concurrent user limit",
+    if_you_are_admin:
+      "The free tier allows a limited number of concurrent users. Upgrade your plan to serve more users (https://app.corsfix.com/billing)",
+    if_you_are_user:
+      "This site's free plan allows one visitor at a time. Try again shortly, or ask the site owner to upgrade.",
+  },
+  free_tier_transfer_limit: {
+    status: 403,
+    message: "This website has used its free tier data transfer for this month",
+    if_you_are_admin:
+      "Register your domain ({domain}) in the dashboard for a higher free allowance, or upgrade your plan (https://app.corsfix.com/billing)",
+    if_you_are_user:
+      "This site is out of free data for the month. Ask the site owner to upgrade so it keeps working.",
   },
   invalid_api_key: {
     status: 403,
@@ -75,6 +93,13 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
     message: "Your plan does not match this proxy endpoint",
     if_you_are_admin:
       "Check that you are using the correct proxy URL for your plan",
+    if_you_are_user: "Please contact the website owner about this issue",
+  },
+  no_active_plan: {
+    status: 403,
+    message: "This website has no active plan",
+    if_you_are_admin:
+      "Upgrade your plan or activate your trial in the dashboard (https://app.corsfix.com/billing), or use the Corsfix SDK for the free tier (https://corsfix.com/docs/free-tier)",
     if_you_are_user: "Please contact the website owner about this issue",
   },
   payload_too_large: {
@@ -139,13 +164,6 @@ const errorDefinitions: Record<CorsfixError, ErrorDefinition> = {
     if_you_are_admin:
       "The target server took too long to respond - check target availability",
     if_you_are_user: "The requested resource is currently unavailable",
-  },
-  trial_expired: {
-    status: 403,
-    message: "The free trial period has ended",
-    if_you_are_admin:
-      "Please upgrade your plan to continue using the proxy (https://app.corsfix.com/billing)",
-    if_you_are_user: "Please contact the website owner about this issue",
   },
   trial_limit_reached: {
     status: 403,

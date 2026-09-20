@@ -256,11 +256,46 @@ interface TrialLimit {
   bytes: number;
   app_count: number;
   rpm: number;
+  days: number;
+  minEndsAt: Date;
 }
 
+// Activated manually from the billing page, once per account.
+//
+// minEndsAt is the amnesty cutoff for accounts that had an automatic trial
+// before manual activation shipped: a stored trial_ends_at below it does not
+// count as "used", so those accounts can activate one more trial once their
+// current one is over.
+//
+// It must be exactly the deploy day (UTC midnight) plus the trial length. Any
+// automatic trial started before deploy ends below it, and any manual
+// activation from deploy day onward ends on or after it, so activations are
+// never repeatable.
 export const trialLimit: TrialLimit = {
   bytes: 1_000_000_000,
   app_count: 3,
+  rpm: 60,
+  days: 7,
+  minEndsAt: new Date("2026-09-27T00:00:00.000Z"),
+};
+
+interface FreeTierLimit {
+  unregisteredBytes: number;
+  registeredBytes: number;
+  app_count: number;
+  origin_count: number;
+  concurrency: number;
+  rpm: number;
+}
+
+// Always-free tier, only reachable through the Corsfix SDK. Data transfer is
+// counted per origin domain per month by the proxy.
+export const freeTierLimit: FreeTierLimit = {
+  unregisteredBytes: 10_000_000,
+  registeredBytes: 100_000_000,
+  app_count: 1,
+  origin_count: 1,
+  concurrency: 1,
   rpm: 60,
 };
 
