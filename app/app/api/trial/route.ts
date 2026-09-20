@@ -20,8 +20,8 @@ export async function POST() {
 
   try {
     const trialEndsAt = await activateTrial(userId);
-    return NextResponse.json<ApiResponse<{ trial_ends_at: Date }>>({
-      data: { trial_ends_at: trialEndsAt },
+    return NextResponse.json<ApiResponse<{ trial_ends_at: string }>>({
+      data: { trial_ends_at: trialEndsAt.toISOString() },
       message: "Trial activated",
       success: true,
     });

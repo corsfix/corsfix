@@ -222,7 +222,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
       rpm = freeTierLimit.rpm;
     } else {
-      // Registered domain, but no plan, no active trial, and no SDK header.
+      // Registered domain, but no plan, no active trial, and no sdk=1 flag.
       return sendCorsfixError(res, "no_active_plan");
     }
 
