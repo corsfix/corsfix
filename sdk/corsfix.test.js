@@ -36,7 +36,9 @@ describe("CDN bundle", () => {
       expect(await res.text()).toBe("ok");
 
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe("https://proxy.corsfix.com/?https://example.com");
+      expect(url).toBe(
+        "https://proxy.corsfix.com/?sdk=1&url=https%3A%2F%2Fexample.com"
+      );
       expect(init.headers.get("x-corsfix-cache")).toBe("true");
     } finally {
       vi.unstubAllGlobals();

@@ -17,6 +17,28 @@ const dailyPeakCache = new CacheableMemory({
   lruSize: 5000,
 });
 
+// IPs already admitted for a free tier domain in the current window. Only
+// ever contains IPs that were admitted in Redis, so a local hit is safe to
+// trust without a round trip.
+const freeTierIpCache = new CacheableMemory({
+  ttl: LOCAL_CACHE_TTL_MS,
+  lruSize: 5000,
+});
+
+// Atomically admit an IP into the window's set if it is already a member or
+// the set still has room. Returns 1 when admitted, 0 when the limit is hit.
+const FREE_TIER_ADMIT_SCRIPT = `
+if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then
+  return 1
+end
+if redis.call('SCARD', KEYS[1]) < tonumber(ARGV[2]) then
+  redis.call('SADD', KEYS[1], ARGV[1])
+  redis.call('EXPIRE', KEYS[1], ARGV[3])
+  return 1
+end
+return 0
+`;
+
 const getDateKey = (): Date => {
   const date = new Date();
   return new Date(
@@ -90,4 +112,44 @@ export const trackConcurrency = (userId: string, ip: string): void => {
   localIpCache.set(cacheKey, ips);
 
   syncToRedis(userId, ip, windowKey, getDateKey());
+};
+
+export const admitFreeTierIp = async (
+  domain: string,
+  ip: string,
+  limit: number
+): Promise<boolean> => {
+  const windowKey = Math.floor(Date.now() / WINDOW_MS);
+  const cacheKey = `free:${domain}:${windowKey}`;
+
+  const ips = freeTierIpCache.get<Set<string>>(cacheKey);
+  if (ips?.has(ip)) {
+    return true;
+  }
+
+  const redis = getRedisClient();
+  if (!redis) return true;
+
+  try {
+    const result = await redis.eval(
+      FREE_TIER_ADMIT_SCRIPT,
+      1,
+      `conc:free:${domain}:${windowKey}`,
+      ip,
+      limit,
+      REDIS_KEY_TTL_SECONDS
+    );
+    if (result !== 1) {
+      return false;
+    }
+  } catch (err) {
+    // Fail open: a Redis outage should not take free tier sites down.
+    console.error("free tier concurrency check failed", err);
+    return true;
+  }
+
+  const admitted = ips ?? new Set<string>();
+  admitted.add(ip);
+  freeTierIpCache.set(cacheKey, admitted);
+  return true;
 };

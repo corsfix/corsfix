@@ -1,11 +1,12 @@
 import { Response } from "hyper-express";
 import {
+  getClientIp,
   getRpmByProductId,
   isDomainAllowed,
   isLocalDomain,
   isTrialActive,
 } from "../lib/util";
-import { CorsfixRequest, RateLimitConfig } from "../types/api";
+import { CorsfixRequest, FreeTier, RateLimitConfig } from "../types/api";
 import { getApplication } from "../lib/services/applicationService";
 import { getUserByApiKey } from "../lib/services/apiKeyService";
 import { checkRateLimit } from "../lib/services/ratelimitService";
@@ -13,15 +14,23 @@ import {
   ALLOWED_ORIGINS,
   ALLOWED_TARGETS,
   DEFAULT_PROXY_HOSTNAME,
+  IS_CLOUD,
   IS_SELFHOST,
   SELFHOST_RPM,
   TEXT_ONLY_HOSTNAME,
+  freeTierLimit,
   trialLimit,
 } from "../config/constants";
 import { getUser } from "../lib/services/userService";
 import { getMonthToDateMetrics } from "../lib/services/metricService";
 import { getConfig } from "../lib/config";
 import { sendCorsfixError } from "../errors";
+import { admitFreeTierIp } from "../lib/services/concurrencyService";
+import {
+  getFreeTierByteLimit,
+  getFreeTierBytes,
+  recordFreeTierBytes,
+} from "../lib/services/freeTierService";
 
 const getHostname = (req: CorsfixRequest): string | undefined => {
   const host = req.header("host");
@@ -43,6 +52,59 @@ const isEnvAllowlisted = (origin_domain: string) =>
   ALLOWED_ORIGINS.length > 0 &&
   ALLOWED_ORIGINS.includes(origin_domain);
 
+// Free tier is only reachable through the SDK: the SDK is what renders the
+// limit notice, so it is the only client that can turn a limit into a
+// conversion path. The SDK marks its requests with `sdk=1` in the query
+// string (a header would force a CORS preflight on every request).
+const canUseFreeTier = (req: CorsfixRequest): boolean =>
+  IS_CLOUD && req.query_parameters.sdk === "1";
+
+// Runs the free tier checks for a request. Returns the error response when a
+// limit is hit, otherwise marks the request as free tier and returns null.
+const handleFreeTierAccess = async (
+  req: CorsfixRequest,
+  res: Response,
+  tier: FreeTier
+): Promise<Response | null> => {
+  const origin_domain = req.ctx_origin_domain!;
+
+  if (
+    DEFAULT_PROXY_HOSTNAME &&
+    !isDefaultProxy(req) &&
+    !isTextOnlyRequest(req)
+  ) {
+    return sendCorsfixError(res, "region_not_allowed");
+  }
+
+  const limit = getFreeTierByteLimit(tier);
+  const used = await getFreeTierBytes(origin_domain);
+  if (used >= limit) {
+    return sendCorsfixError(res, "free_tier_transfer_limit", {
+      domain: origin_domain,
+    });
+  }
+
+  const admitted = await admitFreeTierIp(
+    origin_domain,
+    getClientIp(req),
+    freeTierLimit.concurrency
+  );
+  if (!admitted) {
+    return sendCorsfixError(res, "free_tier_concurrency_limit");
+  }
+
+  req.ctx_free_tier = tier;
+  req.ctx_free_tier_remaining = limit - used;
+
+  res.once("close", () => {
+    if (req.ctx_bytes) {
+      recordFreeTierBytes(origin_domain, req.ctx_bytes);
+    }
+  });
+
+  return null;
+};
+
 export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
   const origin_domain = req.ctx_origin_domain!;
   const target_domain = req.ctx_target_domain!;
@@ -55,7 +117,7 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
   if (isLocalDomain(origin_domain)) {
     rateLimitConfig = {
-      key: req.header("x-real-ip") || req.ip,
+      key: getClientIp(req),
       rpm: 60,
       local: true,
     };
@@ -69,11 +131,12 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     }
     req.ctx_user_id = "env-allowlist";
     rateLimitConfig = {
-      key: req.header("x-real-ip") || req.ip,
+      key: getClientIp(req),
       rpm: SELFHOST_RPM,
     };
   } else {
     let user;
+    let application = null;
     if (apiKey) {
       user = await getUserByApiKey(apiKey);
       if (!user) {
@@ -82,10 +145,22 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
 
       req.ctx_user_id = user.id;
     } else {
-      const application = await getApplication(origin_domain);
+      application = await getApplication(origin_domain);
       if (!application) {
-        return sendCorsfixError(res, "domain_not_registered", {
-          domain: origin_domain,
+        if (!canUseFreeTier(req)) {
+          return sendCorsfixError(res, "domain_not_registered", {
+            domain: origin_domain,
+          });
+        }
+
+        // Unregistered free tier: no account, no application. Only the
+        // origin domain identifies this traffic.
+        const error = await handleFreeTierAccess(req, res, "unregistered");
+        if (error) return error;
+
+        return applyRateLimit(req, res, {
+          key: getClientIp(req),
+          rpm: freeTierLimit.rpm,
         });
       }
       if (!isDomainAllowed(target_domain, application.target_domains)) {
@@ -139,11 +214,19 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
       if (metricsMtd.bytes >= trialLimit.bytes) {
         return sendCorsfixError(res, "trial_limit_reached");
       }
+    } else if (application && canUseFreeTier(req)) {
+      // Registered free tier: the domain is on an application but the
+      // account has no active plan or trial.
+      const error = await handleFreeTierAccess(req, res, "registered");
+      if (error) return error;
+
+      rpm = freeTierLimit.rpm;
     } else {
-      return sendCorsfixError(res, "trial_expired");
+      // Registered domain, but no plan, no active trial, and no SDK header.
+      return sendCorsfixError(res, "no_active_plan");
     }
 
-    let rateLimitKey = req.header("x-real-ip") || req.ip;
+    let rateLimitKey = getClientIp(req);
     if (product && product.rateLimitKey === "user_id") {
       rateLimitKey = user.id;
     }
@@ -154,6 +237,14 @@ export const handleProxyAccess = async (req: CorsfixRequest, res: Response) => {
     };
   }
 
+  return applyRateLimit(req, res, rateLimitConfig);
+};
+
+const applyRateLimit = async (
+  _req: CorsfixRequest,
+  res: Response,
+  rateLimitConfig: RateLimitConfig
+) => {
   const { isAllowed, headers } = await checkRateLimit(rateLimitConfig);
   Object.entries(headers).forEach(([key, value]) => {
     res.header(key, value);

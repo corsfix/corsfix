@@ -45,6 +45,8 @@ export interface Subscription {
   noMinCacheTtl?: boolean;
   noConcurrencyLimit?: boolean;
   concurrencyLimit?: number;
+  /** From the database, so it reflects a trial activated this session. */
+  trial_ends_at?: Date | null;
 }
 
 export const UpsertSecretSchema = z.object({
@@ -68,6 +70,16 @@ export type GetMetrics = z.input<typeof GetMetricsSchema>;
 export interface AuthorizationResult {
   allowed: boolean;
   message?: string;
+}
+
+export type PlanTier = "subscription" | "trial" | "free";
+
+/** Whether the account can still activate its one-time trial. */
+export type TrialState = "available" | "active" | "used";
+
+export interface FreeTierDomainUsage {
+  domain: string;
+  bytes: number;
 }
 
 export interface DeleteSecret {

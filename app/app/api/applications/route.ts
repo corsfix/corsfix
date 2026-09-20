@@ -9,9 +9,10 @@ import {
   createApplication,
   hasApplicationWithOrigins,
 } from "@/lib/services/applicationService";
-import { authorize } from "@/lib/services/authorizationService";
+import { authorize, getPlanTier } from "@/lib/services/authorizationService";
 import { auth } from "@/auth";
 import { getUserId, isLocalDomain } from "@/lib/utils";
+import { freeTierLimit, IS_CLOUD } from "@/config/constants";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -44,6 +45,19 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 }
     );
+  }
+
+  if (IS_CLOUD && (await getPlanTier(session)) === "free") {
+    if (body.originDomains.length > freeTierLimit.origin_count) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          data: null,
+          message: `The free tier allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
+          success: false,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const existingOrigins = await hasApplicationWithOrigins(

@@ -17,6 +17,7 @@ export async function getActiveSubscription(
       name: "-",
       bandwidth: 0,
       active: false,
+      trial_ends_at: user?.trial_ends_at ?? null,
     };
   }
 
@@ -39,5 +40,6 @@ export async function getActiveSubscription(
     noMinCacheTtl: user.feature_overrides?.noMinCacheTtl,
     noConcurrencyLimit: user.feature_overrides?.noConcurrencyLimit,
     concurrencyLimit: product?.concurrencyLimit,
+    trial_ends_at: user.trial_ends_at ?? null,
   };
 }

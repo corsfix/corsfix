@@ -12,6 +12,8 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getUserId, isLocalDomain } from "@/lib/utils";
+import { getPlanTier } from "@/lib/services/authorizationService";
+import { freeTierLimit, IS_CLOUD } from "@/config/constants";
 import * as z from "zod";
 
 export async function PUT(
@@ -39,6 +41,19 @@ export async function PUT(
       },
       { status: 400 }
     );
+  }
+
+  if (IS_CLOUD && (await getPlanTier(session)) === "free") {
+    if (body.originDomains.length > freeTierLimit.origin_count) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          data: null,
+          message: `The free tier allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
+          success: false,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const existingOrigins = await hasApplicationWithOrigins(

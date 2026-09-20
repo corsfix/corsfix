@@ -6,8 +6,11 @@ import Link from "next/link";
 import { ExternalLink, KeyRound } from "lucide-react";
 import { FeedbackLink } from "@/components/feedback-link";
 import { getApplicationSecrets } from "@/lib/services/secretService";
+import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { auth } from "@/auth";
-import { getUserId } from "@/lib/utils";
+import { getUserId, isTrialActive } from "@/lib/utils";
+import { IS_CLOUD } from "@/config/constants";
+import SecretsLocked from "@/components/secrets-locked";
 
 export const metadata: Metadata = {
   title: "Secrets | Corsfix Dashboard",
@@ -17,10 +20,18 @@ export default async function SecretsPage() {
   const session = await auth();
 
   let idToken, initialApplications: Application[];
+  // Secrets are a paid feature: locked on the free tier and on Lite.
+  let locked = false;
 
   try {
     idToken = getUserId(session);
-    initialApplications = await getApplicationSecrets(idToken);
+    if (IS_CLOUD && session?.user.id) {
+      const subscription = await getActiveSubscription(session.user.id);
+      locked =
+        !!subscription.isLite ||
+        (!subscription.active && !isTrialActive(subscription.trial_ends_at));
+    }
+    initialApplications = locked ? [] : await getApplicationSecrets(idToken);
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     idToken = null;
@@ -47,19 +58,26 @@ export default async function SecretsPage() {
           Secrets documentation{" "}
           <ExternalLink size={24} className="inline pb-1" />
         </Link>
-        <SecretList initialApplications={initialApplications} />
-        <p className="mt-8 text-center text-sm">
-          <span className="text-muted-foreground">Done adding secrets?</span>{" "}
-          <a
-            href="https://corsfix.com/docs/cors-proxy/secrets-variable"
-            target="_blank"
-            className="text-violet-500 underline p-0.5 font-medium"
-          >
-            Use it in your requests
-          </a>
-          {" "}&middot;{" "}
-          <FeedbackLink />
-        </p>
+        {locked ? (
+          <SecretsLocked />
+        ) : (
+          <>
+            <SecretList initialApplications={initialApplications} />
+            <p className="mt-8 text-center text-sm">
+              <span className="text-muted-foreground">
+                Done adding secrets?
+              </span>{" "}
+              <a
+                href="https://corsfix.com/docs/cors-proxy/secrets-variable"
+                target="_blank"
+                className="text-violet-500 underline p-0.5 font-medium"
+              >
+                Use it in your requests
+              </a>{" "}
+              &middot; <FeedbackLink />
+            </p>
+          </>
+        )}
       </div>
     </>
   );

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import corsfix, { CorsfixError } from "./index.js";
 
-const PROXY = "https://proxy.corsfix.com/?";
+const proxied = (target, base = "https://proxy.corsfix.com") =>
+  `${base}/?sdk=1&url=${encodeURIComponent(target)}`;
 
 const proxyResponse = (body, { status = 200, corsfixStatus = "success" } = {}) =>
   new Response(body, {
@@ -40,33 +41,37 @@ const lastCall = () => {
 describe("url handling", () => {
   test("prefixes a string URL with the proxy", async () => {
     await corsfix.fetch("https://example.com/api?x=1");
-    expect(lastCall().url).toBe(`${PROXY}https://example.com/api?x=1`);
+    expect(lastCall().url).toBe(proxied("https://example.com/api?x=1"));
   });
 
   test("accepts a URL object", async () => {
     await corsfix.fetch(new URL("https://example.com/a?b=2"));
-    expect(lastCall().url).toBe(`${PROXY}https://example.com/a?b=2`);
+    expect(lastCall().url).toBe(proxied("https://example.com/a?b=2"));
   });
 });
 
 describe("proxy url", () => {
   test("uses proxy.corsfix.com by default", async () => {
     await corsfix.fetch("https://example.com");
-    expect(lastCall().url).toBe(`${PROXY}https://example.com`);
+    expect(lastCall().url).toBe(proxied("https://example.com"));
   });
 
   test("uses a custom proxy origin", async () => {
     await corsfix.fetch("https://example.com", {
       corsfix: { proxyUrl: "https://proxy-eu.corsfix.com" },
     });
-    expect(lastCall().url).toBe("https://proxy-eu.corsfix.com/?https://example.com");
+    expect(lastCall().url).toBe(
+      proxied("https://example.com", "https://proxy-eu.corsfix.com")
+    );
   });
 
   test("tolerates a trailing slash on the proxy origin", async () => {
     await corsfix.fetch("https://example.com", {
       corsfix: { proxyUrl: "http://localhost:8080/" },
     });
-    expect(lastCall().url).toBe("http://localhost:8080/?https://example.com");
+    expect(lastCall().url).toBe(
+      proxied("https://example.com", "http://localhost:8080")
+    );
   });
 });
 
@@ -82,7 +87,7 @@ describe("Request input", () => {
 
     const { url: sent, headers } = lastCall();
     expect(sent).toBeInstanceOf(Request);
-    expect(sent.url).toBe(`${PROXY}https://example.com/post`);
+    expect(sent.url).toBe(proxied("https://example.com/post"));
     expect(sent.method).toBe("POST");
     expect(await sent.text()).toBe("payload");
     expect(headers.get("content-type")).toBe("text/plain");
@@ -147,7 +152,9 @@ describe("Request input", () => {
       corsfix: { proxyUrl: "https://lite.corsfix.com" },
     });
     // Request normalizes its URL, so the target ends with a slash.
-    expect(lastCall().url.url).toBe("https://lite.corsfix.com/?https://example.com/");
+    expect(lastCall().url.url).toBe(
+      proxied("https://example.com/", "https://lite.corsfix.com")
+    );
   });
 });
 
@@ -316,5 +323,188 @@ describe("corsfix errors", () => {
     const boom = new TypeError("Failed to fetch");
     fetchMock.mockRejectedValueOnce(boom);
     await expect(corsfix.fetch("https://example.com")).rejects.toBe(boom);
+  });
+});
+
+describe("free tier", () => {
+  const USER_COPY = {
+    free_tier_transfer_limit: "This site is out of free data for the month.",
+    free_tier_concurrency_limit: "This site's free plan allows one visitor at a time.",
+  };
+  const freeTierError = (code) =>
+    proxyError(code, code === "free_tier_concurrency_limit" ? 429 : 403, {
+      if_you_are_user: USER_COPY[code],
+    });
+
+  // Minimal DOM double: enough for the notice to be built and attached.
+  const fakeDocument = () => {
+    const makeTextNode = (text) => ({ tag: "#text", textContent: text });
+    const makeElement = (tag) => {
+      const el = {
+        tag,
+        id: "",
+        style: {},
+        children: [],
+        attributes: {},
+        removed: false,
+        querySelector(selector) {
+          const attr = selector.replace(/^\[|\]$/g, "");
+          const find = (node) =>
+            node.attributes?.[attr] !== undefined
+              ? node
+              : (node.children ?? []).map(find).find(Boolean) ?? null;
+          return find(this);
+        },
+        appendChild(child) {
+          this.children.push(child);
+          return child;
+        },
+        setAttribute(name, value) {
+          this.attributes[name] = value;
+        },
+        remove() {
+          this.removed = true;
+        },
+      };
+      return el;
+    };
+    const body = makeElement("body");
+    return {
+      body,
+      byId: new Map(),
+      getElementById(id) {
+        return body.children.find((c) => c.id === id) ?? null;
+      },
+      createElement: makeElement,
+      createTextNode: makeTextNode,
+      addEventListener: vi.fn(),
+    };
+  };
+
+  test("flags every request as SDK traffic in the URL", async () => {
+    await corsfix.fetch("https://example.com/a?b=1&c=2");
+    const url = new URL(lastCall().url);
+    expect(url.searchParams.get("sdk")).toBe("1");
+    // The target's own query string survives as one encoded value.
+    expect(url.searchParams.get("url")).toBe("https://example.com/a?b=1&c=2");
+  });
+
+  test("flags a Request input the same way", async () => {
+    await corsfix.fetch(new Request("https://example.com"));
+    expect(new URL(lastCall().url.url).searchParams.get("sdk")).toBe("1");
+  });
+
+  test("throws CorsfixError and renders a notice", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+
+    fetchMock.mockResolvedValue(freeTierError("free_tier_transfer_limit"));
+
+    const err = await corsfix.fetch("https://example.com").catch((e) => e);
+    expect(err).toBeInstanceOf(CorsfixError);
+    expect(err.code).toBe("free_tier_transfer_limit");
+
+    const notice = document.getElementById("corsfix-free-tier-notice");
+    expect(notice).not.toBeNull();
+    expect(notice.attributes.role).toBe("status");
+    const [text, close] = notice.children;
+    const [title, body, link] = text.children;
+    expect(title.textContent).toBe("This site has reached its free Corsfix limit");
+    // Body copy comes from the proxy's if_you_are_user field.
+    expect(body.textContent).toBe(USER_COPY.free_tier_transfer_limit);
+    expect(link.href).toBe("https://app.corsfix.com/billing");
+    expect(link.textContent).toContain("Site owner");
+    expect(close.attributes["aria-label"]).toBe("Dismiss");
+  });
+
+  test("falls back to generic copy when the proxy sends no user hint", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+    fetchMock.mockResolvedValueOnce(
+      proxyResponse("<html>oops</html>", {
+        status: 403,
+        corsfixStatus: "free_tier_transfer_limit",
+      })
+    );
+
+    await corsfix.fetch("https://example.com").catch(() => {});
+    const [text] = document.getElementById("corsfix-free-tier-notice").children;
+    expect(text.children[1].textContent).toContain("Ask the site owner");
+  });
+
+  test("shows the notice again after it was dismissed", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+    fetchMock.mockResolvedValue(freeTierError("free_tier_transfer_limit"));
+
+    await corsfix.fetch("https://example.com").catch(() => {});
+    // Dismissing removes it from the page.
+    document.body.children.length = 0;
+
+    await corsfix.fetch("https://example.com").catch(() => {});
+    expect(document.getElementById("corsfix-free-tier-notice")).not.toBeNull();
+  });
+
+  test("never stacks notices, updates the existing one instead", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+
+    fetchMock.mockResolvedValueOnce(freeTierError("free_tier_transfer_limit"));
+    await corsfix.fetch("https://example.com").catch(() => {});
+    fetchMock.mockResolvedValueOnce(freeTierError("free_tier_concurrency_limit"));
+    await corsfix.fetch("https://example.com").catch(() => {});
+
+    const notices = document.body.children.filter(
+      (c) => c.id === "corsfix-free-tier-notice"
+    );
+    expect(notices).toHaveLength(1);
+    expect(notices[0].children[0].children[1].textContent).toBe(
+      USER_COPY.free_tier_concurrency_limit
+    );
+  });
+
+  test("uses the concurrency copy for the concurrency limit", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+    fetchMock.mockResolvedValueOnce(freeTierError("free_tier_concurrency_limit"));
+
+    const err = await corsfix.fetch("https://example.com").catch((e) => e);
+    expect(err.code).toBe("free_tier_concurrency_limit");
+    const [text] = document.getElementById("corsfix-free-tier-notice").children;
+    expect(text.children[1].textContent).toBe(USER_COPY.free_tier_concurrency_limit);
+  });
+
+  test("defers the notice until the body exists", async () => {
+    const document = fakeDocument();
+    document.body = null;
+    vi.stubGlobal("document", document);
+    fetchMock.mockResolvedValueOnce(freeTierError("free_tier_transfer_limit"));
+
+    await corsfix.fetch("https://example.com").catch(() => {});
+    expect(document.addEventListener).toHaveBeenCalledWith(
+      "DOMContentLoaded",
+      expect.any(Function),
+      { once: true }
+    );
+  });
+
+  test("warns on the console outside a browser", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    fetchMock.mockResolvedValueOnce(freeTierError("free_tier_transfer_limit"));
+
+    const err = await corsfix.fetch("https://example.com").catch((e) => e);
+    expect(err.code).toBe("free_tier_transfer_limit");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("[corsfix]");
+    warn.mockRestore();
+  });
+
+  test("does not show a notice for other proxy errors", async () => {
+    const document = fakeDocument();
+    vi.stubGlobal("document", document);
+    fetchMock.mockResolvedValueOnce(proxyError("rate_limited", 429));
+
+    await corsfix.fetch("https://example.com").catch(() => {});
+    expect(document.getElementById("corsfix-free-tier-notice")).toBeNull();
   });
 });

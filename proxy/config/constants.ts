@@ -12,6 +12,20 @@ export const trialLimit: TrialLimit = {
   rpm: 60,
 };
 
+interface FreeTierLimit {
+  unregisteredBytes: number;
+  registeredBytes: number;
+  concurrency: number;
+  rpm: number;
+}
+
+export const freeTierLimit: FreeTierLimit = {
+  unregisteredBytes: 10_000_000,
+  registeredBytes: 100_000_000,
+  concurrency: 1,
+  rpm: 60,
+};
+
 export const IS_CLOUD = process.env.CLOUD === "true";
 export const IS_SELFHOST = !IS_CLOUD;
 

@@ -16,28 +16,43 @@ import {
 } from "@/components/ui/tooltip";
 import Nav from "@/components/nav";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
-import { config, IS_CLOUD, trialLimit } from "@/config/constants";
+import { config, freeTierLimit, IS_CLOUD, trialLimit } from "@/config/constants";
 import {
   formatBytes,
-  getTrialEnds,
+  formatTrialEnds,
   getUserId,
   isTrialActive,
 } from "@/lib/utils";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { getMonthToDateMetrics } from "@/lib/services/metricService";
+import { getFreeTierUsage } from "@/lib/services/freeTierService";
+import { isTrialUsed } from "@/lib/services/trialService";
 import { FounderBenefitModal } from "@/components/founder-benefit-modal";
 import { PlansSection } from "./plans-section";
-import type { Subscription } from "@/types/api";
+import type {
+  FreeTierDomainUsage,
+  Subscription,
+  TrialState,
+} from "@/types/api";
 
 const trialBenefits = [
   `Up to ${trialLimit.app_count} web applications`,
   `${formatBytes(trialLimit.bytes)} data transfer`,
-  `${trialLimit.rpm} RPM (per IP)`,
+  `${trialLimit.rpm} RPM (per user)`,
   "Cached response",
-  `Secrets variable`,
+  "Secrets variables",
+  "All file sizes & types",
 ];
 
+const freeTierBenefits = [
+  `${freeTierLimit.app_count} web application (${freeTierLimit.origin_count} origin domain)`,
+  `${formatBytes(freeTierLimit.registeredBytes)} data transfer per domain`,
+  `${freeTierLimit.concurrency} concurrent user`,
+  `${freeTierLimit.rpm} RPM (per user)`,
+  "All file sizes & types",
+  "Requires the Corsfix SDK (CDN or NPM)",
+];
 
 export const metadata: Metadata = {
   title: "Billing | Corsfix Dashboard",
@@ -48,35 +63,50 @@ export default async function CreditsPage() {
 
   let subscription: Subscription;
   let isTrial: boolean;
+  let isFree = false;
   let bandwidthMtd: number;
+  let freeTierUsage: FreeTierDomainUsage[] = [];
+  let trialState: TrialState = "used";
 
   try {
-    isTrial = isTrialActive(session);
-
     if (!session?.user.id) {
       throw Error("Unauthenticated.");
     }
     subscription = await getActiveSubscription(session.user.id);
 
+    // Precedence: paid plan, then trial, then free.
+    isTrial = !subscription.active && isTrialActive(subscription.trial_ends_at);
+    trialState = isTrial
+      ? "active"
+      : isTrialUsed(subscription.trial_ends_at)
+      ? "used"
+      : "available";
+
+    const idToken = getUserId(session);
+
     if (subscription.active) {
-      isTrial = false;
+      // nothing to adjust
     } else if (isTrial) {
-      const trialEnds = getTrialEnds(session);
-      const formattedDate = trialEnds.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+      const formattedDate = formatTrialEnds(subscription.trial_ends_at);
       subscription.name = `trial (until ${formattedDate})`;
       subscription.label = `Trial (until ${formattedDate})`;
       subscription.bandwidth = trialLimit.bytes;
+    } else if (IS_CLOUD) {
+      // No plan and no trial: the account is on the always-free tier.
+      isFree = true;
+      subscription.name = "free";
+      subscription.label = "Free";
+      subscription.bandwidth = freeTierLimit.registeredBytes;
+      freeTierUsage = await getFreeTierUsage(idToken);
     }
 
-    const idToken = getUserId(session);
     const metricsMtd = await getMonthToDateMetrics(idToken);
     bandwidthMtd = metricsMtd.bytes;
   } catch (error: unknown) {
     console.error(JSON.stringify(error, null, 2));
     isTrial = false;
+    isFree = false;
+    trialState = "used";
     subscription = {
       active: false,
       name: "-",
@@ -91,6 +121,21 @@ export default async function CreditsPage() {
 
   const defaultBillingCycle =
     subscription.billingCycle === "yearly" ? "yearly" : "monthly";
+
+  const planBenefits = isTrial
+    ? trialBenefits
+    : isFree
+    ? freeTierBenefits
+    : null;
+
+  // Free tier allowance is per domain, so the bar tracks the busiest one.
+  const freeTierMaxBytes = freeTierUsage.reduce(
+    (max, usage) => Math.max(max, usage.bytes),
+    0
+  );
+
+  const usagePercent = (used: number, limit: number) =>
+    `${Math.min(Math.ceil((used / limit) * 100), 100)}%`;
 
   return (
     <>
@@ -127,7 +172,7 @@ export default async function CreditsPage() {
                     noConcurrencyLimit={subscription.noConcurrencyLimit}
                   />
                 )}
-                {isTrial && IS_CLOUD && (
+                {planBenefits && IS_CLOUD && (
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -135,7 +180,7 @@ export default async function CreditsPage() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <ul className="space-y-2">
-                          {trialBenefits.map((benefit, index) => (
+                          {planBenefits.map((benefit, index) => (
                             <li key={index} className="flex items-center gap-2">
                               <Check className="h-3.5 w-3.5 flex-shrink-0" />
                               <span className="text-sm">{benefit}</span>
@@ -160,7 +205,7 @@ export default async function CreditsPage() {
                   <div className="bg-primary h-2 rounded-full transition-all duration-300 w-full"></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  {isTrial || subscription.active ? (
+                  {isTrial || isFree || subscription.active ? (
                     <>
                       <div className="text-sm">You have unlimited requests</div>
                       <Infinity />
@@ -189,15 +234,16 @@ export default async function CreditsPage() {
                     style={{
                       width: subscription.isLite
                         ? "100%"
-                        : `${Math.min(
-                            Math.ceil(
-                              (bandwidthMtd /
-                                (subscription.bandwidth +
-                                  (subscription.extraBandwidth ?? 0))) *
-                                100
-                            ),
-                            100
-                          )}%`,
+                        : isFree
+                        ? usagePercent(
+                            freeTierMaxBytes,
+                            freeTierLimit.registeredBytes
+                          )
+                        : usagePercent(
+                            bandwidthMtd,
+                            subscription.bandwidth +
+                              (subscription.extraBandwidth ?? 0)
+                          ),
                     }}
                   ></div>
                 </div>
@@ -225,6 +271,31 @@ export default async function CreditsPage() {
                         )}
                       </span>
                     </>
+                  ) : isFree ? (
+                    <div className="text-sm w-full">
+                      {freeTierUsage.length === 0 ? (
+                        <span>
+                          Register your domain for{" "}
+                          {formatBytes(freeTierLimit.registeredBytes)} per
+                          month
+                        </span>
+                      ) : (
+                        <ul className="space-y-1">
+                          {freeTierUsage.map((usage) => (
+                            <li
+                              key={usage.domain}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <span className="truncate">{usage.domain}</span>
+                              <span className="whitespace-nowrap">
+                                {formatBytes(usage.bytes)}&nbsp;/&nbsp;
+                                {formatBytes(freeTierLimit.registeredBytes)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   ) : (
                     <div className="text-sm">
                       Upgrade to use Corsfix on production
@@ -242,6 +313,14 @@ export default async function CreditsPage() {
             subscription={subscription}
             sessionEmail={session?.user?.email}
             defaultBillingCycle={defaultBillingCycle}
+            trialState={trialState}
+            trialEndsAt={
+              isTrial && subscription.trial_ends_at
+                ? new Date(subscription.trial_ends_at).toISOString()
+                : null
+            }
+            trialBenefits={trialBenefits}
+            trialDays={trialLimit.days}
           />
         )}
       </div>
