@@ -25,6 +25,7 @@ Start using Corsfix in your web applications.
 | --- | --- |
 | [Hosted Service](https://corsfix.com) | Get started immediately with our free tier |
 | [Self-Hosted](https://corsfix.com/docs/open-source/self-hosting) | Setup and run Corsfix on your own machine |
+| [Easypanel](https://easypanel.io/templates/corsfix) | Deploy Corsfix with one click using the official Easypanel template |
 
 ## 💫 Key Features
 
