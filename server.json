@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.corsfix/corsfix",
+  "title": "Corsfix",
+  "description": "Diagnose CORS errors, manage Corsfix apps and API key secrets, write proxy code and test requests.",
+  "version": "1.0.0",
+  "websiteUrl": "https://corsfix.com/docs/mcp",
+  "repository": {
+    "url": "https://github.com/corsfix/corsfix",
+    "source": "github",
+    "subfolder": "app"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://app.corsfix.com/mcp"
+    }
+  ]
+}
