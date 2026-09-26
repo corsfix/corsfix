@@ -5,14 +5,11 @@ import {
   UpsertApplicationSchema,
 } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createApplication,
-  hasApplicationWithOrigins,
-} from "@/lib/services/applicationService";
-import { authorize, getPlanTier } from "@/lib/services/authorizationService";
+import { createApplication } from "@/lib/services/applicationService";
+import { authorize } from "@/lib/services/authorizationService";
+import { checkApplicationUpsert } from "@/lib/services/applicationValidation";
 import { auth } from "@/auth";
-import { getUserId, isLocalDomain } from "@/lib/utils";
-import { freeTierLimit, IS_CLOUD } from "@/config/constants";
+import { getUserId } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -33,46 +30,10 @@ export async function POST(request: NextRequest) {
   const json = await request.json();
   const body: UpsertApplication = UpsertApplicationSchema.parse(json);
 
-  const localDomains = body.originDomains.filter((domain) =>
-    isLocalDomain(domain)
-  );
-  if (localDomains.length > 0) {
+  const error = await checkApplicationUpsert(session, null, body);
+  if (error) {
     return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: "Localhost domains are not allowed as origin domains.",
-        success: false,
-      },
-      { status: 400 }
-    );
-  }
-
-  if (IS_CLOUD && (await getPlanTier(session)) === "free") {
-    if (body.originDomains.length > freeTierLimit.origin_count) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          data: null,
-          message: `The free tier allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
-          success: false,
-        },
-        { status: 400 }
-      );
-    }
-  }
-
-  const existingOrigins = await hasApplicationWithOrigins(
-    null,
-    body.originDomains
-  );
-  if (existingOrigins.length > 0) {
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: `An application with this origin already exists: ${existingOrigins.join(
-          ", "
-        )}`,
-        success: false,
-      },
+      { data: null, message: error, success: false },
       { status: 400 }
     );
   }

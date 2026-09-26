@@ -1,7 +1,6 @@
 import {
   updateApplication,
   deleteApplication,
-  hasApplicationWithOrigins,
 } from "@/lib/services/applicationService";
 import {
   UpsertApplication,
@@ -11,9 +10,8 @@ import {
 } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getUserId, isLocalDomain } from "@/lib/utils";
-import { getPlanTier } from "@/lib/services/authorizationService";
-import { freeTierLimit, IS_CLOUD } from "@/config/constants";
+import { getUserId } from "@/lib/utils";
+import { checkApplicationUpsert } from "@/lib/services/applicationValidation";
 import * as z from "zod";
 
 export async function PUT(
@@ -29,46 +27,10 @@ export async function PUT(
   const paramId = (await params).id;
   const id = z.string().max(32).parse(paramId);
 
-  const localDomains = body.originDomains.filter((domain) =>
-    isLocalDomain(domain)
-  );
-  if (localDomains.length > 0) {
+  const error = await checkApplicationUpsert(session, id, body);
+  if (error) {
     return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: "Localhost domains are not allowed as origin domains.",
-        success: false,
-      },
-      { status: 400 }
-    );
-  }
-
-  if (IS_CLOUD && (await getPlanTier(session)) === "free") {
-    if (body.originDomains.length > freeTierLimit.origin_count) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          data: null,
-          message: `The free tier allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
-          success: false,
-        },
-        { status: 400 }
-      );
-    }
-  }
-
-  const existingOrigins = await hasApplicationWithOrigins(
-    id,
-    body.originDomains
-  );
-  if (existingOrigins.length > 0) {
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        data: null,
-        message: `An application with this origin already exists: ${existingOrigins.join(
-          ", "
-        )}`,
-        success: false,
-      },
+      { data: null, message: error, success: false },
       { status: 400 }
     );
   }
