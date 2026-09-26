@@ -49,39 +49,22 @@ export default function GetStartedCode({
   ) : null;
 
   return (
-    <Tabs defaultValue="api" className="relative w-full">
+    <Tabs defaultValue="html" className="relative w-full">
       {/* Floats over the top-right corner of the code block. Each snippet
           keeps its first line short so nothing sits underneath the tabs. */}
       <TabsList className="absolute right-2 top-2 h-7 p-0.5">
-        <TabsTrigger value="api" className="h-6 px-2 text-xs">
-          API
-        </TabsTrigger>
-        <TabsTrigger value="cdn" className="h-6 px-2 text-xs">
-          CDN
+        <TabsTrigger value="html" className="h-6 px-2 text-xs">
+          HTML
         </TabsTrigger>
         <TabsTrigger value="npm" className="h-6 px-2 text-xs">
-          NPM
+          npm
+        </TabsTrigger>
+        <TabsTrigger value="api" className="h-6 px-2 text-xs">
+          Proxy URL
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="api" className="mt-0">
-        <Snippet>
-          <C>{"// Prefix the target URL"}</C>
-          {"\n"}
-          <K>const</K>
-          {" url = "}
-          <S>&quot;https://example.com&quot;</S>
-          {";\n\n"}
-          <K>const</K>
-          {" response = "}
-          <K>await</K> <F>fetch</F>
-          {"("}
-          <S>&quot;{proxyUrl}/?&quot;</S>
-          {" + url);"}
-        </Snippet>
-      </TabsContent>
-
-      <TabsContent value="cdn" className="mt-0">
+      <TabsContent value="html" className="mt-0">
         <Snippet>
           <C>{"<!-- Load from CDN -->"}</C>
           {"\n"}
@@ -124,7 +107,22 @@ export default function GetStartedCode({
         </Snippet>
       </TabsContent>
 
-
+      <TabsContent value="api" className="mt-0">
+        <Snippet>
+          <C>{"// Prefix the target URL"}</C>
+          {"\n"}
+          <K>const</K>
+          {" url = "}
+          <S>&quot;https://example.com&quot;</S>
+          {";\n\n"}
+          <K>const</K>
+          {" response = "}
+          <K>await</K> <F>fetch</F>
+          {"("}
+          <S>&quot;{proxyUrl}/?&quot;</S>
+          {" + url);"}
+        </Snippet>
+      </TabsContent>
     </Tabs>
   );
 }
