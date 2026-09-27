@@ -2,7 +2,7 @@ import { IS_SELFHOST, freeTierLimit, trialLimit } from "@/config/constants";
 import { getActiveSubscription } from "./subscriptionService";
 import { countApplication } from "./applicationService";
 import { AuthorizationResult, PlanTier } from "@/types/api";
-import { isTrialActive } from "../utils";
+import { getUserId, isTrialActive } from "../utils";
 import { Session } from "next-auth";
 
 export async function authorize(
@@ -61,7 +61,9 @@ async function canAddApplications(
       allowed: true,
     };
   } else if (isTrial) {
-    const applicationCount = await countApplication(session.user.id);
+    // Applications belong to getUserId(session) (the legacy id for older
+    // accounts), so they are counted by that id.
+    const applicationCount = await countApplication(getUserId(session));
     return {
       allowed: applicationCount < trialLimit.app_count,
       message: `Max ${trialLimit.app_count} applications during trial. Upgrade for higher limits.`,
@@ -69,7 +71,7 @@ async function canAddApplications(
   } else {
     // Free tier: one registered application per account. Other domains can
     // still use the proxy through the SDK with the unregistered allowance.
-    const applicationCount = await countApplication(session.user.id);
+    const applicationCount = await countApplication(getUserId(session));
     return {
       allowed: applicationCount < freeTierLimit.app_count,
       message: `The free tier includes ${freeTierLimit.app_count} application. Upgrade for more.`,
