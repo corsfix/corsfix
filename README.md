@@ -36,6 +36,26 @@ Start using Corsfix in your web applications.
 - Responses streamed for minimal latency
 - Test requests with playground
 - Track performance metrics
+- Work from AI assistants with the MCP server
+
+## 🤖 MCP Server
+
+Corsfix has a remote [MCP](https://modelcontextprotocol.io) server, so AI assistants and coding agents such as Claude, ChatGPT, Cursor and VS Code can check CORS errors, set up your applications and secrets, write the proxy code and test requests for you. They sign in with your Corsfix account, so there is no API key to copy.
+
+```
+https://app.corsfix.com/mcp
+```
+
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=corsfix&config=eyJ1cmwiOiJodHRwczovL2FwcC5jb3JzZml4LmNvbS9tY3AifQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=corsfix&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapp.corsfix.com%2Fmcp%22%7D)
+
+In Claude Code:
+
+```bash
+claude mcp add --transport http corsfix https://app.corsfix.com/mcp
+```
+
+Self-hosted instances serve their own MCP server at `https://<your app domain>/mcp`. See the [MCP docs](https://corsfix.com/docs/mcp) for other clients and the list of tools.
 
 ## 🔎 Preview
 

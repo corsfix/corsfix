@@ -54,6 +54,7 @@ export function MainNav({ className }: { className?: string }) {
     { href: "/secrets", label: "Secrets" },
     { href: "/metrics", label: "Metrics" },
     { href: "/playground", label: "Playground" },
+    { href: "/mcp-setup", label: "MCP" },
     ...(isCloud ? [{ href: "/billing", label: "Billing" }] : []),
     { href: "https://corsfix.com/docs", label: "Docs", external: true },
   ];

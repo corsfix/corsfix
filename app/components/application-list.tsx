@@ -51,6 +51,11 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { isLocalDomain } from "@/lib/utils";
+import {
+  extractDomainFromInput,
+  isValidDomain,
+  isValidTargetDomain,
+} from "@/lib/domains";
 import { ApiKeyButton } from "@/components/api-key-button";
 
 interface ApplicationListProps {
@@ -146,40 +151,6 @@ export default function ApplicationList({
     });
     setIsEditing(false);
     setIsDialogOpen(true);
-  };
-
-  const extractDomainFromInput = (input: string): string => {
-    if (!input || !input.trim()) {
-      return "";
-    }
-
-    let cleanInput = input.trim();
-    cleanInput = cleanInput.replace(/^(https?:\/\/|\/\/)/i, "");
-    cleanInput = cleanInput.split("/")[0].split("?")[0].split("#")[0];
-    cleanInput = cleanInput.split(":")[0];
-    cleanInput = cleanInput.toLowerCase();
-
-    if (isValidDomain(cleanInput)) {
-      return cleanInput;
-    }
-
-    // If it doesn't match, return the cleaned input anyway
-    // This allows the user to see what we extracted and fix it if needed
-    return input;
-  };
-
-  const isValidDomain = (domain: string): boolean => {
-    const domainRegex =
-      /^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$/;
-    return domainRegex.test(domain);
-  };
-
-  const isValidTargetDomain = (domain: string): boolean => {
-    // Asterisk is only allowed for target domains
-    if (domain === "*") {
-      return true;
-    }
-    return isValidDomain(domain);
   };
 
   // Set the domain mode when editing an application - ONLY when editing begins
