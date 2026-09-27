@@ -60,10 +60,14 @@ export const proxiedUrlFor = (
 
 export async function runProxyTest(input: ProxyTestInput) {
   const proxiedUrl = proxiedUrlFor(input.proxyBaseUrl, input.url, input.useSdk);
-  const headers: Record<string, string> = {
-    ...input.headers,
-    Origin: input.origin,
-  };
+  // The Origin decides which application's rules the proxy applies, so it is
+  // always the one chosen by the tool; an Origin in the user's headers (in
+  // any letter case) is dropped rather than merged into it.
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(input.headers)) {
+    if (name.toLowerCase() !== "origin") headers[name] = value;
+  }
+  headers.Origin = input.origin;
   if (input.cache) headers["x-corsfix-cache"] = input.cache;
   if (Object.keys(input.overrideHeaders).length > 0) {
     headers["x-corsfix-headers"] = JSON.stringify(input.overrideHeaders);

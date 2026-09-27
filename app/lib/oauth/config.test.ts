@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { canonicalizeResource, getIssuer } from "./config";
+import { canonicalizeResource, getIssuer, isIssuerConfigured } from "./config";
 
 const ISSUER = "https://app.corsfix.com";
 
@@ -42,6 +42,14 @@ describe("getIssuer", () => {
     vi.stubEnv("AUTH_URL", "https://dash.example.com:443/api/auth");
     const headers = new Headers({ host: "attacker.example" });
     expect(getIssuer(headers)).toBe("https://dash.example.com");
+  });
+
+  it("knows whether the issuer is fixed by configuration", () => {
+    vi.stubEnv("AUTH_URL", "");
+    vi.stubEnv("NEXTAUTH_URL", "");
+    expect(isIssuerConfigured()).toBe(false);
+    vi.stubEnv("AUTH_URL", "https://dash.example.com");
+    expect(isIssuerConfigured()).toBe(true);
   });
 
   it("falls back to forwarded headers, then the Host header", () => {

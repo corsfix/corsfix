@@ -1,11 +1,11 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, Check, ExternalLink } from "lucide-react";
 import { auth } from "@/auth";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { ConsentButtons } from "@/components/consent-buttons";
 import { getIssuer } from "@/lib/oauth/config";
 import {
   AUTHORIZATION_PARAM_NAMES,
@@ -83,18 +83,20 @@ export default async function AuthorizePage({
   }
 
   const issuer = getIssuer(await headers());
-  const result = await validateAuthorizationRequest(params, issuer);
+  const result = await validateAuthorizationRequest(params, issuer, {
+    limitKey: session.user.id,
+  });
 
   if (!result.ok) {
-    if (result.redirectUri) {
-      redirect(
-        buildRedirectUrl(result.redirectUri, issuer, {
+    // Errors are shown here rather than redirected automatically: the app's
+    // redirect URI is self-registered, so the user decides whether to go back.
+    const returnUrl = result.redirectUri
+      ? buildRedirectUrl(result.redirectUri, issuer, {
           error: result.error,
           error_description: result.description,
           state: result.state,
         })
-      );
-    }
+      : null;
     return (
       <Shell>
         <div className="space-y-2">
@@ -103,9 +105,18 @@ export default async function AuthorizePage({
           </h1>
           <p className="text-sm text-muted-foreground">{result.description}</p>
         </div>
-        <Button asChild variant="secondary" className="w-full">
-          <Link href="/get-started">Go to the dashboard</Link>
-        </Button>
+        <div className="flex gap-2">
+          {returnUrl && (
+            <Button asChild variant="outline" className="flex-1">
+              <a href={returnUrl}>
+                Return to {redirectDisplayTarget(result.redirectUri!)}
+              </a>
+            </Button>
+          )}
+          <Button asChild variant="secondary" className="flex-1">
+            <Link href="/get-started">Go to the dashboard</Link>
+          </Button>
+        </div>
       </Shell>
     );
   }
@@ -156,7 +167,9 @@ export default async function AuthorizePage({
         </div>
         <div className="flex justify-between gap-4 px-3 py-2">
           <dt className="text-muted-foreground">
-            {client.source === "metadata_document" ? "Published by" : "Website"}
+            {client.source === "metadata_document"
+              ? "Published by"
+              : "Website (unverified)"}
           </dt>
           <dd className="text-right break-all">
             {clientSite ?? "Not provided"}
@@ -198,24 +211,7 @@ export default async function AuthorizePage({
             <input key={name} type="hidden" name={name} value={params[name]} />
           ) : null
         )}
-        <Button
-          type="submit"
-          name="decision"
-          value="deny"
-          variant="outline"
-          className="flex-1"
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          name="decision"
-          value="approve"
-          className="flex-1"
-          data-umami-event="mcp-oauth-approve"
-        >
-          Allow
-        </Button>
+        <ConsentButtons />
       </form>
 
       <p className="text-xs text-muted-foreground">

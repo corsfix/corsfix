@@ -13,7 +13,7 @@ import {
 } from "../context";
 import { getPlanInfo, getProxyBaseUrl, regionNote } from "../plan";
 import { runProxyTest } from "../proxyTest";
-import { allowCall } from "../rateLimit";
+import { allowCall } from "@/lib/rateLimit";
 import { buildSnippet, sendsBody } from "../snippets";
 
 const METHODS = [

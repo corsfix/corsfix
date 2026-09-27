@@ -56,6 +56,15 @@ export const getIssuer = (headers: Headers, requestUrl?: string): string =>
   originFromUrl(process.env.NEXTAUTH_URL) ||
   originFromHeaders(headers, requestUrl);
 
+// Whether the issuer is fixed by AUTH_URL or NEXTAUTH_URL. When it is not,
+// it comes from request headers, so responses that contain it must not be
+// cached for other requests.
+export const isIssuerConfigured = (): boolean =>
+  !!(
+    originFromUrl(process.env.AUTH_URL) ||
+    originFromUrl(process.env.NEXTAUTH_URL)
+  );
+
 export const getIssuerFromRequest = (req: Request): string =>
   getIssuer(req.headers, req.url);
 

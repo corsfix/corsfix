@@ -2,6 +2,7 @@ import { CacheableMemory } from "cacheable";
 import dbConnect from "@/lib/dbConnect";
 import { OAuthClientEntity } from "@/models/OAuthClientEntity";
 import { safeFetch } from "@/lib/safeFetch";
+import { allowCall } from "@/lib/rateLimit";
 import { validateRedirectUri } from "./redirectUri";
 import { TOKEN_PREFIX } from "./crypto";
 
@@ -26,6 +27,13 @@ export interface OAuthClient {
 export class OAuthClientError extends Error {}
 
 const metadataCache = new CacheableMemory({ ttl: "1h", lruSize: 500 });
+// Failed lookups are remembered briefly and concurrent lookups of the same
+// document share one request, so repeated page loads don't refetch.
+const failedMetadataCache = new CacheableMemory({ ttl: "1m", lruSize: 500 });
+const pendingMetadata = new Map<string, Promise<OAuthClient>>();
+
+// Documents fetched per signed-in user per minute.
+const METADATA_FETCHES_PER_MINUTE = 20;
 
 const MIN_METADATA_TTL_SECONDS = 5 * 60;
 const MAX_METADATA_TTL_SECONDS = 24 * 60 * 60;
@@ -179,14 +187,54 @@ async function fetchMetadataDocument(
 // Looks up a client by client_id. Returns null for unknown clients and
 // throws OAuthClientError when a metadata document is present but invalid.
 //
+async function loadMetadataDocument(
+  clientId: string,
+  url: URL,
+  limitKey?: string
+): Promise<OAuthClient> {
+  const failure = failedMetadataCache.get<string>(clientId);
+  if (failure) throw new OAuthClientError(failure);
+
+  const pending = pendingMetadata.get(clientId);
+  if (pending) return pending;
+
+  if (
+    limitKey &&
+    !(await allowCall(
+      `oauth:metadata:${limitKey}`,
+      METADATA_FETCHES_PER_MINUTE,
+      60
+    ))
+  ) {
+    throw new OAuthClientError(
+      "Too many apps were looked up in a short time. Wait a minute and try again."
+    );
+  }
+
+  const request = fetchMetadataDocument(clientId, url)
+    .catch((error) => {
+      if (error instanceof OAuthClientError) {
+        failedMetadataCache.set(clientId, error.message);
+      }
+      throw error;
+    })
+    .finally(() => pendingMetadata.delete(clientId));
+  pendingMetadata.set(clientId, request);
+  return request;
+}
+
 // fetchMetadata: false is for the token and revocation endpoints. There a
 // metadata-document client is a public client identified by its URL, and the
 // codes and tokens it presents are bound to that client_id, so the document
 // is not needed. Not fetching it keeps unauthenticated requests from making
 // the server call arbitrary URLs.
+// limitKey (the signed-in user's id) rate-limits metadata document fetches.
 export async function getClient(
   clientId: string,
-  { fetchMetadata = true }: { fetchMetadata?: boolean } = {}
+  {
+    fetchMetadata = true,
+    limitKey,
+  }: { fetchMetadata?: boolean; limitKey?: string } = {}
 ): Promise<OAuthClient | null> {
   if (!clientId || clientId.length > 2048) return null;
 
@@ -203,7 +251,7 @@ export async function getClient(
         source: "metadata_document",
       };
     }
-    return fetchMetadataDocument(clientId, url);
+    return loadMetadataDocument(clientId, url, limitKey);
   }
 
   if (!clientId.startsWith(TOKEN_PREFIX.clientId)) return null;

@@ -87,6 +87,11 @@ const normalizeDomains = (
         .filter(Boolean)
     ),
   ];
+  if (cleaned.length === 0) {
+    throw new McpToolError(
+      `Give at least one ${kind} domain, such as example.com.`
+    );
+  }
   const invalid = cleaned.filter((domain) =>
     kind === "origin" ? !isValidDomain(domain) : !isValidTargetDomain(domain)
   );

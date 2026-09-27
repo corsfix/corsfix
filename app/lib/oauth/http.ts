@@ -45,16 +45,49 @@ export const oauthErrorResponse = (error: OAuthTokenError) =>
     error.status === 401 ? { "WWW-Authenticate": 'Basic realm="corsfix"' } : {}
   );
 
+export class BodyTooLargeError extends Error {}
+
+// Reads a request body as text, giving up as soon as it exceeds maxBytes so
+// an oversized request can't use up memory.
+export async function readBodyText(
+  req: Request,
+  maxBytes: number
+): Promise<string> {
+  const declared = Number(req.headers.get("content-length") || 0);
+  if (declared > maxBytes) throw new BodyTooLargeError();
+  if (!req.body) return "";
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel();
+      throw new BodyTooLargeError();
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 // Token and revocation requests are form encoded (RFC 6749). JSON bodies are
 // accepted too, since a few clients send them.
 export async function readFormBody(req: Request): Promise<URLSearchParams> {
   const contentType = req.headers.get("content-type") || "";
-  const text = await req.text();
-  if (text.length > 16 * 1024) {
-    throw new OAuthTokenError(
-      "invalid_request",
-      "The request body is too large."
-    );
+  let text: string;
+  try {
+    text = await readBodyText(req, 16 * 1024);
+  } catch (error) {
+    if (error instanceof BodyTooLargeError) {
+      throw new OAuthTokenError(
+        "invalid_request",
+        "The request body is too large."
+      );
+    }
+    throw error;
   }
   if (contentType.includes("application/json")) {
     try {

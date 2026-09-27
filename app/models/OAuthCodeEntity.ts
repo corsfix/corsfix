@@ -17,6 +17,7 @@ export interface OAuthCodeEntity extends Document<string> {
   expires_at: Date;
   used_at?: Date;
   grant_id?: string;
+  replayed_at?: Date;
 }
 
 const OAuthCodeSchema = new Schema<OAuthCodeEntity>(
@@ -34,6 +35,7 @@ const OAuthCodeSchema = new Schema<OAuthCodeEntity>(
     expires_at: Date,
     used_at: Date,
     grant_id: String,
+    replayed_at: Date,
   },
   { collection: "oauth_codes" }
 );

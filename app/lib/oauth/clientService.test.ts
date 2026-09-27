@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/safeFetch", () => ({ safeFetch: vi.fn() }));
+vi.mock("@/lib/rateLimit", () => ({ allowCall: vi.fn(async () => true) }));
 vi.mock("@/lib/dbConnect", () => ({ default: vi.fn() }));
 vi.mock("@/models/OAuthClientEntity", () => ({
   OAuthClientEntity: { findById: vi.fn(), updateOne: vi.fn() },
 }));
 
 import { safeFetch } from "@/lib/safeFetch";
+import { allowCall } from "@/lib/rateLimit";
 import { OAuthClientEntity } from "@/models/OAuthClientEntity";
 import {
   OAuthClientError,
@@ -203,6 +205,39 @@ describe("getClient with Client ID Metadata Documents", () => {
       new Error("client1.example.com does not resolve to a public address")
     );
     await expect(getClient(clientId)).rejects.toThrow(OAuthClientError);
+  });
+
+  it("remembers failures briefly instead of refetching", async () => {
+    const clientId = nextClientId();
+    respond({}, { status: 404 });
+    await expect(getClient(clientId)).rejects.toThrow("status 404");
+    await expect(getClient(clientId)).rejects.toThrow("status 404");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("shares one request between concurrent lookups", async () => {
+    const clientId = nextClientId();
+    respond({ client_id: clientId, redirect_uris: ["https://a.example/cb"] });
+    const [first, second] = await Promise.all([
+      getClient(clientId),
+      getClient(clientId),
+    ]);
+    expect(first).toEqual(second);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("limits how many documents one user can make the server fetch", async () => {
+    vi.mocked(allowCall).mockResolvedValueOnce(false);
+    const clientId = nextClientId();
+    await expect(getClient(clientId, { limitKey: "user-1" })).rejects.toThrow(
+      "Too many apps"
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(allowCall).toHaveBeenCalledWith(
+      "oauth:metadata:user-1",
+      expect.any(Number),
+      60
+    );
   });
 
   it("does not fetch the document when fetchMetadata is false", async () => {

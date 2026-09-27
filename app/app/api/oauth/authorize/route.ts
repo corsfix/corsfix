@@ -44,7 +44,9 @@ export async function POST(req: Request) {
     return NextResponse.redirect(consentPage, 303);
   }
 
-  const result = await validateAuthorizationRequest(params, issuer);
+  const result = await validateAuthorizationRequest(params, issuer, {
+    limitKey: userId,
+  });
   if (!result.ok) {
     if (!result.redirectUri) {
       // The consent page explains errors that cannot be sent to the client.

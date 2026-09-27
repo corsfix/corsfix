@@ -23,8 +23,8 @@ export async function DELETE(
   const id = z
     .string()
     .max(64)
-    .parse((await params).id);
-  const revoked = await revokeGrant(userId, id);
+    .safeParse((await params).id);
+  const revoked = id.success && (await revokeGrant(userId, id.data));
   if (!revoked) {
     return NextResponse.json<ApiResponse<null>>(
       { data: null, message: "Connection not found", success: false },

@@ -84,13 +84,17 @@ export async function createAuthorizationCode({
   return code;
 }
 
-async function issueTokens(grant: {
-  _id: string;
-  user_id: string;
-  client_id: string;
-  scope: string;
-  resource: string;
-}): Promise<TokenResponse> {
+// parentId is the hash of the refresh token this pair replaces, if any.
+async function issueTokens(
+  grant: {
+    _id: string;
+    user_id: string;
+    client_id: string;
+    scope: string;
+    resource: string;
+  },
+  parentId?: string
+): Promise<TokenResponse> {
   const accessToken = randomToken(TOKEN_PREFIX.accessToken);
   const refreshToken = randomToken(TOKEN_PREFIX.refreshToken);
   const now = new Date();
@@ -114,6 +118,7 @@ async function issueTokens(grant: {
       _id: hashToken(refreshToken),
       kind: "refresh",
       expires_at: secondsFromNow(REFRESH_TOKEN_TTL_SECONDS),
+      ...(parentId ? { parent_id: parentId } : {}),
       ...shared,
     },
   ]);
@@ -181,26 +186,33 @@ export async function exchangeAuthorizationCode({
     );
   }
 
-  const alreadyUsed = new OAuthTokenError(
-    "invalid_grant",
-    "The authorization code has already been used."
-  );
-  if (stored.used_at) {
-    // A second valid request with a used code: deny it and revoke what the
-    // first one received (OAuth 2.1 section 4.1.3).
-    if (stored.grant_id) await revokeGrantTokens(stored.grant_id);
-    throw alreadyUsed;
-  }
+  // A second valid request with a used code is refused, and whatever the
+  // code issued is revoked (OAuth 2.1 section 4.1.3). The code records the
+  // grant it created and any replay, so this also holds when both requests
+  // arrive at the same time: whichever finishes last revokes the grant.
+  const refuseReplay = async (): Promise<never> => {
+    const replayed = await OAuthCodeEntity.findOneAndUpdate(
+      { _id: codeHash },
+      { $set: { replayed_at: now } },
+      { new: true }
+    ).lean();
+    if (replayed?.grant_id) await revokeGrantTokens(replayed.grant_id);
+    throw new OAuthTokenError(
+      "invalid_grant",
+      "The authorization code has already been used."
+    );
+  };
+  if (stored.used_at) return refuseReplay();
 
-  // Claim the code atomically so two concurrent requests cannot both succeed.
+  const grantId = crypto.randomBytes(16).toString("hex");
   const claimed = await OAuthCodeEntity.findOneAndUpdate(
     { _id: codeHash, used_at: { $exists: false } },
-    { $set: { used_at: now } }
+    { $set: { used_at: now, grant_id: grantId } }
   ).lean();
-  if (!claimed) throw alreadyUsed;
+  if (!claimed) return refuseReplay();
 
   const grant = await OAuthGrantEntity.create({
-    _id: crypto.randomBytes(16).toString("hex"),
+    _id: grantId,
     user_id: stored.user_id,
     client_id: stored.client_id,
     client_name: stored.client_name,
@@ -212,12 +224,19 @@ export async function exchangeAuthorizationCode({
     last_used_at: now,
     expires_at: secondsFromNow(REFRESH_TOKEN_TTL_SECONDS),
   });
-  await OAuthCodeEntity.updateOne(
-    { _id: codeHash },
-    { $set: { grant_id: grant._id } }
-  );
+  const tokens = await issueTokens(grant);
 
-  return issueTokens(grant);
+  const replay = await OAuthCodeEntity.findById(codeHash)
+    .select({ replayed_at: 1 })
+    .lean();
+  if (replay?.replayed_at) {
+    await revokeGrantTokens(grantId);
+    throw new OAuthTokenError(
+      "invalid_grant",
+      "The authorization code has already been used."
+    );
+  }
+  return tokens;
 }
 
 // Deleting the grant is what revokes access: access tokens and refresh
@@ -250,55 +269,87 @@ export async function refreshTokens({
       kind: "refresh",
       client_id: client.client_id,
       used_at: { $exists: false },
+      superseded_at: { $exists: false },
       expires_at: { $gt: now },
       ...(resource ? { resource } : {}),
     },
     { $set: { used_at: now } }
   ).lean();
 
-  if (!stored) {
-    const previous = await OAuthTokenEntity.findById(tokenHash).lean();
-    if (previous?.kind === "refresh" && previous.expires_at > now) {
-      if (previous.client_id !== client.client_id) {
-        throw new OAuthTokenError(
-          "invalid_grant",
-          "The refresh token was issued to a different client."
-        );
-      }
-      if (resource && resource !== previous.resource) {
-        throw new OAuthTokenError(
-          "invalid_target",
-          "The resource does not match the original authorization."
-        );
-      }
-      if (previous.used_at) {
-        const sinceRotation = now.getTime() - previous.used_at.getTime();
-        if (sinceRotation <= REFRESH_TOKEN_REUSE_GRACE_SECONDS * 1000) {
-          // The token was rotated moments ago, most likely by a concurrent
-          // refresh from the same client (several requests noticing an
-          // expired access token at once). Give this request its own token
-          // pair instead of disconnecting the app.
-          return issueTokensForGrant(previous.grant_id, now);
-        }
-        // A rotated refresh token was replayed later: assume it leaked and
-        // cut off every token in the grant (OAuth 2.1 section 4.3.1).
-        await revokeGrantTokens(previous.grant_id);
-      }
+  if (stored) {
+    // A concurrent refresh may have produced a sibling of this token (see
+    // below). Once one sibling is used, the others are stale, so presenting
+    // one later counts as reuse. That keeps a copied token from starting a
+    // second, independent chain.
+    if (stored.parent_id) {
+      await OAuthTokenEntity.updateMany(
+        {
+          kind: "refresh",
+          parent_id: stored.parent_id,
+          _id: { $ne: tokenHash },
+          used_at: { $exists: false },
+        },
+        { $set: { superseded_at: now } }
+      );
     }
-    throw new OAuthTokenError(
-      "invalid_grant",
-      "The refresh token is invalid, expired or already used."
-    );
+    // The rotated token is kept (marked used) until it expires so a replay
+    // can be detected; the previous access token stays valid until it
+    // expires.
+    return issueTokensForGrant(stored.grant_id, now, tokenHash);
   }
 
-  // The rotated token is kept (marked used) until it expires so a replay can
-  // be detected; the previous access token stays valid until it expires.
-  return issueTokensForGrant(stored.grant_id, now);
+  const previous = await OAuthTokenEntity.findById(tokenHash).lean();
+  if (previous?.kind === "refresh" && previous.expires_at > now) {
+    if (previous.client_id !== client.client_id) {
+      throw new OAuthTokenError(
+        "invalid_grant",
+        "The refresh token was issued to a different client."
+      );
+    }
+    if (resource && resource !== previous.resource) {
+      throw new OAuthTokenError(
+        "invalid_target",
+        "The resource does not match the original authorization."
+      );
+    }
+    if (
+      previous.used_at &&
+      !previous.superseded_at &&
+      now.getTime() - previous.used_at.getTime() <=
+        REFRESH_TOKEN_REUSE_GRACE_SECONDS * 1000 &&
+      // Once the replacement token has itself been used, this is no longer
+      // a concurrent retry.
+      !(await OAuthTokenEntity.exists({
+        parent_id: tokenHash,
+        used_at: { $exists: true },
+      }))
+    ) {
+      // The token was rotated moments ago, most likely by a concurrent
+      // refresh from the same client (several requests noticing an expired
+      // access token at once). One such retry gets its own token pair, a
+      // sibling of the first; any further retry is treated as reuse.
+      const retry = await OAuthTokenEntity.findOneAndUpdate(
+        { _id: tokenHash, grace_used_at: { $exists: false } },
+        { $set: { grace_used_at: now } }
+      ).lean();
+      if (retry) return issueTokensForGrant(previous.grant_id, now, tokenHash);
+    }
+    if (previous.used_at || previous.superseded_at) {
+      // A used or stale refresh token was presented: assume it leaked and
+      // cut off every token in the grant (OAuth 2.1 section 4.3.1).
+      await revokeGrantTokens(previous.grant_id);
+    }
+  }
+  throw new OAuthTokenError(
+    "invalid_grant",
+    "The refresh token is invalid, expired or already used."
+  );
 }
 
 async function issueTokensForGrant(
   grantId: string,
-  now: Date
+  now: Date,
+  parentId?: string
 ): Promise<TokenResponse> {
   const grant = await OAuthGrantEntity.findOneAndUpdate(
     { _id: grantId, expires_at: { $gt: now } },
@@ -316,7 +367,7 @@ async function issueTokensForGrant(
       "This connection was removed. Connect the app again."
     );
   }
-  return issueTokens(grant);
+  return issueTokens(grant, parentId);
 }
 
 export async function verifyAccessToken(

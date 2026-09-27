@@ -10,12 +10,12 @@ export async function allowCall(
   try {
     const redis = await redisConnect();
     const window = Math.floor(Date.now() / (windowSeconds * 1000));
-    const redisKey = `mcp:ratelimit:${key}:${window}`;
+    const redisKey = `ratelimit:${key}:${window}`;
     const count = await redis.incr(redisKey);
     if (count === 1) await redis.expire(redisKey, windowSeconds);
     return count <= limit;
   } catch (error) {
-    console.error("MCP rate limit check failed", error);
+    console.error("Rate limit check failed", error);
     return true;
   }
 }

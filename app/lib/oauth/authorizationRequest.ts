@@ -42,7 +42,8 @@ export type AuthorizationRequestResult =
   | { ok: true; request: ValidAuthorizationRequest }
   // The client or redirect URI cannot be trusted: show the error, never redirect.
   | { ok: false; redirectUri: null; error: string; description: string }
-  // Everything else is reported back to the client through its redirect URI.
+  // Everything else can be reported back to the client through its redirect
+  // URI, once the user chooses to go back to the app.
   | {
       ok: false;
       redirectUri: string;
@@ -79,9 +80,11 @@ export const buildRedirectUrl = (
   return url.toString();
 };
 
+// limitKey (the signed-in user's id) rate-limits client metadata fetches.
 export async function validateAuthorizationRequest(
   params: AuthorizationParams,
-  issuer: string
+  issuer: string,
+  { limitKey }: { limitKey?: string } = {}
 ): Promise<AuthorizationRequestResult> {
   const fail = (error: string, description: string) =>
     ({ ok: false, redirectUri: null, error, description } as const);
@@ -92,7 +95,7 @@ export async function validateAuthorizationRequest(
 
   let client: OAuthClient | null;
   try {
-    client = await getClient(params.client_id);
+    client = await getClient(params.client_id, { limitKey });
   } catch (error) {
     return fail(
       "invalid_client",

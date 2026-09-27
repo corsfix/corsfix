@@ -1,4 +1,5 @@
 import dns from "dns";
+import http from "http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SafeFetchError,
@@ -36,6 +37,8 @@ describe("isPublicAddress", () => {
     "::ffff:127.0.0.1",
     "::ffff:10.0.0.1",
     "64:ff9b::a00:1",
+    "::7f00:1",
+    "::a9fe:a9fe",
     "not-an-ip",
   ])("refuses %s", (address) => {
     expect(isPublicAddress(address)).toBe(false);
@@ -87,7 +90,40 @@ describe("safeFetch", () => {
     }) as unknown as typeof dns.lookup);
 
     await expect(safeFetch("http://rebind.example.test/")).rejects.toThrow(
-      "does not resolve to a public address"
+      "rebind.example.test could not be resolved to a public address"
     );
+  });
+
+  it("gives the same error for names that do not resolve", async () => {
+    vi.spyOn(dns, "lookup").mockImplementation(((
+      hostname: string,
+      _options: unknown,
+      callback: (err: NodeJS.ErrnoException) => void
+    ) => {
+      callback(
+        Object.assign(new Error(`getaddrinfo ENOTFOUND ${hostname}`), {
+          code: "ENOTFOUND",
+        })
+      );
+    }) as unknown as typeof dns.lookup);
+
+    await expect(safeFetch("http://mongodb/")).rejects.toThrow(
+      "mongodb could not be resolved to a public address"
+    );
+  });
+
+  it("uses its own agent, so proxy settings on the global agent do not apply", async () => {
+    let agent: unknown;
+    vi.spyOn(http, "request").mockImplementation(((
+      _url: URL,
+      options: http.RequestOptions
+    ) => {
+      agent = options.agent;
+      throw new Error("stop");
+    }) as unknown as typeof http.request);
+
+    await expect(safeFetch("http://api.example.com/")).rejects.toThrow("stop");
+    expect(agent).toBeInstanceOf(http.Agent);
+    expect(agent).not.toBe(http.globalAgent);
   });
 });

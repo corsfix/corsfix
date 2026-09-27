@@ -12,10 +12,19 @@ import ipaddr from "ipaddr.js";
 export class SafeFetchError extends Error {}
 
 // ipaddr.js labels ordinary public addresses "unicast"; every other range
-// (private, loopback, link-local, mapped, reserved, ...) is refused.
+// (private, loopback, link-local, mapped, reserved, ...) is refused, and so
+// are deprecated IPv4-compatible IPv6 addresses (::a.b.c.d), which ipaddr.js
+// counts as unicast.
 export const isPublicAddress = (address: string): boolean => {
   try {
-    return ipaddr.parse(address).range() === "unicast";
+    const parsed = ipaddr.parse(address);
+    if (
+      parsed.kind() === "ipv6" &&
+      (parsed as ipaddr.IPv6).parts.slice(0, 6).every((part) => part === 0)
+    ) {
+      return false;
+    }
+    return parsed.range() === "unicast";
   } catch {
     return false;
   }
@@ -33,16 +42,17 @@ const safeLookup = (
   callback: LookupCallback
 ) => {
   dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
-    if (err) {
-      callback(err);
-      return;
-    }
+    // One message for unknown names and private addresses alike, so the
+    // error does not reveal which internal hostnames exist.
     if (
+      err ||
       addresses.length === 0 ||
       addresses.some((entry) => !isPublicAddress(entry.address))
     ) {
       callback(
-        new SafeFetchError(`${hostname} does not resolve to a public address`)
+        new SafeFetchError(
+          `${hostname} could not be resolved to a public address`
+        )
       );
       return;
     }
@@ -53,6 +63,12 @@ const safeLookup = (
     }
   });
 };
+
+// Dedicated agents: with Node's env proxy support (NODE_USE_ENV_PROXY and
+// HTTP(S)_PROXY) the global agents would send requests to a proxy that
+// resolves the hostname itself, skipping safeLookup.
+const httpAgent = new http.Agent();
+const httpsAgent = new https.Agent();
 
 export interface SafeFetchOptions {
   method?: string;
@@ -109,10 +125,12 @@ export function safeFetch(
       return;
     }
 
-    const client = url.protocol === "https:" ? https : http;
+    const secure = url.protocol === "https:";
+    const client = secure ? https : http;
     const req = client.request(
       url,
       {
+        agent: secure ? httpsAgent : httpAgent,
         method,
         headers: { "user-agent": "Corsfix-MCP/1.0", ...headers },
         lookup: safeLookup as unknown as http.RequestOptions["lookup"],

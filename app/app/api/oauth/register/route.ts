@@ -1,11 +1,17 @@
 import * as z from "zod";
 import dbConnect from "@/lib/dbConnect";
-import redisConnect from "@/lib/redisConnect";
 import { OAuthClientEntity } from "@/models/OAuthClientEntity";
 import { REGISTERED_CLIENT_TTL_SECONDS } from "@/lib/oauth/config";
 import { TOKEN_PREFIX, hashToken, randomToken } from "@/lib/oauth/crypto";
 import { validateRedirectUri } from "@/lib/oauth/redirectUri";
-import { getClientIp, oauthJson, preflightResponse } from "@/lib/oauth/http";
+import { allowCall } from "@/lib/rateLimit";
+import {
+  BodyTooLargeError,
+  getClientIp,
+  oauthJson,
+  preflightResponse,
+  readBodyText,
+} from "@/lib/oauth/http";
 
 export const dynamic = "force-dynamic";
 
@@ -47,20 +53,13 @@ const httpsUrlOrUndefined = (value?: string) => {
   }
 };
 
-async function isRateLimited(req: Request): Promise<boolean> {
-  try {
-    const redis = await redisConnect();
-    const hour = Math.floor(Date.now() / 3_600_000);
-    const key = `oauth:register:${getClientIp(req)}:${hour}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, 3600);
-    return count > REGISTRATIONS_PER_IP_PER_HOUR;
-  } catch (error) {
-    // Registration keeps working if Redis is unavailable.
-    console.error("OAuth registration rate limit check failed", error);
-    return false;
-  }
-}
+// Registration keeps working if Redis is unavailable (allowCall allows).
+const isRateLimited = async (req: Request): Promise<boolean> =>
+  !(await allowCall(
+    `oauth:register:${getClientIp(req)}`,
+    REGISTRATIONS_PER_IP_PER_HOUR,
+    3600
+  ));
 
 export async function POST(req: Request) {
   if (await isRateLimited(req)) {
@@ -75,11 +74,13 @@ export async function POST(req: Request) {
 
   let json: unknown;
   try {
-    json = await req.json();
-  } catch {
+    json = JSON.parse(await readBodyText(req, 32 * 1024));
+  } catch (error) {
     return registrationError(
       "invalid_client_metadata",
-      "The request body must be a JSON object."
+      error instanceof BodyTooLargeError
+        ? "The request body is too large."
+        : "The request body must be a JSON object."
     );
   }
 
