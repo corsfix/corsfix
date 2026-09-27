@@ -11,7 +11,6 @@ import {
 } from "./config";
 import { OAuthClient } from "./clientService";
 import { TOKEN_PREFIX, hashToken, randomToken, verifyPkceS256 } from "./crypto";
-import { redirectUriMatches } from "./redirectUri";
 
 export class OAuthTokenError extends Error {
   constructor(
@@ -142,13 +141,13 @@ export async function exchangeAuthorizationCode({
   resource?: string | null;
 }): Promise<TokenResponse> {
   await dbConnect();
+  const codeHash = hashToken(code);
+  const now = new Date();
 
-  // findOneAndDelete makes the code single-use even under concurrent requests.
-  const stored = await OAuthCodeEntity.findOneAndDelete({
-    _id: hashToken(code),
-  }).lean();
-
-  if (!stored || stored.expires_at < new Date()) {
+  // Every check runs before the code is used up, so a request with a wrong
+  // verifier or redirect_uri cannot spend the legitimate client's code.
+  const stored = await OAuthCodeEntity.findById(codeHash).lean();
+  if (!stored || stored.expires_at <= now) {
     throw new OAuthTokenError(
       "invalid_grant",
       "The authorization code is invalid or has expired."
@@ -160,7 +159,10 @@ export async function exchangeAuthorizationCode({
       "The authorization code was issued to a different client."
     );
   }
-  if (redirectUri && !redirectUriMatches(stored.redirect_uri, redirectUri)) {
+  // OAuth 2.1 clients leave redirect_uri out of the token request; when it
+  // is sent, it must be identical to the one in the authorization request
+  // (RFC 6749 section 4.1.3), including a loopback port.
+  if (redirectUri !== undefined && redirectUri !== stored.redirect_uri) {
     throw new OAuthTokenError(
       "invalid_grant",
       "redirect_uri does not match the authorization request."
@@ -179,7 +181,24 @@ export async function exchangeAuthorizationCode({
     );
   }
 
-  const now = new Date();
+  const alreadyUsed = new OAuthTokenError(
+    "invalid_grant",
+    "The authorization code has already been used."
+  );
+  if (stored.used_at) {
+    // A second valid request with a used code: deny it and revoke what the
+    // first one received (OAuth 2.1 section 4.1.3).
+    if (stored.grant_id) await revokeGrantTokens(stored.grant_id);
+    throw alreadyUsed;
+  }
+
+  // Claim the code atomically so two concurrent requests cannot both succeed.
+  const claimed = await OAuthCodeEntity.findOneAndUpdate(
+    { _id: codeHash, used_at: { $exists: false } },
+    { $set: { used_at: now } }
+  ).lean();
+  if (!claimed) throw alreadyUsed;
+
   const grant = await OAuthGrantEntity.create({
     _id: crypto.randomBytes(16).toString("hex"),
     user_id: stored.user_id,
@@ -193,10 +212,17 @@ export async function exchangeAuthorizationCode({
     last_used_at: now,
     expires_at: secondsFromNow(REFRESH_TOKEN_TTL_SECONDS),
   });
+  await OAuthCodeEntity.updateOne(
+    { _id: codeHash },
+    { $set: { grant_id: grant._id } }
+  );
 
   return issueTokens(grant);
 }
 
+// Deleting the grant is what revokes access: access tokens and refresh
+// tokens are only accepted while their grant exists. Deleting the tokens
+// afterwards is cleanup.
 async function revokeGrantTokens(grantId: string): Promise<void> {
   await OAuthGrantEntity.deleteOne({ _id: grantId });
   await OAuthTokenEntity.deleteMany({ grant_id: grantId });
@@ -275,7 +301,7 @@ async function issueTokensForGrant(
   now: Date
 ): Promise<TokenResponse> {
   const grant = await OAuthGrantEntity.findOneAndUpdate(
-    { _id: grantId },
+    { _id: grantId, expires_at: { $gt: now } },
     {
       $set: {
         last_used_at: now,
@@ -312,15 +338,21 @@ export async function verifyAccessToken(
     return null;
   }
 
+  // The token only works while its connection exists, so disconnecting an
+  // app cuts it off even if cleaning up its tokens failed.
+  const grant = await OAuthGrantEntity.findById(stored.grant_id)
+    .select({ last_used_at: 1, expires_at: 1 })
+    .lean();
+  if (!grant || grant.expires_at <= now) return null;
+
   // Keep "last used" roughly current for the connected apps list without
   // writing on every request.
-  OAuthGrantEntity.updateOne(
-    {
-      _id: stored.grant_id,
-      last_used_at: { $lt: new Date(now.getTime() - 5 * 60 * 1000) },
-    },
-    { $set: { last_used_at: now } }
-  ).catch((error) => console.error("Failed to update grant usage", error));
+  if ((grant.last_used_at?.getTime() ?? 0) < now.getTime() - 5 * 60 * 1000) {
+    OAuthGrantEntity.updateOne(
+      { _id: stored.grant_id },
+      { $set: { last_used_at: now } }
+    ).catch((error) => console.error("Failed to update grant usage", error));
+  }
 
   return {
     userId: stored.user_id,

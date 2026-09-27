@@ -45,6 +45,41 @@ describe("analyzeRequest", () => {
     ]);
     expect(shape.reasons).toHaveLength(4);
   });
+
+  it.each([
+    ["Accept", 'application/json; profile="v2"'],
+    ["Accept", `application/json, ${"a".repeat(130)}`],
+    ["Content-Type", 'text/plain; charset="utf-8"'],
+    ["Content-Type", "text/plain; x={1}"],
+    ["Accept-Language", "en_US"],
+    ["Content-Language", "de-DE:1"],
+    ["Range", "bytes=-500"],
+    ["Range", "bytes=10-5"],
+  ])("needs a preflight for %s: %s", (name, value) => {
+    const shape = analyzeRequest("GET", { [name]: value });
+    expect(shape.needsPreflight).toBe(true);
+    expect(shape.unsafeHeaders).toEqual([name.toLowerCase()]);
+  });
+
+  it.each([
+    ["Accept", "application/json, text/plain;q=0.9, */*;q=0.8"],
+    ["Accept-Language", "en-US,en;q=0.9"],
+    ["Content-Language", "de-DE"],
+    ["Content-Type", "  multipart/form-data; boundary=abc  "],
+    ["Range", "bytes=0-99"],
+    ["Range", "bytes=100-"],
+  ])("keeps %s: %s simple", (name, value) => {
+    expect(analyzeRequest("GET", { [name]: value }).needsPreflight).toBe(false);
+  });
+
+  it("combines repeated header names before checking them, like browsers do", () => {
+    const shape = analyzeRequest("GET", {
+      Accept: "a".repeat(100),
+      ACCEPT: "b".repeat(100),
+    });
+    expect(shape.needsPreflight).toBe(true);
+    expect(shape.unsafeHeaders).toEqual(["accept"]);
+  });
 });
 
 describe("evaluatePreflight", () => {
@@ -132,7 +167,16 @@ describe("checkCors", () => {
     });
   });
 
-  it("only sends GET for methods that could change data", async () => {
+  const deleteRequest = {
+    url: "https://api.example.com/items/1",
+    origin: ORIGIN,
+    method: "DELETE",
+    headers: {},
+    credentials: false,
+    proxyBaseUrl: "https://proxy.corsfix.com",
+  };
+
+  it("never sends methods that could change data, so the verdict is inconclusive", async () => {
     fetchMock
       .mockResolvedValueOnce(
         response(204, {
@@ -143,19 +187,46 @@ describe("checkCors", () => {
       .mockResolvedValueOnce(
         response(200, { "access-control-allow-origin": ORIGIN })
       );
-    const result = await checkCors({
-      url: "https://api.example.com/items/1",
-      origin: ORIGIN,
-      method: "DELETE",
-      headers: {},
-      credentials: false,
-      proxyBaseUrl: "https://proxy.corsfix.com",
-    });
+    const result = await checkCors(deleteRequest);
     expect(fetchMock.mock.calls.map(([, options]) => options?.method)).toEqual([
       "OPTIONS",
       "GET",
     ]);
-    expect(result.verdict).toBe("allowed");
+    expect(result).toMatchObject({
+      verdict: "inconclusive",
+      likely: "allowed",
+    });
+    expect(result).not.toHaveProperty("fix");
+  });
+
+  it("suggests the proxy when the stand-in GET is blocked", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        response(204, {
+          "access-control-allow-origin": ORIGIN,
+          "access-control-allow-methods": "DELETE",
+        })
+      )
+      .mockResolvedValueOnce(response(200));
+    const result = await checkCors(deleteRequest);
+    expect(result).toMatchObject({
+      verdict: "inconclusive",
+      likely: "blocked",
+    });
+    expect(result).toHaveProperty("fix");
+  });
+
+  it("is conclusive when the preflight for a write method fails", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        response(204, { "access-control-allow-origin": ORIGIN })
+      )
+      .mockResolvedValueOnce(
+        response(200, { "access-control-allow-origin": ORIGIN })
+      );
+    const result = await checkCors(deleteRequest);
+    expect(result.verdict).toBe("blocked");
+    expect(result.summary).toMatch(/preflight/);
   });
 
   it("returns an unknown verdict when the target cannot be reached", async () => {

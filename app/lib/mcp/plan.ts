@@ -86,13 +86,25 @@ export async function getPlanInfo(account: McpAccount): Promise<PlanInfo> {
 
 // Base URL of the proxy this account should call, following the same rules
 // as the dashboard playground: self-hosted instances use their own proxy
-// domain, Lite plans use lite.corsfix.com, and regional endpoints are opt-in.
+// domain, Lite plans use lite.corsfix.com, and regional endpoints are only
+// used on plans with region selection (the proxy rejects them otherwise).
 export const getProxyBaseUrl = (plan: PlanInfo, region: Region = "auto") => {
   if (!IS_CLOUD) {
     const domain = getProxyDomain();
     return domain ? `https://${domain}` : "https://proxy.corsfix.com";
   }
   if (plan.isLite) return "https://lite.corsfix.com";
-  if (region !== "auto") return `https://proxy-${region}.corsfix.com`;
+  if (region !== "auto" && plan.regionSelection) {
+    return `https://proxy-${region}.corsfix.com`;
+  }
   return "https://proxy.corsfix.com";
 };
+
+// Explains why a requested region was not used, or returns null.
+export const regionNote = (
+  plan: PlanInfo,
+  region: Region = "auto"
+): string | null =>
+  IS_CLOUD && region !== "auto" && !plan.regionSelection
+    ? "Region selection needs a Growth or Scale plan, so your plan's default proxy endpoint is used instead."
+    : null;

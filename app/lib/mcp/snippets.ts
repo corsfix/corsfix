@@ -55,6 +55,13 @@ const bodyExpression = (body: string) => {
   return str(body);
 };
 
+// Browsers refuse a body on GET and HEAD requests, so it is only sent with
+// other methods.
+export const sendsBody = <T extends Pick<SnippetInput, "method" | "body">>(
+  input: T
+): input is T & { body: string } =>
+  input.body !== undefined && input.method !== "GET" && input.method !== "HEAD";
+
 const isJsonResponseLikely = (input: SnippetInput) =>
   !/\.(png|jpe?g|gif|webp|svg|pdf|zip|mp3|mp4|csv|txt|html?)(\?|$)/i.test(
     input.url
@@ -80,7 +87,7 @@ function fetchSnippet(input: SnippetInput): string {
   if (input.method !== "GET") options.push(`method: ${str(input.method)}`);
   const headers = proxyHeaders(input);
   if (headers.length) options.push(`headers: ${objectLiteral(headers, 2)}`);
-  if (input.body !== undefined && input.method !== "GET") {
+  if (sendsBody(input)) {
     options.push(`body: ${indent(bodyExpression(input.body), 2)}`);
   }
   const init = options.length ? `, {\n  ${options.join(",\n  ")},\n}` : "";
@@ -97,7 +104,7 @@ function sdkCall(input: SnippetInput): string {
     ([key, value]) => [key, str(value)] as [string, string]
   );
   if (headers.length) options.push(`headers: ${objectLiteral(headers, 2)}`);
-  if (input.body !== undefined && input.method !== "GET") {
+  if (sendsBody(input)) {
     options.push(`body: ${indent(bodyExpression(input.body), 2)}`);
   }
   const corsfix: [string, string][] = [];
@@ -147,7 +154,7 @@ function axiosSnippet(input: SnippetInput): string {
   ];
   const headers = proxyHeaders(input);
   if (headers.length) config.push(`headers: ${objectLiteral(headers, 2)}`);
-  if (input.body !== undefined && input.method !== "GET") {
+  if (sendsBody(input)) {
     config.push(`data: ${indent(bodyExpression(input.body), 2)}`);
   }
   return `import axios from "axios";\n\nconst { data } = await axios({\n  ${config.join(
@@ -163,7 +170,7 @@ function jquerySnippet(input: SnippetInput): string {
   ];
   const headers = proxyHeaders(input);
   if (headers.length) config.push(`headers: ${objectLiteral(headers, 2)}`);
-  if (input.body !== undefined && input.method !== "GET") {
+  if (sendsBody(input)) {
     config.push(`data: ${indent(bodyExpression(input.body), 2)}`);
   }
   return `$.ajax({\n  ${config.join(
@@ -192,7 +199,7 @@ function curlSnippet(input: SnippetInput): string {
       )}`
     );
   }
-  if (input.body !== undefined && input.method !== "GET") {
+  if (sendsBody(input)) {
     parts.push(`--data ${shellQuote(input.body)}`);
   }
   return parts.join(" \\\n  ");

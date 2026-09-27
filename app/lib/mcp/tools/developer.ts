@@ -11,10 +11,10 @@ import {
   McpToolContext,
   McpToolError,
 } from "../context";
-import { getPlanInfo, getProxyBaseUrl } from "../plan";
+import { getPlanInfo, getProxyBaseUrl, regionNote } from "../plan";
 import { runProxyTest } from "../proxyTest";
 import { allowCall } from "../rateLimit";
-import { buildSnippet } from "../snippets";
+import { buildSnippet, sendsBody } from "../snippets";
 
 const METHODS = [
   "GET",
@@ -209,18 +209,20 @@ async function testThroughProxy(args: ProxyTestArgs, ctx: McpToolContext) {
     origin = account.issuer;
   }
 
+  const result = await runProxyTest({
+    url,
+    method: args.method,
+    headers: args.headers ?? {},
+    body: args.body,
+    cache: args.cache,
+    overrideHeaders: args.override_headers ?? {},
+    origin,
+    useSdk: args.use_sdk,
+    proxyBaseUrl: getProxyBaseUrl(plan, args.region),
+  });
+  const unusedRegion = regionNote(plan, args.region);
   return jsonResult(
-    await runProxyTest({
-      url,
-      method: args.method,
-      headers: args.headers ?? {},
-      body: args.body,
-      cache: args.cache,
-      overrideHeaders: args.override_headers ?? {},
-      origin,
-      useSdk: args.use_sdk,
-      proxyBaseUrl: getProxyBaseUrl(plan, args.region),
-    })
+    unusedRegion ? { ...result, notes: [unusedRegion] } : result
   );
 }
 
@@ -230,7 +232,7 @@ export function registerDeveloperTools(server: McpServer) {
     {
       title: "Check CORS",
       description:
-        "Check whether a browser request from a website to an API would be blocked by CORS. Runs the preflight the browser would send (if any) and a GET to the target from Corsfix's servers, then explains the result and how to fix it. Only GET and HEAD are sent for real.",
+        "Check whether a browser request from a website to an API would be blocked by CORS. Sends the preflight the browser would send (if any) and a GET or HEAD to the target from Corsfix's servers, then explains the result and how to fix it. POST, PUT, PATCH and DELETE are never sent because they could change data, so for those the verdict is inconclusive unless the preflight already fails.",
       inputSchema: checkCorsSchema,
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
@@ -296,6 +298,11 @@ export function registerDeveloperTools(server: McpServer) {
         const usesSecrets = /\{\{\s*[A-Za-z0-9_]+\s*\}\}/.test(
           url + JSON.stringify(headers)
         );
+        if (args.body !== undefined && !sendsBody(args)) {
+          notes.push(
+            `${args.method} requests can't have a body, so the body was left out.`
+          );
+        }
         if (plan.tier === "free" && !style.startsWith("sdk")) {
           notes.push(
             "On the free tier, live websites must call the proxy through the Corsfix SDK; this code works on localhost only until you upgrade."
@@ -323,11 +330,8 @@ export function registerDeveloperTools(server: McpServer) {
               : "{{SECRET_NAME}} variables need a paid Standard plan or an active trial; on this plan they are sent as-is."
           );
         }
-        if (args.region !== "auto" && !plan.regionSelection && IS_CLOUD) {
-          notes.push(
-            "Region selection is available on Growth and Scale plans."
-          );
-        }
+        const unusedRegion = regionNote(plan, args.region);
+        if (unusedRegion) notes.push(unusedRegion);
         if (style === "curl") {
           notes.push(
             "curl is for testing only: the proxy identifies websites by the Origin header, which browsers set automatically."

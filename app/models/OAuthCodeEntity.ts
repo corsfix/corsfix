@@ -1,6 +1,8 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-// Single-use authorization codes. _id is the SHA-256 hash of the code.
+// Single-use authorization codes. _id is the SHA-256 hash of the code. Used
+// codes are kept (with used_at and the grant they created) until they expire,
+// so a second use can be detected.
 export interface OAuthCodeEntity extends Document<string> {
   _id: string;
   client_id: string;
@@ -13,6 +15,8 @@ export interface OAuthCodeEntity extends Document<string> {
   resource: string;
   created_at: Date;
   expires_at: Date;
+  used_at?: Date;
+  grant_id?: string;
 }
 
 const OAuthCodeSchema = new Schema<OAuthCodeEntity>(
@@ -28,6 +32,8 @@ const OAuthCodeSchema = new Schema<OAuthCodeEntity>(
     resource: String,
     created_at: Date,
     expires_at: Date,
+    used_at: Date,
+    grant_id: String,
   },
   { collection: "oauth_codes" }
 );

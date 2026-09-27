@@ -60,6 +60,19 @@ describe("buildSnippet", () => {
     expect(regional.code).toContain('proxyUrl: "https://proxy-eu.corsfix.com"');
   });
 
+  it.each(["fetch", "sdk", "axios", "jquery", "curl"] as const)(
+    "leaves the body out of %s HEAD requests",
+    (style) => {
+      const { code } = buildSnippet({
+        ...base,
+        style,
+        method: "HEAD",
+        body: '{"a":1}',
+      });
+      expect(code).not.toMatch(/body:|data:|--data/);
+    }
+  );
+
   it("quotes curl arguments for the shell", () => {
     const { code, language } = buildSnippet({
       ...base,

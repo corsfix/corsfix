@@ -4,13 +4,6 @@ import { safeFetch, SafeFetchError, SafeFetchResponse } from "@/lib/safeFetch";
 // so an agent can tell whether a request will be blocked before suggesting
 // a proxy.
 
-const SAFELISTED_HEADERS = new Set([
-  "accept",
-  "accept-language",
-  "content-language",
-  "content-type",
-  "range",
-]);
 const SIMPLE_CONTENT_TYPES = new Set([
   "application/x-www-form-urlencoded",
   "multipart/form-data",
@@ -37,12 +30,59 @@ export interface RequestShape {
   unsafeHeaders: string[];
 }
 
+// CORS-unsafe request-header bytes (Fetch standard).
+const UNSAFE_HEADER_BYTE = /[\x00-\x08\x0a-\x1f"():<>?@\[\\\]{}\x7f]/;
+const LANGUAGE_HEADER_VALUE = /^[0-9A-Za-z *,\-.;=]*$/;
+
+// Why a header makes the request need a preflight, or null when it is a
+// CORS-safelisted request-header (Fetch standard). Only accept,
+// accept-language, content-language, content-type and range can be
+// safelisted, and only with values of up to 128 bytes in a limited format.
+function safelistProblem(rawName: string, value: string): string | null {
+  const name = rawName.toLowerCase();
+  const notSafelisted = `the ${rawName} header is not CORS-safelisted`;
+  const valueProblem = `the ${rawName} header's value is not CORS-safelisted (it must be at most 128 bytes without characters such as quotes, parentheses, colons or braces)`;
+
+  switch (name) {
+    case "accept":
+      return value.length > 128 || UNSAFE_HEADER_BYTE.test(value)
+        ? valueProblem
+        : null;
+    case "accept-language":
+    case "content-language":
+      return value.length > 128 || !LANGUAGE_HEADER_VALUE.test(value)
+        ? valueProblem
+        : null;
+    case "content-type": {
+      if (value.length > 128 || UNSAFE_HEADER_BYTE.test(value)) {
+        return valueProblem;
+      }
+      const essence = value.split(";")[0].trim().toLowerCase();
+      return SIMPLE_CONTENT_TYPES.has(essence)
+        ? null
+        : `Content-Type ${value} is not one of the simple content types (application/x-www-form-urlencoded, multipart/form-data, text/plain)`;
+    }
+    case "range": {
+      const range = /^bytes=(\d+)-(\d*)$/.exec(value);
+      const valid =
+        value.length <= 128 &&
+        range !== null &&
+        (range[2] === "" || Number(range[1]) <= Number(range[2]));
+      return valid ? null : "the Range header is not a single byte range";
+    }
+    default:
+      return notSafelisted;
+  }
+}
+
 export function analyzeRequest(
   method: string,
   headers: Record<string, string>
 ): RequestShape {
   const reasons: string[] = [];
   const unsafeHeaders = new Set<string>();
+  const safelisted: string[] = [];
+  let safelistedBytes = 0;
 
   if (!SIMPLE_METHODS.has(method)) {
     reasons.push(
@@ -50,24 +90,35 @@ export function analyzeRequest(
     );
   }
 
-  for (const [rawName, value] of Object.entries(headers)) {
+  // Like the browser's Headers object, combine names that differ only in
+  // case, and strip leading and trailing whitespace from values.
+  const combined = new Map<string, { rawName: string; values: string[] }>();
+  for (const [rawName, rawValue] of Object.entries(headers)) {
     const name = rawName.toLowerCase();
+    const value = rawValue.replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, "");
+    const entry = combined.get(name);
+    if (entry) entry.values.push(value);
+    else combined.set(name, { rawName, values: [value] });
+  }
+
+  for (const [name, { rawName, values }] of combined) {
     if (BROWSER_MANAGED_HEADERS.has(name)) continue;
-    if (!SAFELISTED_HEADERS.has(name)) {
+    const value = values.join(", ");
+    const problem = safelistProblem(rawName, value);
+    if (problem) {
       unsafeHeaders.add(name);
-      reasons.push(`the ${rawName} header is not CORS-safelisted`);
-    } else if (
-      name === "content-type" &&
-      !SIMPLE_CONTENT_TYPES.has(value.split(";")[0].trim().toLowerCase())
-    ) {
-      unsafeHeaders.add(name);
-      reasons.push(
-        `Content-Type ${value} is not one of the simple content types`
-      );
-    } else if (name === "range" && !/^bytes=\d+-\d*$/.test(value.trim())) {
-      unsafeHeaders.add(name);
-      reasons.push("the Range header is not a simple byte range");
+      reasons.push(problem);
+    } else {
+      safelisted.push(name);
+      safelistedBytes += value.length;
     }
+  }
+
+  if (safelistedBytes > 1024) {
+    safelisted.forEach((name) => unsafeHeaders.add(name));
+    reasons.push(
+      "the CORS-safelisted headers are longer than 1024 bytes together"
+    );
   }
 
   return {
@@ -208,7 +259,13 @@ export async function checkCors(input: CorsCheckInput) {
       credentials: input.credentials,
     },
   };
-  const problems: string[] = [];
+  // Only GET and HEAD are sent for real. Other methods could change data on
+  // the target, so a GET to the same URL stands in for them, and its result
+  // only suggests what the real response would do.
+  const probeMethod = method === "HEAD" ? "HEAD" : "GET";
+  const substituted = probeMethod !== method;
+  let preflightProblems: string[] = [];
+  let responseProblems: string[] = [];
 
   try {
     if (shape.needsPreflight) {
@@ -225,13 +282,12 @@ export async function checkCors(input: CorsCheckInput) {
         },
         maxBytes: 4 * 1024,
       });
-      const preflightProblems = evaluatePreflight(preflight, {
+      preflightProblems = evaluatePreflight(preflight, {
         origin: input.origin,
         method,
         unsafeHeaders: shape.unsafeHeaders,
         credentials: input.credentials,
       });
-      problems.push(...preflightProblems);
       result.preflight = {
         required: true,
         why: shape.reasons,
@@ -248,25 +304,21 @@ export async function checkCors(input: CorsCheckInput) {
       };
     }
 
-    // Only GET and HEAD are sent for real; other methods could change data
-    // on the target, so a GET to the same URL stands in for them.
-    const probeMethod = method === "HEAD" ? "HEAD" : "GET";
     const response = await safeFetch(input.url, {
       method: probeMethod,
       headers: { origin: input.origin },
       maxBytes: 4 * 1024,
     });
-    const responseProblems = checkAllowOrigin(
+    responseProblems = checkAllowOrigin(
       response,
       input.origin,
       input.credentials
     );
-    problems.push(...responseProblems);
     result.response = {
       method_checked: probeMethod,
-      ...(probeMethod !== method
+      ...(substituted
         ? {
-            note: `${method} was not sent to avoid side effects; the GET response's CORS headers usually match.`,
+            note: `${method} was not sent because it could change data on the target. This is the response to a GET, and some APIs send different CORS headers for different methods.`,
           }
         : {}),
       status: response.status,
@@ -284,19 +336,41 @@ export async function checkCors(input: CorsCheckInput) {
     throw error;
   }
 
-  const blocked = problems.length > 0;
+  const problems = [...preflightProblems, ...responseProblems];
+  const likelyBlocked = problems.length > 0;
+  let verdict: "allowed" | "blocked" | "inconclusive";
+  let summary: string;
+  if (preflightProblems.length > 0) {
+    verdict = "blocked";
+    summary = `The browser will block this request from ${input.origin} at the preflight. ${preflightProblems[0]}`;
+  } else if (!substituted) {
+    verdict = likelyBlocked ? "blocked" : "allowed";
+    summary = likelyBlocked
+      ? `The browser will block this request from ${input.origin}. ${responseProblems[0]}`
+      : `The browser will allow this request from ${input.origin}; no proxy is needed.`;
+  } else {
+    verdict = "inconclusive";
+    const preflightPart = shape.needsPreflight
+      ? "The preflight passes"
+      : "No preflight is needed";
+    summary = likelyBlocked
+      ? `${preflightPart}, but ${method} was not sent. A GET to the same URL is blocked (${responseProblems[0]}), so the ${method} response is most likely blocked too.`
+      : `${preflightPart}, but ${method} was not sent. A GET to the same URL passes, so the ${method} response is most likely allowed, unless the API sends different CORS headers for ${method}.`;
+  }
+
   const localOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
     input.origin
   );
 
   return {
     ...result,
-    verdict: blocked ? "blocked" : "allowed",
-    summary: blocked
-      ? `The browser will block this request from ${input.origin}. ${problems[0]}`
-      : `The browser will allow this request from ${input.origin}; no proxy is needed.`,
+    verdict,
+    ...(verdict === "inconclusive"
+      ? { likely: likelyBlocked ? "blocked" : "allowed" }
+      : {}),
+    summary,
     problems,
-    ...(blocked
+    ...(likelyBlocked
       ? {
           fix: {
             proxied_url: `${input.proxyBaseUrl}/?${input.url}`,

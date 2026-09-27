@@ -40,6 +40,9 @@ const setSchema = z.object({
     .string()
     .min(1)
     .max(255)
+    // The dashboard ignores blank values, so they are refused here instead
+    // of being reported as saved.
+    .refine((value) => value.trim().length > 0, "value must not be blank")
     .describe("The secret value, e.g. an API key."),
 });
 

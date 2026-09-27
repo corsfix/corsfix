@@ -100,7 +100,7 @@ export function registerAccountTools(server: McpServer) {
     {
       title: "Usage metrics",
       description:
-        "Get proxy usage for a month: requests, data transfer and peak concurrent users per day (days without traffic are skipped), with monthly totals. Optionally filter by origin domains.",
+        "Get proxy usage for a month: requests, data transfer and peak concurrent users per day (days without traffic are skipped), with monthly totals. Requests and data transfer can be filtered by origin domain; concurrent users are only tracked for the whole account.",
       inputSchema: usageSchema,
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -113,36 +113,53 @@ export function registerAccountTools(server: McpServer) {
           throw new McpToolError("month must look like 2026-09.");
         }
         const domains = args.origin_domains?.map(extractDomainFromInput);
+        const filtered = !!domains?.length;
 
         const [points, concurrency] = await Promise.all([
           getMetricsYearMonth(account.ownerId, month),
           getConcurrencyYearMonth(account.ownerId, month),
         ]);
-        const days = aggregateByDate(points, month, domains, concurrency);
+        // Concurrent users are only tracked for the whole account, so they are
+        // left out of the per-day figures when filtering by origin domain.
+        const days = aggregateByDate(
+          points,
+          month,
+          domains,
+          filtered ? undefined : concurrency
+        );
         const active = days.filter(
           (day) => day.req_count > 0 || (day.peak_concurrent ?? 0) > 0
         );
         const totalRequests = days.reduce((sum, day) => sum + day.req_count, 0);
         const totalBytes = days.reduce((sum, day) => sum + day.bytes, 0);
+        const accountPeak = Math.max(
+          0,
+          ...concurrency.map((day) => day.peak_concurrent)
+        );
 
         return jsonResult({
           month,
-          ...(domains?.length ? { origin_domains: domains } : {}),
+          ...(filtered ? { origin_domains: domains } : {}),
           totals: {
             requests: totalRequests,
             data_transfer: formatBytes(totalBytes),
             data_transfer_bytes: totalBytes,
-            peak_concurrent_users: Math.max(
-              0,
-              ...days.map((day) => day.peak_concurrent ?? 0)
-            ),
+            ...(filtered ? {} : { peak_concurrent_users: accountPeak }),
           },
           days: active.map((day) => ({
             date: new Date(day.date).toISOString().slice(0, 10),
             requests: day.req_count,
             data_transfer_bytes: day.bytes,
-            peak_concurrent_users: day.peak_concurrent ?? 0,
+            ...(filtered
+              ? {}
+              : { peak_concurrent_users: day.peak_concurrent ?? 0 }),
           })),
+          ...(filtered
+            ? {
+                account_peak_concurrent_users: accountPeak,
+                note: "Concurrent users are counted for the whole account, not per origin domain, so only the account-wide peak is shown.",
+              }
+            : {}),
           origin_domains_with_traffic: [
             ...new Set(
               points.map((point) => point.origin_domain).filter(Boolean)
