@@ -15,8 +15,7 @@ import GetStartedCode from "@/components/get-started-code";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { formatTrialEnds, getProxyDomain, isTrialActive } from "@/lib/utils";
-import { freeTierLimit, IS_CLOUD } from "@/config/constants";
-import { formatBytes } from "@/lib/utils";
+import { IS_CLOUD } from "@/config/constants";
 
 export const metadata: Metadata = {
   title: "Get Started | Corsfix Dashboard",
@@ -42,12 +41,6 @@ export default async function GetStarted() {
       subscription.label = `Trial (until ${formattedDate})`;
       planDescription =
         "Try all the features for free. Upgrade to keep using Corsfix on live web applications.";
-    } else if (IS_CLOUD) {
-      subscription.name = "free";
-      subscription.label = "Free";
-      planDescription = `Use Corsfix in production with the Corsfix SDK (CDN or NPM). Unlimited requests and ${formatBytes(
-        freeTierLimit.registeredBytes
-      )} data transfer included. Upgrade for more.`;
     } else {
       planDescription = "Upgrade to use Corsfix on live web applications.";
     }
@@ -95,8 +88,8 @@ export default async function GetStarted() {
                     Use Corsfix in your website
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Use the SDK, add the proxy URL to your requests, or drop
-                    in the CDN script.
+                    Add the proxy in your request and integrate with your
+                    existing code.
                   </p>
                   <div className="flex flex-wrap my-6 md:mb-0 gap-2">
                     <Link
