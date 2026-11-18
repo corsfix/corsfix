@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           data: null,
-          message: `The free tier allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
+          message: `Your current plan allows ${freeTierLimit.origin_count} origin domain per application. Upgrade to add more.`,
           success: false,
         },
         { status: 400 }

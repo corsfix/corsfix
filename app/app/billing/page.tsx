@@ -45,15 +45,6 @@ const trialBenefits = [
   "All file sizes & types",
 ];
 
-const freeTierBenefits = [
-  `${freeTierLimit.app_count} web application (${freeTierLimit.origin_count} origin domain)`,
-  `${formatBytes(freeTierLimit.registeredBytes)} data transfer per domain`,
-  `${freeTierLimit.concurrency} concurrent user`,
-  `${freeTierLimit.rpm} RPM (per user)`,
-  "All file sizes & types",
-  "Requires the Corsfix SDK (CDN or NPM)",
-];
-
 export const metadata: Metadata = {
   title: "Billing | Corsfix Dashboard",
 };
@@ -92,10 +83,10 @@ export default async function CreditsPage() {
       subscription.label = `Trial (until ${formattedDate})`;
       subscription.bandwidth = trialLimit.bytes;
     } else if (IS_CLOUD) {
-      // No plan and no trial: the account is on the always-free tier.
+      // No plan and no trial: the account is on the always-free tier. The
+      // free tier is not advertised here, the plan shows as none and the
+      // page nudges toward upgrading or the trial.
       isFree = true;
-      subscription.name = "free";
-      subscription.label = "Free";
       subscription.bandwidth = freeTierLimit.registeredBytes;
       freeTierUsage = await getFreeTierUsage(idToken);
     }
@@ -122,11 +113,7 @@ export default async function CreditsPage() {
   const defaultBillingCycle =
     subscription.billingCycle === "yearly" ? "yearly" : "monthly";
 
-  const planBenefits = isTrial
-    ? trialBenefits
-    : isFree
-    ? freeTierBenefits
-    : null;
+  const planBenefits = isTrial ? trialBenefits : null;
 
   // Free tier allowance is per domain, so the bar tracks the busiest one.
   const freeTierMaxBytes = freeTierUsage.reduce(
@@ -205,7 +192,7 @@ export default async function CreditsPage() {
                   <div className="bg-primary h-2 rounded-full transition-all duration-300 w-full"></div>
                 </div>
                 <div className="flex items-center justify-between">
-                  {isTrial || isFree || subscription.active ? (
+                  {isTrial || subscription.active ? (
                     <>
                       <div className="text-sm">You have unlimited requests</div>
                       <Infinity />
@@ -271,30 +258,22 @@ export default async function CreditsPage() {
                         )}
                       </span>
                     </>
-                  ) : isFree ? (
+                  ) : isFree && freeTierUsage.length > 0 ? (
                     <div className="text-sm w-full">
-                      {freeTierUsage.length === 0 ? (
-                        <span>
-                          Register your domain for{" "}
-                          {formatBytes(freeTierLimit.registeredBytes)} per
-                          month
-                        </span>
-                      ) : (
-                        <ul className="space-y-1">
-                          {freeTierUsage.map((usage) => (
-                            <li
-                              key={usage.domain}
-                              className="flex items-center justify-between gap-2"
-                            >
-                              <span className="truncate">{usage.domain}</span>
-                              <span className="whitespace-nowrap">
-                                {formatBytes(usage.bytes)}&nbsp;/&nbsp;
-                                {formatBytes(freeTierLimit.registeredBytes)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <ul className="space-y-1">
+                        {freeTierUsage.map((usage) => (
+                          <li
+                            key={usage.domain}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate">{usage.domain}</span>
+                            <span className="whitespace-nowrap">
+                              {formatBytes(usage.bytes)}&nbsp;/&nbsp;
+                              {formatBytes(freeTierLimit.registeredBytes)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   ) : (
                     <div className="text-sm">

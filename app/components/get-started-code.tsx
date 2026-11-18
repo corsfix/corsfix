@@ -49,18 +49,18 @@ export default function GetStartedCode({
   ) : null;
 
   return (
-    <Tabs defaultValue="html" className="relative w-full">
+    <Tabs defaultValue="api" className="relative w-full">
       {/* Floats over the top-right corner of the code block. Each snippet
           keeps its first line short so nothing sits underneath the tabs. */}
       <TabsList className="absolute right-2 top-2 h-7 p-0.5">
+        <TabsTrigger value="api" className="h-6 px-2 text-xs">
+          Proxy URL
+        </TabsTrigger>
         <TabsTrigger value="html" className="h-6 px-2 text-xs">
           HTML
         </TabsTrigger>
         <TabsTrigger value="npm" className="h-6 px-2 text-xs">
           npm
-        </TabsTrigger>
-        <TabsTrigger value="api" className="h-6 px-2 text-xs">
-          Proxy URL
         </TabsTrigger>
       </TabsList>
 

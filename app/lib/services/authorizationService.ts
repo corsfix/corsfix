@@ -72,7 +72,7 @@ async function canAddApplications(
     const applicationCount = await countApplication(session.user.id);
     return {
       allowed: applicationCount < freeTierLimit.app_count,
-      message: `The free tier includes ${freeTierLimit.app_count} application. Upgrade for more.`,
+      message: `Your current plan includes ${freeTierLimit.app_count} application. Upgrade for more.`,
     };
   }
 }
@@ -112,7 +112,7 @@ async function canManageSecrets(
     return {
       allowed: false,
       message:
-        "Secrets variables are not available on the free tier. Upgrade to use this feature.",
+        "Secrets variables are not available on your current plan. Upgrade to use this feature.",
     };
   }
 }
